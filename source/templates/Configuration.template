@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: (SOCA) -  Manage cluster-related information.
+Parameters:
+  VpcId:
+    Type: String
+
+  PublicSubnet1:
+    Type: String
+
+  PublicSubnet2:
+    Type: String
+
+  PublicSubnet3:
+    Type: String
+
+  PrivateSubnet1:
+    Type: String
+
+  PrivateSubnet2:
+    Type: String
+
+  PrivateSubnet3:
+    Type: String
+
+  SchedulerPrivateIP:
+    Type: String
+
+  SchedulerPrivateDnsName:
+    Type: String
+
+  SchedulerInstanceId:
+    Type: String
+
+  SchedulerSecurityGroup:
+    Type: String
+
+  ComputeNodeSecurityGroup:
+    Type: String
+
+  SchedulerIAMRoleArn:
+    Type: String
+
+  EFSAppsDns:
+    Type: String
+
+  EFSDataDns:
+    Type: String
+
+  ClusterId:
+    Type: String
+
+  Version:
+    Type: String
+
+  S3Bucket:
+    Type: String
+
+  SSHKeyPair:
+    Type: String
+
+  ImageId:
+    Type: String
+
+  ComputeNodeIAMRoleArn:
+    Type: String
+
+  ComputeNodeIAMRole:
+    Type: String
+
+  SchedulerIAMRole:
+    Type: String
+
+  ComputeNodeInstanceProfile:
+    Type: String
+
+  ESDomainEndpoint:
+    Type: String
+
+  LoadBalancerDNSName:
+    Type: String
+
+  LoadBalancerArn:
+    Type: String
+
+  BaseOS:
+    Type: String
+
+  S3InstallFolder:
+    Type: String
+
+  SchedulerPublicIP:
+    Type: String
+
+Resources:
+  ConfigParameters:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ClusterId}
+      Description: !Sub Contain all settings for ${ClusterId}
+      SecretString: !Sub '{"VpcId": "${VpcId}",
+      "PublicSubnet1": "${PublicSubnet1}",
+      "PublicSubnet2": "${PublicSubnet2}",
+      "PublicSubnet3": "${PublicSubnet3}",
+      "PrivateSubnet1": "${PrivateSubnet1}",
+      "PrivateSubnet2": "${PrivateSubnet2}",
+      "PrivateSubnet3": "${PrivateSubnet3}",
+      "SchedulerPrivateIP": "${SchedulerPrivateIP}",
+      "SchedulerPrivateDnsName": "${SchedulerPrivateDnsName}",
+      "SchedulerInstanceId": "${SchedulerInstanceId}",
+      "SchedulerSecurityGroup": "${SchedulerSecurityGroup}",
+      "ComputeNodeSecurityGroup": "${ComputeNodeSecurityGroup}",
+      "SchedulerIAMRoleArn": "${SchedulerIAMRoleArn}",
+      "SchedulerIAMRole": "${SchedulerIAMRole}",
+      "ComputeNodeIAMRoleArn": "${ComputeNodeIAMRoleArn}",
+      "ComputeNodeIAMRole": "${ComputeNodeIAMRole}",
+      "ComputeNodeInstanceProfile": "${ComputeNodeInstanceProfile}",
+      "EFSDataDns": "${EFSDataDns}",
+      "EFSAppsDns": "${EFSAppsDns}",
+      "ClusterId": "${ClusterId}",
+      "Version": "${Version}",
+      "S3Bucket": "${S3Bucket}",
+      "SSHKeyPair": "${SSHKeyPair}",
+      "CustomAMI": "${ImageId}",
+      "ESDomainEndpoint": "${ESDomainEndpoint}",
+      "LoadBalancerDNSName": "${LoadBalancerDNSName}",
+      "LoadBalancerArn": "${LoadBalancerArn}",
+      "BaseOS": "${BaseOS}",
+      "S3InstallFolder": "${S3InstallFolder}",
+      "SchedulerPublicIP": "${SchedulerPublicIP}"
+      }'
+
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterId}-Configuration
+        - Key: soca:ClusterId
+          Value: !Ref ClusterId
+
+
+  UpdateIAMRole:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AccesClusterConfiguration
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Ref ConfigParameters
+      Roles:
+        - !Ref ComputeNodeIAMRole
+        - !Ref SchedulerIAMRole

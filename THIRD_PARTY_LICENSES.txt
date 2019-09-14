@@ -1,0 +1,2 @@
+** Boto3; version 1.9.86 -- https://github.com/boto/boto3/
+** botocore; version 1.9.86 -- https://github.com/boto/botocore

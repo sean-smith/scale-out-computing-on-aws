@@ -1,0 +1,341 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: (SOCA) - Manage security stack.
+Parameters:
+  VpcId:
+    Type: String
+
+  ClientIp:
+    Type: String
+
+  ClusterId:
+    Type: String
+
+  S3InstallBucket:
+    Type: String
+
+  S3InstallFolder:
+    Type: String
+
+Resources:
+  SchedulerSecurityGroup:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W5
+            reason: "All access for Egress traffic"
+          - id: W27
+            reason: "All traffic permitted between Scheduler and Compute Nodes"
+          - id: W29
+            reason: "All ports open for Egress traffic - esp required in case of FlexLM licensing"
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: SG For Scheduler Host
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterId}-SchedulerSG
+        - Key: soca:ClusterId
+          Value: !Ref ClusterId
+
+  ComputeNodeSecurityGroup:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W5
+            reason: "All CIDR access for Egress traffic"
+          - id: W27
+            reason: "All traffic permitted between Scheduler and Compute Nodes"
+          - id: W29
+            reason: "All ports open for Egress traffic - esp required in case of FlexLM licensing"
+
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: SG For all Compute Nodes
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterId}-ComputeNodeSG
+        - Key: soca:ClusterId
+          Value: !Ref ClusterId
+
+  SchedulerInboundRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !GetAtt ComputeNodeSecurityGroup.GroupId
+      GroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      Description: "Allow all traffic between scheduler and compute nodes"
+
+  SchedulerInboundRuleAllowClientIP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref ClientIp
+      GroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      Description: "Allow SSH traffic from client IP to master host"
+
+  SchedulerInboundRuleAllowClientIPHTTPS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref ClientIp
+      GroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      Description: "Allow HTTPS traffic from client IP to ELB"
+
+  SchedulerInboundRuleAllowClientIPHTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: !Ref ClientIp
+      GroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      Description: "Allow HTTP traffic from client IP to ELB"
+
+  ComputeNodeInboundRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      GroupId: !Ref ComputeNodeSecurityGroup
+      Description: "Allow traffic between Master agent and compute nodes"
+
+  ComputeNodeInboundRuleItSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !GetAtt ComputeNodeSecurityGroup.GroupId
+      GroupId: !Ref ComputeNodeSecurityGroup
+      Description: "Allow all connectivity within compute nodes"
+
+  ComputeNodeOutbound:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: 0
+      ToPort: 65535
+      GroupId: !Ref ComputeNodeSecurityGroup
+      Description: "Egress traffic for ComputeNode SG"
+
+  SchedulerOutbound:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: 0
+      ToPort: 65535
+      GroupId: !Ref SchedulerSecurityGroup
+      Description: "Egress traffic for Sheduler SG"
+
+  SchedulerInboundRuleItSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 8443
+      ToPort: 8443
+      SourceSecurityGroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      GroupId: !Ref SchedulerSecurityGroup
+      Description: "Allow ELB healtcheck to communicate with web ui on master host"
+
+  # Begin IAM
+
+  ComputeNodeIAMRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "* is reduced to minimal pattern"
+
+
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub "ec2.${AWS::URLSuffix}"
+                - !Sub "ssm.${AWS::URLSuffix}"
+            Action:
+              - sts:AssumeRole
+      #RoleName: !Sub ${ClusterId}-ComputeNodeIAMRole
+      Policies:
+        - PolicyName: ComputeNodePermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:PutObject
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket , "/*" ] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket] ]
+
+
+  ComputeNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref ComputeNodeIAMRole
+      InstanceProfileName: !Sub ${ClusterId}-ComputeNodeInstanceProfile
+
+  SchedulerIAMRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "API calls are read commands which have to be mapped to wildcard resources"
+
+    Type: AWS::IAM::Role
+    DependsOn: ComputeNodeIAMRole
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub "ec2.${AWS::URLSuffix}"
+            Action:
+              - sts:AssumeRole
+      #RoleName: !Sub ${ClusterId}-SchedulerIAMRole
+      Policies:
+        - PolicyName: SchedulerReadPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - pricing:GetProducts
+                  - ec2:DescribeInstances
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeImages
+                  - ec2:DescribeInstanceAttribute
+                  - ec2:DescribeSpotInstanceRequests
+                  - ec2:DescribeVpcClassicLink
+                  - ec2:DescribePlacementGroups
+                  - ec2:DescribeKeyPairs
+                  - autoscaling:DescribeAutoScalingGroups
+                  - autoscaling:DescribeScalingActivities
+                  - autoscaling:DescribeLaunchConfigurations
+                  - elasticloadbalancing:DescribeRules
+                  - elasticloadbalancing:DescribeListeners
+                  - elasticloadbalancing:DescribeTargetGroups
+                Resource: "*"
+
+        - PolicyName: SchedulerWritePermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - autoscaling:UpdateAutoScalingGroup
+                  - autoscaling:DeleteAutoScalingGroup
+                  - autoscaling:CreateAutoScalingGroup
+                  - autoscaling:CreateLaunchConfiguration
+                  - autoscaling:DeleteLaunchConfiguration
+                Resource: "*"
+                Condition:
+                  StringLikeIfExists:
+                    "autoscaling:LaunchConfigurationName": !Sub "${ClusterId}*"
+
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                Resource: "*"
+                Condition:
+                  "ForAllValues:StringEquals":
+                    "cloudformation:TemplateURL": !Sub "https://s3.{AWS::URLSuffix}/${S3InstallBucket}/${S3InstallFolder}/templates/ComputeNode.template"
+
+              - Effect: Allow
+                Action:
+                  - ec2:RunInstances
+                  - ec2:CreatePlacementGroup
+                  - ec2:DeletePlacementGroup
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:subnet/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:key-pair/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:key-pair/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:instance/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*::snapshot/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:launch-template/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:security-group/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:placement-group/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:network-interface/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*::image/*"
+                Condition:
+                  "ForAllValues:ArnEqualsIfExists":
+                      "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
+
+              - Effect: Allow
+                Action:
+                  - ec2:CreatePlacementGroup
+                  - ec2:DeletePlacementGroup
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:PutObject
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket , "/*" ] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket] ]
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                  - iam:CreateServiceLinkedRole
+                Resource: !GetAtt ComputeNodeIAMRole.Arn
+
+
+
+  SchedulerIAMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref SchedulerIAMRole
+      InstanceProfileName: !Sub ${ClusterId}-SchedulerIAMInstanceProfile
+
+
+
+Outputs:
+  SchedulerIAMRole:
+    Value: !Ref SchedulerIAMRole
+  SchedulerIAMRoleArn:
+    Value: !GetAtt SchedulerIAMRole.Arn
+  SchedulerIAMInstanceProfile:
+    Value: !Ref SchedulerIAMInstanceProfile
+  SchedulerIAMInstanceProfileArn:
+    Value: !GetAtt SchedulerIAMInstanceProfile.Arn
+  ComputeNodeIAMRole:
+    Value: !Ref ComputeNodeIAMRole
+  ComputeNodeIAMRoleArn:
+    Value: !GetAtt ComputeNodeIAMRole.Arn
+  ComputeNodeInstanceProfile:
+    Value: !Ref ComputeNodeInstanceProfile
+  ComputeNodeInstanceProfileArn:
+    Value: !GetAtt ComputeNodeInstanceProfile.Arn
+  SchedulerSecurityGroup:
+    Value: !GetAtt SchedulerSecurityGroup.GroupId
+  ComputeNodeSecurityGroup:
+    Value: !GetAtt ComputeNodeSecurityGroup.GroupId

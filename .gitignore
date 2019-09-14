@@ -1,0 +1,5 @@
+.idea
+.idea/*
+.source/dist/*
+.DS_Store*
+

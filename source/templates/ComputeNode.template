@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: (SOCA) - Base template to deploy compute nodes.
+Parameters:
+  Version:
+    Type: String
+
+  S3Bucket:
+    Type: String
+
+  PlacementGroup:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+  SecurityGroupId:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
+  KeepForever:
+    Default: false
+    Type: String
+
+  SSHKeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+
+  ComputeNodeInstanceProfile:
+    Type: String
+
+  JobId:
+    Type: String
+
+  JobProject:
+    Type: String
+    Default: False
+
+  ScratchSize:
+    Type: Number
+    Default: 50
+
+  ImageId:
+    Type: String
+
+  JobName:
+    Type: String
+
+  JobQueue:
+    Type: String
+
+  JobOwner:
+    Type: String
+
+  ClusterId:
+    Type: String
+
+  EFSAppsDns:
+    Type: String
+
+  EFSDataDns:
+    Type: String
+
+  SubnetId:
+    Type: List<AWS::EC2::Subnet::Id>
+
+  InstanceType:
+    Type: String
+
+  SchedulerHostname:
+    Type: String
+
+  DesiredCapacity:
+    Type: Number
+
+  BaseOS:
+    Type: String
+
+  S3InstallFolder:
+    Type: String
+
+  SpotPrice:
+    Type: String
+    Default: false
+
+Conditions:
+  UsePlacementGroup: !Equals [ !Ref PlacementGroup, true]
+  UseSpotInstance: !Not [!Equals [ !Ref SpotPrice, false]]
+
+Resources:
+  ComputeNodePlacementGroup:
+    Type: AWS::EC2::PlacementGroup
+    Condition: UsePlacementGroup
+    Properties:
+      Strategy: cluster
+
+
+  LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: !Sub ${ClusterId}-${JobId}
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      SpotPrice: !If [UseSpotInstance, !Ref SpotPrice, !Ref "AWS::NoValue"]
+      EbsOptimized: true
+      IamInstanceProfile: !Ref ComputeNodeInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvdbx
+          Ebs:
+            VolumeSize: !Ref ScratchSize
+            VolumeType: gp2
+
+      KeyName: !Ref SSHKeyPair
+      SecurityGroups: !Ref SecurityGroupId
+      UserData:
+        "Fn::Base64": !Sub |
+          #!/bin/bash -xe
+          ## Aligo Specific - DO NOT EDIT
+          export PATH=$PATH:/usr/local/bin
+          if [ "${BaseOS}" == "Centos7" ] || [ "${BaseOS}" == "Rhel7" ];
+            then
+              EASY_INSTALL=$(which easy_install-2.7)
+              $EASY_INSTALL pip
+              PIP=$(which pip2.7)
+              $PIP install awscli
+          fi
+
+          if [ "${BaseOS}" == "AmazonLinux2" ];
+          then
+            /usr/sbin/update-motd --disable
+          fi
+          echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
+          echo export "SOCA_JOB_QUEUE=${JobQueue}" >> /etc/environment
+          echo export "SOCA_JOB_OWNER=${JobOwner}" >> /etc/environment
+          echo export "SOCA_JOB_NAME=${JobName}" >> /etc/environment
+          echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
+          echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
+          echo export "SOCA_VERSION=${Version}" >> /etc/environment
+          echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
+          source /etc/environment
+
+          echo "@reboot /bin/aws s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodePostReboot.sh /root && /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
+          # Feel free to add new scripts based on your own requirement.
+          AWS=$(which aws)
+          $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
+          $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
+          /bin/bash /root/ComputeNode.sh ${S3Bucket} ${EFSDataDns} ${EFSAppsDns} ${SchedulerHostname}
+
+  AutoScalingComputeGroup:
+    DependsOn: LaunchConfiguration
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      MinSize: !Ref DesiredCapacity
+      MaxSize: !Ref DesiredCapacity
+      VPCZoneIdentifier: !Ref SubnetId
+      PlacementGroup: !If [UsePlacementGroup, !Ref ComputeNodePlacementGroup, !Ref "AWS::NoValue"]
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterId}-compute-job-${JobId}
+          PropagateAtLaunch: true
+
+        - Key: soca:JobId
+          Value: !Ref JobId
+          PropagateAtLaunch: true
+
+        - Key: soca:JobName
+          Value: !Ref JobName
+          PropagateAtLaunch: true
+
+        - Key: soca:JobQueue
+          Value: !Ref JobQueue
+          PropagateAtLaunch: true
+
+        - Key: soca:StackId
+          Value: !Sub ${AWS::StackName}
+          PropagateAtLaunch: true
+
+        - Key: soca:JobOwner
+          Value: !Ref JobOwner
+          PropagateAtLaunch: true
+
+        - Key: soca:JobProject
+          Value: !Ref JobProject
+          PropagateAtLaunch: true
+
+        - Key: soca:KeepForever
+          Value: !Ref KeepForever
+          PropagateAtLaunch: true
+
+        - Key: soca:ClusterId
+          Value: !Ref ClusterId
+          PropagateAtLaunch: true
+
+        - Key: soca:NodeType
+          Value: soca-compute-node
+          PropagateAtLaunch: true
+
+

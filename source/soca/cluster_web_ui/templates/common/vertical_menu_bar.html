@@ -1,0 +1,82 @@
+<ul class="navbar-nav bg-aws sidebar sidebar-dark accordion" id="accordionSidebar">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
+        <div class="sidebar-brand-text mx-3">
+            <img height="50px" width="80px" src="{{ url_for('static', filename='img/AWS_logo_RGB_WHT.png') }}">
+        </div>
+      </a>
+
+      <!-- Divider -->
+      <hr class="sidebar-divider my-0">
+
+      <li class="nav-item active">
+        <a class="nav-link" href="/">
+          <i class="fas fa-home"></i>
+          <span> {{  username  }}'s dashboard</span></a>
+      </li>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-heading">
+        Access Cluster
+      </div>
+
+        <li class="nav-item">
+            <a class="nav-link" href="/ssh">
+          <i class="fab fa-linux fa-10x"></i>
+            <span>SSH access</span></a>
+        </li>
+
+
+     <li class="nav-item">
+        <a class="nav-link" href="/remotedesktop">
+          <i class="fas fa-tv"></i>
+            <span>Graphical Access</span></a>
+     </li>
+
+
+        <li class="nav-item">
+        <a class="nav-link" href="/sftp">
+          <i class="fas fa-exchange-alt"></i>
+          <span>Transfer Files (SFTP)</span></a>
+      </li>
+
+
+          <hr class="sidebar-divider">
+
+     <div class="sidebar-heading">
+        Job Management
+      </div>
+
+        <li class="nav-item">
+        <a class="nav-link" href="/howto">
+          <i class="fas fa-cogs"></i>
+          <span>Submit my first job</span></a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="/qstat">
+          <i class="fas fa-fw fa-table"></i>
+          <span>My Job Queue</span></a>
+      </li>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-heading">
+        Analytics
+      </div>
+
+      <li class="nav-item">
+        <a class="nav-link" href="/dashboard">
+          <i class="fas fa-fw fa-chart-area"></i>
+          <span>Dashboard</span></a>
+      </li>
+
+
+      <hr class="sidebar-divider d-none d-md-block">
+
+      <!-- Sidebar Toggler (Sidebar)
+      <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle"></button>
+      </div> -->
+
+    </ul>

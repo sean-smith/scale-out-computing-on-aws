@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+     {% include 'common/header.html' %}
+
+
+</head>
+
+<body id="page-top">
+
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              <div class="row">
+                      <div class="col-md-12">
+                          <div class="alert alert-info">
+  <strong>Things to know before you start</strong>
+                              <li>Jobs start on average 6 minutes after submission (this value may differ depending on the number and type of compute resource you need to be provisioned)</li>
+                              <li>You can launch 'AlwaysOn' instances if you want to avoid the ColdStart penalty</li>
+
+                          <li>If your simulation requires a lot of disk I/O, it's recommended to use high performance SSD-NVMe disks (using /scratch location) and not default HOME path</li>
+
+</div>
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">How to submit your job</h6>
+                              </div>
+
+                              <div class="card-body">
+
+                                  <h4>Basic template</h4>
+                                  Create a simple text file, name it "job_submit.que". See below for a simple template, you will be required to edit whatever is between < >.
+                                  <pre><code>
+ #!/bin/bash
+ ## BEGIN PBS SETTINGS: Note PBS lines MUST start with #
+ #PBS -N **your_job_name**
+ #PBS -V -j oe -o **your_job_name**.qlog
+ #PBS -P **your_project**
+ #PBS -q **your_queue**
+ #PBS -l nodes=**number_of_nodes_for_this_job**
+ ## END PBS SETTINGS
+ ## BEGIN ACTUAL CODE
+ ** your code goes here **
+ ## END ACTUAL CODE
+                                  </code></pre>
+                                  <hr>
+<h4>Run your job</h4>
+Run "qsub job_submit.que" to submit you job to the queue.<br>
+
+<code>qsub job_submit.que<br>
+3323.ip-10-10-10-28
+</code><br>Once you run the qsub command, you will get a job id.  To get more information about this job, run <code>qstat -f 3323</code> (or <code>qstat -f 3323 -x</code> is the job is already terminated).
+                                  <br>Your job will start as soon as resources are available (usually within 5 minutes after job submission)
+<hr>
+                                  <h4>Custom AWS scheduler resources (optional)</h4>
+                                  Here is a list of scheduler resources specially designed for workloads running on AWS.The line starting with -l (lowercase L) is meant to define scheduler resource which will be used by this job. Syntax is as follow: <br>
+                                  <code>#PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2</code> <br>
+                                  If you don't use them, your job will use the default values configured for your queue (see <code>/apps/soca/cluster_manager/queue_mapping.yml</code>)
+                                  <table class="table table-striped">
+                                      <tbody>
+                                        <tr>
+                                            <th>-l instance_type</th>
+                                            <td>Reference to the type of instance you want to provision for this job</td>
+                                        </tr>
+                                       <tr>
+                                            <th>-l scratch_size</th>
+                                            <td>Reference to the type of instance you want to provision for this job (in GB)</td>
+                                        </tr>
+                                        <tr>
+                                            <th>-l placement_group</th>
+                                            <td>Enable support for placement group<br>
+
+Notes:<br>
+Placement group is automatically disabled if simulation is running on 1 host<br>
+Placement group is automatically enabled if simulation is running on > 1 host (unless placement_group=false is specified)</td>
+                                        </tr>
+                                      <tr>
+                                            <th>-l ami_id</th>
+                                            <td>Support for custom AMI	</td>
+                                      </tr>
+                                      <tr>
+                                            <th>-l spot_price</th>
+                                            <td>Support for SPOT instances	</td>
+                                      </tr>
+
+                                      </tbody>
+                                  </table>
+<hr>
+<h4>Specify an EC2 Instance Type (optional)</h4>
+SOCA support all types of EC2 instance from AWS. If you don't specify it, job will use a default type which may not be optimal (eg: simulation is memory intensive but default EC2 is compute intensive)
+If you are not familiar with EC2 instances, take some time to review  <a href="https://aws.amazon.com/ec2/instance-types/" target="_blank">https://aws.amazon.com/ec2/instance-types/</a><br>
+If you want to force utilization of a specific instance type (and not use the default one), simply change the line and add instance_type value<br>
+                                  <code>#PBS -l [existing_parameters...],instance_type=**instance_type_value**</code>
+                                  <hr>
+                                  <h4>Specify a license restriction (optional)</h4>
+                                     <div class="alert alert-info">Please refer to <code>/apps/soca/cluster_manager/settings/licenses_mapping.yml</code> for a list of licenses you can restrict. Contact your Administrator if your license is not available yet.
+                                     </div>
+If your job needs to check-out a specific license to run, you want to make sure enough licenses are available before we provision capacity and start the job. To do so, you can add a new resource which will be your license name and the number of license you need.<br>
+
+                                  Example: Your job will only start if we have at least 2 Synopsys VCSRuntime_Net licenses available.<br>
+
+                                  <code>#PBS -l [existing_parameters...],synopsys_lic_vcsruntimenet=2</code><br>
+                                  <hr>
+                                  <h4>Manage your application logs</h4>
+PBS will automatically generate a .qlog file once the job is complete as shown below.<br>
+
+                                  <code>#PBS -V -j oe -o **your_job_name**.qlog</code><br>
+If you need more verbose log, we recommend you using STDERR/STDOUT redirection on your code<br>
+
+
+            <hr>
+                                  <h4>Examples</h4>
+                                  <h5>Run a simple script on 1 node using default settings for 'cpus' queue</h5>
+<pre><code>#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=1
+## END PBS SETTINGS
+cd $HOME
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+                                  <h5>Run a simple script on 5 nodes using custom EC2 instance type</h5>
+This job will use a 5 c5.18xlarge instances.<br>
+<pre><code>#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=5,instance_type=c5.18xlarge
+## END PBS SETTINGS
+cd $HOME
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+
+                                  <h5>Run a simple script on 5 nodes using custom License Restriction</h5>
+This job will only start if we have at least 4 Comsol Acoustic licenses available<br>
+<pre><code>#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=5,instance_type=c5.18xlarge,comsol_lic_acoustic=4
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+   <h5>Run a MPI (OpenMPI script on 10 nodes</h5>
+ <pre><code>#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=10,instance_type=m5.24xlarge
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+## Find list of host that will be used for your simulation. This is required if your software supports MPI
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+## Optional - You may want to export some libraries, if needed, here is an example below
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+mpiexec -f mpi_nodes -n 10 -ppn 48 ./myscript > my_output.log</code></pre>
+                                  <h5>Run a simple script on 5 m5.24xlarge SPOT instances as long as bid price is lower than $2.5 per hour</h5>
+This job will use SPOT instances. Instances will be automatically terminated if BID price is higher than $2.5 / per hour per instance<br>
+<pre><code>#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=5,instance_type=m5.24xlarge,spot_price=2.5
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+
+
+
+
+
+
+
+
+
+                              </div>
+                          </div>
+                      </div>
+              </div>
+          </div>
+      </div>
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+    {% include 'common/footer.html' %}
+
+</body>
+
+</html>

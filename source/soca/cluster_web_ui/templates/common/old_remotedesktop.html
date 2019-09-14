@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+     {% include 'common/header.html' %}
+
+
+</head>
+
+<body id="page-top">
+
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              <div class="row">
+                      <div class="col-md-6">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Your 2D Session</h6>
+                              </div>
+                              <div class="card-body">
+                              <div class="alert alert-primary" role="alert">
+                                   2D sessions provide a full remote desktop experience (similar to VNC/NX).
+                                  This type of session does not support GPU and is good for non-intensive graphical operations such as file browsing or job submission.
+                               </div>
+
+
+                              {% if '2d' in user_sessions.keys() %}
+                                  {% for session_type, session_data in user_sessions.items() %}
+                                      {% if session_type == '2d' %}
+
+                                          {% if session_data.state == 'pending' %}
+                                                <div class="alert alert-warning" role="alert">
+                                                    Please wait, your session is starting and will be ready within 15 minutes (<a href="/qstat">check session creation progress</a>)
+                                                  The page will automatically be refreshed when the session is active.
+                                                </div>
+
+                                          {% elif session_data.state == 'running' %}
+                                              <h5>Access your 2D Session</h5>
+                                              <hr>
+
+                                              <h6>Option1: Browser access</h6>
+
+                                            <a target="_blank" href="{{ session_data.url }}" class="btn btn-success btn-icon-split">
+                                                <span class="icon text-white-50">
+                                                  <i class="fas fa-check"></i>
+                                                </span>
+                                                <span class="text">Open 2D Session directly on a browser</span>
+                                            </a>
+                                              <br><br>
+
+                                              <h6>Option2: Use Native Application</h6>
+                                              <div class="alert alert-warning" role="alert">
+                                                  Download your client <a href="https://download.nice-dcv.com/" target="_blank"> here</a>.
+                                                </div>
+                                              <a target="_blank" href="/api/dcv_create_client_file?session_type=desktop2d" class="btn btn-success btn-icon-split">
+                                                <span class="icon text-white-50">
+                                                  <i class="fas fa-check"></i>
+                                                </span>
+                                                <span class="text">Download 2D Session File</span>
+                                            </a>
+                                              <hr>
+                                              <div align="center">
+                                               <a href="/api/dcv_close_session?session_type=desktop2d" class="btn btn-danger btn-icon-split">
+                                                   <span class="icon text-white-50">
+                                                       <i class="fas fa-trash"></i>
+                                                   </span>
+                                                   <span class="text">Terminate 2D  Session</span>
+                                               </a>
+                                              </div>
+                                          {% endif %}
+                                      {% endif  %}
+                                  {% endfor %}
+                              {% else %}
+                                  <form method="get" action="/api/dcv_create_session">
+                                      <div class="form-group col-md-6">
+                                          <label for="walltime">Session Validity</label>
+                                          <select class="form-control" name='walltime' id="walltime">
+                                              <option selected="true" value="24:00:00">1 day</option>
+                                              <option value="120:00:00">5 days</option>
+                                              <option value="360:00:00">15 days</option>
+                                              <option value="7500:00:00">30 days</option>
+                                          </select>
+                                      </div>
+                                      <div class="form-group col-md-6">
+                                          <label for="walltime">Session Type</label>
+                                          <select class="form-control" name='walltime' id="walltime">
+                                              <option selected="true" value="24:00:00">2D - Small (2gb)</option>
+                                              <option value="120:00:00">2D - Medium (8gb)</option>
+                                              <option value="360:00:00">3D - Small (16gb 1GPU)</option>
+                                              <option value="7500:00:00">3D - Large (24GB - 2GPUs)</option>
+                                          </select>
+                                      </div>
+                                     <input type="hidden" name="session_type" value="desktop2d">
+                                      <button type="submit"  class="btn btn-primary btn-icon-split">
+                                          <span class="icon text-white-50">
+                                              <i class="fas fa-info-circle"></i>
+                                          </span>
+                                          <span class="text">Launch 2D  Session</span>
+                                      </button>
+                                  </form>
+
+
+                              {% endif %}
+                              </div>
+                          </div>
+                      </div>
+
+
+              <!-- -->
+              <div class="col-md-6">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Your 3D GPU Session</h6>
+                              </div>
+                              <div class="card-body">
+                               <div class="alert alert-primary" role="alert">
+                                   3D session provides full GPU support. This is recommended to use if you are planning to do graphic intensive operations such as 3D model rendering or post-processing.
+                               </div>
+                              {% if '3d' in user_sessions.keys() %}
+                                  {% for session_type, session_data in user_sessions.items() %}
+                                      {% if session_type == '3d' %}
+
+                                          {% if session_data.state == 'pending' %}
+                                              <div class="alert alert-warning" role="alert">
+                                                  Please wait, your session is starting and will be ready within 15 minutes (<a href="/qstat">check session creation progress</a>)
+                                                  The page will automatically be refreshed when the session is active.
+                                                </div>
+
+                                          {% elif session_data.state == 'running' %}
+                                               <h5>Access your 3D Session</h5>
+                                              <hr>
+
+                                              <h6>Option1: Browser access</h6>
+
+                                             <a target="_blank" href="{{ session_data.url }}" class="btn btn-success btn-icon-split">
+                                                <span class="icon text-white-50">
+                                                  <i class="fas fa-check"></i>
+                                                </span>
+                                                <span class="text">Open 3D Session directly on a browser</span>
+                                            </a>
+                                              <br><br>
+
+                                              <h6>Option2: Use Native Application</h6>
+                                              <div class="alert alert-warning" role="alert">
+                                                  Download your client <a href="https://download.nice-dcv.com/" target="_blank"> here</a>.
+                                                </div>
+                                               <a target="_blank" href="/api/dcv_create_client_file?session_type=desktop3d" class="btn btn-success btn-icon-split">
+                                                <span class="icon text-white-50">
+                                                  <i class="fas fa-check"></i>
+                                                </span>
+                                                <span class="text">Download 3D Session File</span>
+                                            </a>
+                                              <hr>
+                                              <div align="center">
+                                                <a href="/api/dcv_close_session?session_type=desktop3d" class="btn btn-danger btn-icon-split">
+                                                   <span class="icon text-white-50">
+                                                       <i class="fas fa-trash"></i>
+                                                   </span>
+                                                   <span class="text">Terminate 3D Session</span>
+                                               </a>
+                                              </div>
+                                          {% endif %}
+                                      {% endif  %}
+                                  {% endfor %}
+                              {% else %}
+                                  <form method="get" action="/api/dcv_create_session">
+                                      <div class="form-group col-md-6">
+                                          <label for="walltime">Session Validity</label>
+                                          <select class="form-control" name='walltime' id="walltime">
+                                              <option selected="true" value="24:00:00">1 day</option>
+                                              <option value="120:00:00">5 days</option>
+                                              <option value="360:00:00">15 days</option>
+                                              <option value="7500:00:00">30 days</option>
+                                          </select>
+                                      </div>
+
+                                     <input type="hidden" name="session_type" value="desktop3d">
+                                      <button type="submit"  class="btn btn-primary btn-icon-split">
+                                          <span class="icon text-white-50">
+                                              <i class="fas fa-info-circle"></i>
+                                          </span>
+                                          <span class="text">Launch 3D  Session</span>
+                                      </button>
+                                  </form>
+                              {% endif %}
+                              </div>
+                          </div>
+                      </div>
+              </div>
+          </div>
+      </div>
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+    {% include 'common/footer.html' %}
+
+</body>
+
+</html>

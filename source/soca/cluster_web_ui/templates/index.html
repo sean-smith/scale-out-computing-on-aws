@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     {% include 'common/header.html' %}
+</head>
+
+<body id="page-top">
+
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              <main role="main">
+                  <section class="jumbotron text-center">
+                        <div class="container">
+                          <h1 class="jumbotron-heading">Welcome to your HPC cluster</h1>
+                          <p class="lead text-muted">This website is designed to simplify user on-boarding process as well as interactions with our remote AWS cluster. Refer to the links below for more documentation</p>
+                          <p>
+                            <a href="https://confluence.amazon.com/display/DTHPC/DT+HPC+Learning+Series" target="_blank" class="btn btn-primary my-2"><span class="badge badge-success">START HERE</span> New User Documentation</a>
+                              <a href="https://confluence.amazon.com/display/DTHPC/" target="_blank" class="btn btn-secondary my-2">General Documentation</a>
+
+                              <hr>
+                            <div align="center">
+                                  <iframe src="https://broadcast.amazon.com/embed/113323" width="585" height="329" style="border:0" allowfullscreen></iframe>
+                                <br><i>Not familiar with HPC? Watch this 1 minute presentation</i>
+                              </div>
+                          </p>
+                        </div>
+                </section>
+
+
+                    </main>
+
+
+
+
+              </div>
+          </div>
+      </div>
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+    {% include 'common/footer.html' %}
+
+</body>
+
+</html>
