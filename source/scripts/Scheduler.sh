@@ -67,9 +67,6 @@ chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
 # Edit path with new scheduler/python locations
 echo "export PATH=\"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/opt/pbs/bin:/opt/pbs/sbin:/opt/pbs/bin:/apps/python/latest/bin\" " >> /etc/environment
 
-systemctl enable pbs
-systemctl start pbs
-
 # Default AWS Resources
 cat <<EOF >>/var/spool/pbs/server_priv/resourcedef
 compute_node type=string flag=h
@@ -83,6 +80,9 @@ scratch_size type=string
 placement_group type=string
 spot_price type=string
 EOF
+
+systemctl enable pbs
+systemctl start pbs
 
 # Default Server config
 /opt/pbs/bin/qmgr -c "create node $SERVER_HOSTNAME_ALT"
@@ -117,7 +117,6 @@ EOF
 /opt/pbs/bin/qmgr -c "set queue alwayson queue_type = Execution"
 /opt/pbs/bin/qmgr -c "set queue alwayson started = True"
 /opt/pbs/bin/qmgr -c "set queue alwayson enabled = True"
-
 /opt/pbs/bin/qmgr -c  "set server default_queue = normal"
 
 # Add compute_node to list of required resource
@@ -137,11 +136,12 @@ echo "BASE $LDAP_BASE" >> /etc/openldap/ldap.conf
 
 # Generate 10y certificate for ldaps
 openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
-    -subj "/C=US/ST=California/L=Sunnyvale/O=Aligo/CN=aligo.local" \
-    -keyout /etc/openldap/certs/aligo.key  -out /etc/openldap/certs/aligo.crt
+    -subj "/C=US/ST=California/L=Sunnyvale/O=Aligo/CN=$SERVER_HOSTNAME" \
+    -keyout /etc/openldap/certs/soca.key -out /etc/openldap/certs/soca.crt
 
-chown ldap:ldap /etc/openldap/certs/aligo.key /etc/openldap/certs/aligo.crt
-chmod 600 /etc/openldap/certs/aligo.key /etc/openldap/certs/aligo.crt
+chown ldap:ldap /etc/openldap/certs/soca.key /etc/openldap/certs/soca.crt
+chmod 600 /etc/openldap/certs/soca.key /etc/openldap/certs/soca.crt
+
 echo -e "
 dn: olcDatabase={2}hdb,cn=config
 changetype: modify
@@ -162,36 +162,26 @@ olcRootPW: $MASTER_LDAP_PASSWORD_ENCRYPTED
 echo -e "
 dn: cn=config
 changetype: modify
-replace: olcTLSCertificateKeyFile
-olcTLSCertificateKeyFile: /etc/openldap/certs/aligo.key
-
-dn: cn=config
-changetype: modify
 replace: olcTLSCertificateFile
-olcTLSCertificateFile: /etc/openldap/certs/aligo.crt
-" > certs.ldif
+olcTLSCertificateFile: /etc/openldap/certs/soca.crt
+-
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/openldap/certs/soca.key
+" > update_ssl_cert.ldif
 
 echo -e "
-dn: cn=config
-changetype: modify
-replace: olcTLSCertificateFile
-olcTLSCertificateFile: /etc/openldap/certs/aligo.crt
-
-dn: cn=config
-changetype: modify
-replace: olcTLSCertificateKeyFile
-olcTLSCertificateKeyFile: /etc/openldap/certs/aligo.key
-" > certs_alt.ldif
-
-echo -e "
-dn: olcDatabase={1}monitor,cn=config
+dn: olcDatabase={2}hdb,cn=config
 changetype: modify
 replace: olcAccess
-olcAccess: {0}to * by dn.base='gidNumber=0+uidNumber=0,cn=peercred,cn=external, cn=auth' read by dn.base='cn=admin,$LDAP_BASE' read by * none
-" > monitor.ldif
+olcAccess: {0}to attrs=userPassword by self write by anonymous auth by group.exact="ou=admins,$LDAP_BASE" write by * none
+-
+add: olcAccess
+olcAccess: {1}to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write by dn.base="ou=admins,$LDAP_BASE" write by * read
+" > change_user_password.ldif
 
 /bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f db.ldif
-/bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f monitor.ldif
+/bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f update_ssl_cert.ldif
+/bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f change_user_password.ldif
 /bin/ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif
 /bin/ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif
 /bin/ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif
@@ -214,9 +204,29 @@ ou: People
 dn: ou=Group,$LDAP_BASE
 objectClass: organizationalUnit
 ou: Group
+
+dn: ou=Sudoers,$LDAP_BASE
+objectClass: organizationalUnit
+ou: Group
+
+dn: ou=admins,$LDAP_BASE
+objectClass: organizationalUnit
+ou: Group
 " > base.ldif
 
 /bin/ldapadd -x -W -y /root/OpenLdapAdminPassword.txt -D "cn=admin,$LDAP_BASE" -f base.ldif
+
+authconfig \
+    --enablesssd \
+    --enablesssdauth \
+    --enableldap \
+    --enableldapauth \
+    --ldapserver="ldap://$SERVER_HOSTNAME" \
+    --ldapbasedn="$LDAP_BASE" \
+    --enablelocauthorize \
+    --enablemkhomedir \
+    --enablecachecreds \
+    --updateall
 
 # Configure SSSD
 echo -e "[domain/default]
@@ -227,12 +237,18 @@ ldap_search_base = $LDAP_BASE
 id_provider = ldap
 auth_provider = ldap
 chpass_provider = ldap
+sudo_provider = ldap
+ldap_tls_cacert = /etc/openldap/certs/soca.crt
+ldap_sudo_search_base = ou=Sudoers,$LDAP_BASE
+ldap_sudo_full_refresh_interval=86400
+ldap_sudo_smart_refresh_interval=3600
 ldap_uri = ldap://$SERVER_HOSTNAME
 ldap_id_use_start_tls = True
 use_fully_qualified_names = False
+ldap_tls_cacertdir = /etc/openldap/certs/
 
 [sssd]
-services = nss, pam, autofs
+services = nss, pam, autofs, sudo
 full_name_format = %2\$s\%1\$s
 domains = default
 
@@ -252,8 +268,8 @@ homedir_substring = /data/home
 [ifp]
 
 [secrets]" > /etc/sssd/sssd.conf
-
 chmod 600 /etc/sssd/sssd.conf
+
 systemctl enable sssd
 systemctl restart sssd
 

@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Replace Placeholder
     for line in fileinput.input([build_folder + '/solution-for-scale-out-computing-on-aws.template'], inplace=True):
-        print(line.replace('%%BUCKET_NAME%%', 'your-s3-bucket-name-here').replace('%%SOLUTION_NAME%%/%%VERSION%%', 'your-s3-folder-name-here'), end='')
+        print(line.replace('%%BUCKET_NAME%%', 'your-s3-bucket-name-here').replace('%%SOLUTION_NAME%%/%%VERSION%%', 'your-s3-folder-name-here').replace('\n', ''))
 
     print(" > Creating archive for build id: " + unique_id)
     make_archive('dist/' + output_prefix, 'gztar', build_folder)

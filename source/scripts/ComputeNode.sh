@@ -104,7 +104,7 @@ ldap_uri = ldap://$SCHEDULER_HOSTNAME
 ldap_id_use_start_tls = True
 use_fully_qualified_names = False
 ldap_tls_reqcert = demand
-ldap_tls_cacertdir = /etc/openldap/cacerts
+ldap_tls_cacertdir = /etc/openldap/certs
 
 [sssd]
 services = nss, pam, autofs
@@ -133,8 +133,8 @@ systemctl enable sssd
 systemctl restart sssd
 
 echo | openssl s_client -connect $SCHEDULER_HOSTNAME:389 -starttls ldap > /root/open_ssl_ldap
-mkdir /etc/openldap/cacerts/
-cat /root/open_ssl_ldap | openssl x509 > /etc/openldap/cacerts/openldap-server.pem
+mkdir /etc/openldap/certs/
+cat /root/open_ssl_ldap | openssl x509 > /etc/openldap/certs/openldap-server.pem
 
 authconfig --disablesssd --disablesssdauth --disableldap --disableldapauth --disablekrb5 --disablekrb5kdcdns --disablekrb5realmdns --disablewinbind --disablewinbindauth --disablewinbindkrb5 --disableldaptls --disablerfc2307bis --updateall
 sss_cache -E

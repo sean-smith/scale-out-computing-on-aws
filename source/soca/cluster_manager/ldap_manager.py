@@ -108,6 +108,7 @@ def create_group(username, gid_number):
 
 
 def create_user(username, password, uid=False, gid=False):
+    #todo: add email + admin
     dn_user = "uid="+username+",ou=people," + ldap_base
     enc_passwd = bytes(password, 'utf-8')
     salt = os.urandom(16)
@@ -152,8 +153,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
     parser.add_argument('-p', '--password', nargs='?', required=True, help='User password')
+    parser.add_argument('-m', nargs='?', help='User email')
     parser.add_argument('--uid', nargs='?', help='Specify custom Uid')
     parser.add_argument('--gid', nargs='?', help='Specific custom Gid')
+    parser.add_argument('--admin', action='store_const', const=True, help='If flag is specified, user will be added to sudoers group')
     arg = parser.parse_args()
     con = ldap.initialize('ldap://'+aligo_configuration['SchedulerPrivateDnsName'])
     con.simple_bind_s(root_dn, root_pw)

@@ -11,4 +11,4 @@ def f():
     user_private_key_path = '/data/home/' + username + '/.ssh/id_rsa'
     return send_file(user_private_key_path,
                      as_attachment=True,
-                     attachment_filename=username+'_hpc_privatekey.pem')
+                     attachment_filename=username+'_soca_privatekey.pem')

@@ -6,7 +6,6 @@ source /root/config.cfg
 # First flush the current crontab to prevent this script to run on the next reboot
 crontab -r
 
-
 # Copy  Aligo scripts file structure
 # NOTE: THIS REQUIRE PERMISSION ON THE SOURCE BUCKET
 AWS=$(which aws)
