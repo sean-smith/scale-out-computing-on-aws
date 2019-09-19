@@ -107,8 +107,7 @@ def create_group(username, gid_number):
         return e
 
 
-def create_user(username, password, uid=False, gid=False):
-    #todo: add email + admin
+def create_user(username, password, sudoers, email=False, uid=False, gid=False):
     dn_user = "uid="+username+",ou=people," + ldap_base
     enc_passwd = bytes(password, 'utf-8')
     salt = os.urandom(16)
@@ -135,12 +134,40 @@ def create_user(username, password, uid=False, gid=False):
         ('userPassword', [passwd.encode('utf-8')])
     ]
 
+    if email is not False:
+        attrs.append(('mail', [email.encode('utf-8')]))
+
+    try:
+        con.add_s(dn_user, attrs)
+        if sudoers is True:
+            sudo = add_sudo(username)
+            if sudo is True:
+                print('Added user as sudoers')
+            else:
+                print(sudo)
+        return True
+    except Exception as e:
+        return e
+
+
+
+
+def add_sudo(username):
+    dn_user = "cn=" + username + ",ou=Sudoers," + ldap_base
+    attrs = [
+        ('objectClass', ['top'.encode('utf-8'),
+                         'sudoRole'.encode('utf-8')]),
+        ('sudoHost', ['ALL'.encode('utf-8')]),
+        ('sudoUser', [str(username).encode('utf-8')]),
+        ('sudoCommand', ['ALL'.encode('utf-8')])
+    ]
+
     try:
         con.add_s(dn_user, attrs)
         return True
     except Exception as e:
-        
         return e
+
 
 if __name__ == "__main__":
     aligo_configuration = configuration.get_aligo_configuration()
@@ -153,7 +180,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
     parser.add_argument('-p', '--password', nargs='?', required=True, help='User password')
-    parser.add_argument('-m', nargs='?', help='User email')
+    parser.add_argument('-e', '--email', nargs='?', help='User email')
     parser.add_argument('--uid', nargs='?', help='Specify custom Uid')
     parser.add_argument('--gid', nargs='?', help='Specific custom Gid')
     parser.add_argument('--admin', action='store_const', const=True, help='If flag is specified, user will be added to sudoers group')
@@ -164,7 +191,13 @@ if __name__ == "__main__":
     gid = ldap_ids['next_gid']
     uid = ldap_ids['next_uid']
 
-    add_user = create_user(str(arg.username), str(arg.password), uid, gid)
+    if arg.email is not None:
+        email = arg.email
+    else:
+        email = False
+
+
+    add_user = create_user(str(arg.username), str(arg.password), arg.admin, email, uid, gid)
     add_group = create_group(str(arg.username), gid)
     add_home = create_home(arg.username)
 

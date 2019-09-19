@@ -100,14 +100,15 @@ ldap_search_base = $LDAP_BASE
 id_provider = ldap
 auth_provider = ldap
 chpass_provider = ldap
+sudo_provider = ldap
+ldap_sudo_search_base = ou=Sudoers,$LDAP_BASE
 ldap_uri = ldap://$SCHEDULER_HOSTNAME
 ldap_id_use_start_tls = True
 use_fully_qualified_names = False
-ldap_tls_reqcert = demand
-ldap_tls_cacertdir = /etc/openldap/certs
+ldap_tls_cacertdir = /etc/openldap/cacerts
 
 [sssd]
-services = nss, pam, autofs
+services = nss, pam, autofs, sudo
 full_name_format = %2\$s\%1\$s
 domains = default
 
@@ -117,6 +118,8 @@ homedir_substring = /data/home
 [pam]
 
 [sudo]
+ldap_sudo_full_refresh_interval=86400
+ldap_sudo_smart_refresh_interval=3600
 
 [autofs]
 
@@ -128,17 +131,20 @@ homedir_substring = /data/home
 
 [secrets]" > /etc/sssd/sssd.conf
 
+
 chmod 600 /etc/sssd/sssd.conf
 systemctl enable sssd
 systemctl restart sssd
 
 echo | openssl s_client -connect $SCHEDULER_HOSTNAME:389 -starttls ldap > /root/open_ssl_ldap
-mkdir /etc/openldap/certs/
-cat /root/open_ssl_ldap | openssl x509 > /etc/openldap/certs/openldap-server.pem
+mkdir /etc/openldap/cacerts/
+cat /root/open_ssl_ldap | openssl x509 > /etc/openldap/cacerts/openldap-server.pem
 
 authconfig --disablesssd --disablesssdauth --disableldap --disableldapauth --disablekrb5 --disablekrb5kdcdns --disablekrb5realmdns --disablewinbind --disablewinbindauth --disablewinbindkrb5 --disableldaptls --disablerfc2307bis --updateall
 sss_cache -E
 authconfig --enablesssd --enablesssdauth --enableldap --enableldaptls --enableldapauth --ldapserver=ldap://$SCHEDULER_HOSTNAME --ldapbasedn=$LDAP_BASE --enablelocauthorize --enablemkhomedir --enablecachecreds --updateall
+
+echo "sudoers: files sss" >> /etc/nsswitch.conf
 
 # Install SSM
 yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm

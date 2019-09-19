@@ -23,6 +23,11 @@ Metadata:
           - VpcCidr
           - ClientIp
           - SSHKeyPair
+      - Label:
+          default: Default LDAP user
+        Parameters:
+          - UserName
+          - UserPassword
 
     ParameterLabels:
       VpcCidr:
@@ -41,6 +46,10 @@ Metadata:
         default: S3 folder where you uploaded the SOCA files
       SchedulerInstanceType:
         default: Instance type for your master host
+      UserName:
+        default: Username for your default LDAP user
+      UserPassword:
+        default: Password for your default LDAP user
 
 Parameters:
   CustomAMI:
@@ -92,6 +101,17 @@ Parameters:
     Type: String
     Default: %%SOLUTION_NAME%%/%%VERSION%%
     Description: Name of the S3 folder where you uploaded SOCA
+
+  UserName:
+    Type: String
+
+  UserPassword:
+    NoEcho: true
+    Type: String
+    MinLength: 5
+    MaxLength: 50
+    AllowedPattern: '^[a-zA-Z0-9]*$'
+    Description: 5 characters minimum, uppercase/lowercase/digit only
 
 Conditions:
   UseCustomAMI: !Not [!Equals [!Ref CustomAMI, ""]]
@@ -237,6 +257,8 @@ Resources:
         EFSAppsDns: !GetAtt Storage.Outputs.EFSAppsDns
         ImageId: !If [UseCustomAMI, !Ref CustomAMI, !FindInMap [RegionMap, !Ref "AWS::Region", !Ref BaseOS]]
         BaseOS: !Ref BaseOS
+        UserName: !Ref UserName
+        UserPassword: !Ref UserPassword
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Scheduler.template"] ]
       TimeoutInMinutes: 60
 

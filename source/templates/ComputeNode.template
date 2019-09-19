@@ -136,6 +136,9 @@ Resources:
           echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
           source /etc/environment
 
+          # Give some sudo permission to the user on this specific machine
+          echo "${JobOwner} ALL=(ALL) /bin/yum" >> /etc/sudoers
+
           echo "@reboot /bin/aws s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodePostReboot.sh /root && /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
           # Feel free to add new scripts based on your own requirement.
           AWS=$(which aws)

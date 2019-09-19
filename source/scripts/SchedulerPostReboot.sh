@@ -142,13 +142,17 @@ if [ "$SOCA_BASE_OS" == "Centos7" ];
      usermod --shell /bin/bash centos
 fi
 
+
+# Create default LDAP user
+/apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py -u $3 -p $4 --admin
+
+# Clean directories
 rm -rf /root/pbspro-18.1.4*
 rm -rf /root/*.sh
 rm -rf /root/config.cfg
 
 # Install OpenMPI
 # This will take a while and is not system blocking, so adding at the end of the install process
-
 mkdir -p /apps/openmpi/installer
 cd /apps/openmpi/installer
 wget $OPENMPI_URL

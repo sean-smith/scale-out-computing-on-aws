@@ -179,9 +179,24 @@ add: olcAccess
 olcAccess: {1}to * by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write by dn.base="ou=admins,$LDAP_BASE" write by * read
 " > change_user_password.ldif
 
+echo -e "
+dn: cn=sudo,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: sudo
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.1 NAME 'sudoUser' DESC 'User(s) who may  run sudo' EQUALITY caseExactIA5Match SUBSTR caseExactIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.2 NAME 'sudoHost' DESC 'Host(s) who may run sudo' EQUALITY caseExactIA5Match SUBSTR caseExactIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.3 NAME 'sudoCommand' DESC 'Command(s) to be executed by sudo' EQUALITY caseExactIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.4 NAME 'sudoRunAs' DESC 'User(s) impersonated by sudo (deprecated)' EQUALITY caseExactIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.5 NAME 'sudoOption' DESC 'Options(s) followed by sudo' EQUALITY caseExactIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.6 NAME 'sudoRunAsUser' DESC 'User(s) impersonated by sudo' EQUALITY caseExactIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: ( 1.3.6.1.4.1.15953.9.1.7 NAME 'sudoRunAsGroup' DESC 'Group(s) impersonated by sudo' EQUALITY caseExactIA5Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcObjectClasses: ( 1.3.6.1.4.1.15953.9.2.1 NAME 'sudoRole' SUP top STRUCTURAL DESC 'Sudoer Entries' MUST ( cn ) MAY ( sudoUser $ sudoHost $ sudoCommand $ sudoRunAs $ sudoRunAsUser $ sudoRunAsGroup $ sudoOption $ description ) )
+" > sudoers.ldif
+
 /bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f db.ldif
 /bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f update_ssl_cert.ldif
 /bin/ldapmodify -Y EXTERNAL -H ldapi:/// -f change_user_password.ldif
+/bin/ldapadd -Y EXTERNAL -H ldapi:/// -f sudoers.ldif
 /bin/ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/cosine.ldif
 /bin/ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/nis.ldif
 /bin/ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/inetorgperson.ldif
@@ -207,7 +222,6 @@ ou: Group
 
 dn: ou=Sudoers,$LDAP_BASE
 objectClass: organizationalUnit
-ou: Group
 
 dn: ou=admins,$LDAP_BASE
 objectClass: organizationalUnit
@@ -228,6 +242,8 @@ authconfig \
     --enablecachecreds \
     --updateall
 
+echo "sudoers: files sss" >> /etc/nsswitch.conf
+
 # Configure SSSD
 echo -e "[domain/default]
 enumerate = True
@@ -240,8 +256,6 @@ chpass_provider = ldap
 sudo_provider = ldap
 ldap_tls_cacert = /etc/openldap/certs/soca.crt
 ldap_sudo_search_base = ou=Sudoers,$LDAP_BASE
-ldap_sudo_full_refresh_interval=86400
-ldap_sudo_smart_refresh_interval=3600
 ldap_uri = ldap://$SERVER_HOSTNAME
 ldap_id_use_start_tls = True
 use_fully_qualified_names = False
@@ -258,6 +272,8 @@ homedir_substring = /data/home
 [pam]
 
 [sudo]
+ldap_sudo_full_refresh_interval=86400
+ldap_sudo_smart_refresh_interval=3600
 
 [autofs]
 
