@@ -70,4 +70,4 @@ cp -r $source_dir/scripts $build_dist_dir
 echo "cp -r $source_dir/soca $build_dist_dir"
 cp -r $source_dir/soca $build_dist_dir
 echo "cp -r $source_dir/templates $build_dist_dir"
-cp -r $source_dir/soca $build_dist_dir
+cp -r $source_dir/templates $build_dist_dir
