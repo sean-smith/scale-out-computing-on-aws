@@ -49,8 +49,6 @@ echo "[Packing] Copy all templates for CfnNagScan and force .template extension"
 echo "------------------------------------------------------------------------------"
 echo "mkdir -p $template_dist_dir"
 mkdir -p $template_dist_dir
-echo "cp ../source/templates/*.template $template_dist_dir/"
-cp ../source/templates/*.template $template_dist_dir/
 echo "cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/"
 cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/
 echo "Updating code source bucket in template with $1"
@@ -70,4 +68,6 @@ echo "--------------------------------------------------------------------------
 echo "cp -r $source_dir/scripts $build_dist_dir"
 cp -r $source_dir/scripts $build_dist_dir
 echo "cp -r $source_dir/soca $build_dist_dir"
+cp -r $source_dir/soca $build_dist_dir
+echo "cp -r $source_dir/templates $build_dist_dir"
 cp -r $source_dir/soca $build_dist_dir
