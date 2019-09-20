@@ -57,6 +57,8 @@ echo "cp $source_template_dir/../CONTRIBUTING.md $dist_dir"
 cp $source_template_dir/../CONTRIBUTING.md $dist_dir
 echo "cp $source_template_dir/../CHANGELOG.md $dist_dir"
 cp $source_template_dir/../CHANGELOG.md $dist_dir
+echo "cp $source_template_dir/../THIRD_PARTY_LICENSES.txt $dist_dir"
+cp $source_template_dir/../THIRD_PARTY_LICENSES.txt $dist_dir
 
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Create GitHub (open-source) zip file"

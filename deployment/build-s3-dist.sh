@@ -44,11 +44,15 @@ mkdir -p $build_dist_dir
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Global Assets"
 echo "------------------------------------------------------------------------------"
-echo "cp -r ../source/templates/ $template_dist_dir/"
-cp -r $source_dir/templates/ $template_dist_dir/
+echo "------------------------------------------------------------------------------"
+echo "[Packing] Copy all templates for CfnNagScan and force .template extension"
+echo "------------------------------------------------------------------------------"
+echo "mkdir -p $template_dist_dir"
+mkdir -p $template_dist_dir
+echo "cp ../source/templates/*.template $template_dist_dir/"
+cp ../source/templates/*.template $template_dist_dir/
 echo "cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/"
-cp ../source/Setup.yml $template_dist_dir/
-
+cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/
 echo "Updating code source bucket in template with $1"
 replace="s/%%BUCKET_NAME%%/$1/g"
 echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
@@ -63,11 +67,7 @@ sed -i '' -e $replace $template_dist_dir/*.template
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Regional Assets"
 echo "------------------------------------------------------------------------------"
-echo "cp -r ../source/soca/ $build_dist_dir/"
-cp -r ../source/soca/ $build_dist_dir/
-echo "cp -r ../source/scripts/ $build_dist_dir/"
-cp -r ../source/scripts/ $build_dist_dir/
-echo "cp ../source/manual_build.py $template_dist_dir/"
-cp ../source/manual_build.py $template_dist_dir/
-echo "cp ../README.md $build_dist_dir/"
-cp ../README.md $build_dist_dir/
+echo "cp -r $source_dir/scripts $build_dist_dir"
+cp -r $source_dir/scripts $build_dist_dir
+echo "cp -r $source_dir/soca $build_dist_dir"
+cp -r $source_dir/soca $build_dist_dir
