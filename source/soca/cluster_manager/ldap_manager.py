@@ -55,13 +55,11 @@ def find_ids():
 def create_home(username):
     try:
 
-        key = rsa.generate_private_key(backend=crypto_default_backend(),public_exponent=65537,key_size=2048)
-        
+        key = rsa.generate_private_key(backend=crypto_default_backend(),public_exponent=65537, key_size=2048)
         private_key = key.private_bytes(
             crypto_serialization.Encoding.PEM,
             crypto_serialization.PrivateFormat.TraditionalOpenSSL,
             crypto_serialization.NoEncryption())
-        
         public_key = key.public_key().public_bytes(
             crypto_serialization.Encoding.OpenSSH,
             crypto_serialization.PublicFormat.OpenSSH
@@ -78,7 +76,7 @@ def create_home(username):
         os.chmod(user_home + '/' + username + '/.ssh', 0o700)
         os.chmod(user_home + '/' + username + '/.ssh/id_rsa', 0o600)
         os.chmod(user_home + '/' + username + '/.ssh/authorized_keys', 0o600)
-        shutil.chown(user_home + '/' + username +'/', user=username, group=username)
+        shutil.chown(user_home + '/' + username + '/', user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh', user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh/authorized_keys', user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh/id_rsa', user=username, group=username)
@@ -92,7 +90,7 @@ def create_home(username):
 
 
 def create_group(username, gid_number):
-    dn_group = "cn="+username+",ou=group," + ldap_base
+    dn_group = "cn=" + username + ",ou=group," + ldap_base
     attrs = [
         ('objectClass', ['top'.encode('utf-8'),
                          'posixGroup'.encode('utf-8')]),
@@ -108,7 +106,7 @@ def create_group(username, gid_number):
 
 
 def create_user(username, password, sudoers, email=False, uid=False, gid=False):
-    dn_user = "uid="+username+",ou=people," + ldap_base
+    dn_user = "uid=" + username + ",ou=people," + ldap_base
     enc_passwd = bytes(password, 'utf-8')
     salt = os.urandom(16)
     sha = hashlib.sha1(enc_passwd)
@@ -130,7 +128,7 @@ def create_user(username, password, sudoers, email=False, uid=False, gid=False):
         ('cn', [str(username).encode('utf-8')]),
         ('sn', [str(username).encode('utf-8')]),
         ('loginShell', ['/bin/bash'.encode('utf-8')]),
-        ('homeDirectory', (str(user_home)+'/'+str(username)).encode('utf-8')),
+        ('homeDirectory', (str(user_home) + '/' + str(username)).encode('utf-8')),
         ('userPassword', [passwd.encode('utf-8')])
     ]
 
@@ -148,8 +146,6 @@ def create_user(username, password, sudoers, email=False, uid=False, gid=False):
         return True
     except Exception as e:
         return e
-
-
 
 
 def add_sudo(username):
@@ -176,16 +172,18 @@ if __name__ == "__main__":
     slappasswd = '/sbin/slappasswd'
     root_dn = 'CN=admin,DC=soca,DC=local'
     root_pw = open('/root/OpenLdapAdminPassword.txt', 'r').read()
-    ldap_args = '-ZZ -x -H "ldap://' + aligo_configuration['SchedulerPrivateDnsName'] + '" -D ' + root_dn + ' -y ' + root_pw
+    ldap_args = '-ZZ -x -H "ldap://' + aligo_configuration[
+        'SchedulerPrivateDnsName'] + '" -D ' + root_dn + ' -y ' + root_pw
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
     parser.add_argument('-p', '--password', nargs='?', required=True, help='User password')
     parser.add_argument('-e', '--email', nargs='?', help='User email')
     parser.add_argument('--uid', nargs='?', help='Specify custom Uid')
     parser.add_argument('--gid', nargs='?', help='Specific custom Gid')
-    parser.add_argument('--admin', action='store_const', const=True, help='If flag is specified, user will be added to sudoers group')
+    parser.add_argument('--admin', action='store_const', const=True,
+                        help='If flag is specified, user will be added to sudoers group')
     arg = parser.parse_args()
-    con = ldap.initialize('ldap://'+aligo_configuration['SchedulerPrivateDnsName'])
+    con = ldap.initialize('ldap://' + aligo_configuration['SchedulerPrivateDnsName'])
     con.simple_bind_s(root_dn, root_pw)
     ldap_ids = find_ids()
     gid = ldap_ids['next_gid']
@@ -196,13 +194,12 @@ if __name__ == "__main__":
     else:
         email = False
 
-
     add_user = create_user(str(arg.username), str(arg.password), arg.admin, email, uid, gid)
     add_group = create_group(str(arg.username), gid)
     add_home = create_home(arg.username)
 
     if add_user is True:
-        print('Created User: ' +str(arg.username) + ' id: ' +str(uid))
+        print('Created User: ' + str(arg.username) + ' id: ' + str(uid))
     else:
         print('Unable to create user:' + add_user)
         sys.exit(1)
@@ -218,7 +215,4 @@ if __name__ == "__main__":
         print('Unable to create Home structure:' + add_home)
         sys.exit(1)
 
-
     con.unbind_s()
-
-

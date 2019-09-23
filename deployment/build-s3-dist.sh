@@ -51,8 +51,8 @@ echo "mkdir -p $template_dist_dir"
 mkdir -p $template_dist_dir
 echo "cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/"
 cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/
-echo "Updating code source bucket in template with $1"
-replace="s/%%BUCKET_NAME%%/$1/g"
+echo "Updating code source bucket in template with $1-reference"
+replace="s/%%BUCKET_NAME%%/$1-reference/g"
 echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 replace="s/%%SOLUTION_NAME%%/$2/g"
@@ -61,13 +61,6 @@ sed -i '' -e $replace $template_dist_dir/*.template
 replace="s/%%VERSION%%/$3/g"
 echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
-
-echo "cp -r $source_dir/scripts $template_dist_dir"
-cp -r $source_dir/scripts $template_dist_dir
-echo "cp -r $source_dir/soca $template_dist_dir"
-cp -r $source_dir/soca $template_dist_dir
-echo "cp -r $source_dir/templates $template_dist_dir"
-cp -r $source_dir/templates $template_dist_dir
 
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Regional Assets"
