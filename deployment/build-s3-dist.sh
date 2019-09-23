@@ -68,3 +68,13 @@ echo "cp -r $source_dir/soca $template_dist_dir"
 cp -r $source_dir/soca $template_dist_dir
 echo "cp -r $source_dir/templates $template_dist_dir"
 cp -r $source_dir/templates $template_dist_dir
+
+echo "------------------------------------------------------------------------------"
+echo "[Packing] Regional Assets"
+echo "------------------------------------------------------------------------------"
+echo "cp -r $source_dir/scripts $build_dist_dir"
+cp -r $source_dir/scripts $build_dist_dir
+echo "cp -r $source_dir/soca $build_dist_dir"
+cp -r $source_dir/soca $build_dist_dir
+echo "cp -r $source_dir/templates $build_dist_dir"
+cp -r $source_dir/templates $build_dist_dir
