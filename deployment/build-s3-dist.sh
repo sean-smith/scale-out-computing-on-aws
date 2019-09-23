@@ -62,9 +62,9 @@ replace="s/%%VERSION%%/$3/g"
 echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 
-echo "cp -r $template_dist_dir/scripts $build_dist_dir"
-cp -r $template_dist_dir/scripts $build_dist_dir
-echo "cp -r $template_dist_dir/soca $build_dist_dir"
-cp -r $template_dist_dir/soca $build_dist_dir
-echo "cp -r $template_dist_dir/templates $build_dist_dir"
-cp -r $template_dist_dir/templates $build_dist_dir
+echo "cp -r $source_dir/scripts $template_dist_dir"
+cp -r $source_dir/scripts $template_dist_dir
+echo "cp -r $source_dir/soca $template_dist_dir"
+cp -r $source_dir/soca $template_dist_dir
+echo "cp -r $source_dir/templates $template_dist_dir"
+cp -r $source_dir/templates $template_dist_dir
