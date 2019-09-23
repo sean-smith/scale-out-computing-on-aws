@@ -102,7 +102,8 @@ def howto():
 @auth.login_required
 def sftp():
     username = session['username']
-    return render_template('sftp.html', username=username)
+    scheduler_ip = parameters.get_aligo_configuration()['SchedulerPublicIP']
+    return render_template('sftp.html', scheduler_ip=scheduler_ip, username=username)
 
 
 @app.route('/ping', methods=['GET'])
