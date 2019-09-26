@@ -1,24 +1,22 @@
 # Solution for Scale Out Computing on AWS (SOCA)
 
 ## :wrench: How to install SOCA
-### 1) Automated installer
+### 1) 1-Click installer
 
-Visit https://aws.amazon.com/solutions/<link_tbd>
+Visit https://aws.amazon.com/solutions/solution-for-scale-out-computing-on-aws/
 
-:rotating_light: If you are planning to heavily customize your cluster, it's recommended you go with option 2 instead.
+:rotating_light: 1-Click installer is only recommended for PoC/demos. For production workload, it's recommended you go with option 2 instead.
 
 ### 2) Build and install SOCA on your own AWS account
 
 + 1\) Clone this git repository
 ```bash
-git clone https://github.com/awslabs/solution-for-scale-out-computing-on-aws `
+git clone https://github.com/awslabs/solution-for-scale-out-computing-on-aws
 ```
-+ 2\) Create your own installer by running:
++ 2\) Run the following command to create your build (support Python2 and Python3):
 ```bash
-# You can use either Python2 or Python3
 python source/manual_build.py
 ```
-
 + 3\) Output will be created under `source/dist/<build_id>`
 
 + 4\) Upload `source/dist/<build_id>` folder to your own S3 bucket
@@ -68,8 +66,14 @@ The AWS SOCA project consists in a collection of CloudFormation template, EC2 Us
 
 Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
-Licensed under the Amazon Software License (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-    http://aws.amazon.com/asl/
+    http://www.apache.org/licenses/LICENSE-2.0
 
-or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions and limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
