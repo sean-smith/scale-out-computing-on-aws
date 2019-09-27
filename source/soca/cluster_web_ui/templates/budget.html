@@ -41,20 +41,23 @@
 
                                   <h4>Step1: Enable Cost Allocation Tags</h4>
                                   <div class="row">
-                                      <div class="col-md-5">
+                                      <div class="col-md-6">
                                         Click on your account name (1) then select "My Billing Dashboard" (2)<br>
-                                      <img src="{{ url_for('static', filename='img/budget-1.png') }}">
+                                      <img height="100%" width="auto" src="{{ url_for('static', filename='img/budget-1.png') }}">
                                       </div>
-                                      <div class="col-md-4">
+                                      <div class="col-md-6">
                                           Then click Cost Allocation tag<br>
-                                          <img src="{{ url_for('static', filename='img/budget-2.png') }}">
+                                          <img  height="100%" width="auto" src="{{ url_for('static', filename='img/budget-2.png') }}">
                                       </div>
                                   </div>
                                   <br>
-                                  <div class="col-md-8">
-                                  Finally, search all "SOCA" tags then click "Activate"<br>
-                                      <img width="100%" height="100%" src="{{ url_for('static', filename='img/budget-3.png') }}">
-                                   <div class="alert alert-warning" role="alert">It could take up to <strong>24 hours for the tags to be active </strong></div>
+                                  <div class="row">
+                                      <div class="col-md-12">
+                                      Finally, search all "SOCA" tags then click "Activate"<br>
+                                          <img width="100%" height="auto" src="{{ url_for('static', filename='img/budget-3.png') }}">
+                                          <br><br>
+                                       <div class="alert alert-warning" role="alert">It could take up to <strong>24 hours for the tags to be active </strong></div>
+                                      </div>
                                   </div>
 
 
@@ -65,7 +68,7 @@
 
                                     <h3> Step 3: Query Cost Explorer</h3>
                                   <div class="row">
-                                      <div class="col-md-10">
+                                      <div class="col-md-12">
                                           Open your Cost Explorer tab and specify your filters. In this example I want to get the EC2 cost (1), group by day for my queue named "cpus" (2). <br>
                                           <img height="auto" width="100%" src="{{ url_for('static', filename='img/budget-5.png') }}">
                                       </div>
@@ -73,7 +76,7 @@
 
                                   <br>
                                   <div class="row">
-                                      <div class="col-md-10">
+                                      <div class="col-md-12">
                                           To get more detailed information, select 'Group By' and apply additional filters. Here is an example if I want user level information for "cpus" queue
                                           Click "Tag" section under "Group By" horizontal label (1) and select "soca:JobOwner" tag. Your graph will automatically be updated with a cost breakdown by users for "cpus" queue <br>
                                           <img height="auto" width="100%" src="{{ url_for('static', filename='img/budget-6.png') }}">
@@ -82,17 +85,20 @@
                                   <hr>
 
                                   <h2>AWS Budget</h2>
+                                   <div class="row">
+                                      <div class="col-md-12">
                                   Open your Billing Dashboard (or search for AWS Budget), click "Budget" (1) then "Create a budget" (2) <br>
-
-                                  <img height="400" width="850" src="{{ url_for('static', filename='img/budget-7.png') }}"> <br>
-                                  <div class="row">
-                                      <div class="col-md-5">
-                                          Specify "Cost Budget" and then apply the tag(s) you want to monitor (usually cost center, team, user, queue or project) as well as your budget limit you don't want to exceed.
-                                          <br><img height="500" width="250" src="{{ url_for('static', filename='img/budget-8.png') }}">
+                                  <img height="auto" width="100%" src="{{ url_for('static', filename='img/budget-7.png') }}"> <br>
                                       </div>
-                                      <div class="col-md-4">
+                                   </div>
+                                  <div class="row">
+                                      <div class="col-md-6">
+                                          Specify "Cost Budget" and then apply the tag(s) you want to monitor (usually cost center, team, user, queue or project) as well as your budget limit you don't want to exceed.
+                                          <br><img height="auto" width="50%" src="{{ url_for('static', filename='img/budget-8.png') }}">
+                                      </div>
+                                      <div class="col-md-6">
                                            Under Budget Parameters, specify your tag  (in this case soca:JobQueue) <br>
-                                  <img height="500" width="250" src="{{ url_for('static', filename='img/budget-9.png') }}">
+                                  <img height="auto" width="50%" src="{{ url_for('static', filename='img/budget-9.png') }}">
                                       </div>
                                   </div>
 
@@ -108,7 +114,11 @@
                                    </div>
 
                                   Here is an example of AWS Budget with one email alert configured: <br>
-                                  <img height="500" width="975" src="{{ url_for('static', filename='img/budget-10.png') }}">
+                                    <div class="row">
+                                      <div class="col-md-12">
+                                        <img height="auto" width="100%" src="{{ url_for('static', filename='img/budget-10.png') }}">
+                                      </div>
+                                    </div>
 
 
 
