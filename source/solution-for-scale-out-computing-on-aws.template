@@ -110,8 +110,8 @@ Parameters:
     Type: String
     MinLength: 5
     MaxLength: 50
-    AllowedPattern: '^[a-zA-Z0-9]*$'
-    Description: 5 characters minimum, uppercase/lowercase/digit only
+    AllowedPattern: '^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:]*$'
+    Description: "5 characters minimum. Special chars authorized: (!@#$%^&*()_+\-=\[\]{};:)"
 
 Conditions:
   UseCustomAMI: !Not [!Equals [!Ref CustomAMI, ""]]

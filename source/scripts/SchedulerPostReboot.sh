@@ -144,7 +144,7 @@ fi
 
 
 # Create default LDAP user
-/apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py -u $3 -p $4 --admin
+/apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin
 
 # Clean directories
 rm -rf /root/pbspro-18.1.4*

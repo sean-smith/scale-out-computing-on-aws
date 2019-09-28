@@ -124,7 +124,7 @@
                             <h3> Example: Create a new LDAP group</h3>
                             Create a "mynewgroup.ldif" text file.
                             <pre>
-                               <code>
+                               <code class="language-bash">
 dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
 objectClass: top
 objectClass: posixGroup
@@ -133,18 +133,18 @@ gidNumber: 6000
 memberUid: mytestuser</code></pre>
                             Then run the following command to create your group
                             <pre>
-                                <code>
+                                <code class="language-bash">
 ~ ldapadd -x -D cn=admin,dc=soca,dc=local -y /root/OpenLdapAdminPassword.txt -f mynewgroup.ldif
 adding new entry "cn=mynewgroup,ou=Group,dc=soca,dc=local"</code></pre>
                             Finally valid your group has been created correctly using <code>ldapsearch</code>
                             <pre>
-                                <code>
+                                <code class="language-bash">
 # Validate with Ldapsearch
 ~ ldapsearch -x cn=mynewgroup
 #Extended LDIF
 #
 # LDAPv3
-# base <DC=soca,DC=local> (default) with scope subtree
+# base DC=soca,DC=local (default) with scope subtree
 # filter: cn=mynewgroup
 # requesting: ALL
 #
@@ -159,7 +159,7 @@ memberUid: mytestuser</code></pre>
 <hr>
                              <h3> Example: Modify Operation</h3>
                             <pre>
-                                <code>
+                                <code class="language-bash">
 dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
 changetype: modify
 add: memberUid
@@ -167,11 +167,11 @@ memberUid: anotheruser</code></pre>
                             <hr>
                              <h3> Example: Delete Operation</h3>
                             <pre>
-                                <code>
+                                <code class="language-bash">
 dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
 changetype: modify
 delete: memberUid
-memberUid:: anotheruser # you get the membrUid by running a simple ldapsearch first</code></pre>
+memberUid:: anotheruser # you get the memberUid by running a simple ldapsearch first</code></pre>
 
                         </div>
                     </div>

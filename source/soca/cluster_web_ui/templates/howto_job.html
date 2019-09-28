@@ -20,7 +20,7 @@
               {% include 'common/horizontal_menu_bar.html' %}
               <div class="row">
                       <div class="col-md-12">
-                          <div class="alert alert-info">
+                          <div class="alert alert-primary">
   <strong>Things to know before you start</strong>
                               <li>Jobs start on average 6 minutes after submission (this value may differ depending on the number and type of compute resource you need to be provisioned)</li>
                               <li>You can launch 'AlwaysOn' instances if you want to avoid the ColdStart penalty</li>
@@ -37,7 +37,7 @@
 
                                   <h4>Basic template</h4>
                                   Create a simple text file, name it "job_submit.que". See below for a simple template, you will be required to edit whatever is between **.
-                                  <pre><code>
+                                  <pre><code class="language-bash">
  #!/bin/bash
  ## BEGIN PBS SETTINGS: Note PBS lines MUST start with #
  #PBS -N **your_job_name**
@@ -53,16 +53,16 @@
                                   <hr>
 <h4>Run your job</h4>
 Run "qsub job_submit.que" to submit you job to the queue.<br>
-
-<code>qsub job_submit.que<br>
+<pre><code class="language-bash">
+#qsub job_submit.que
 3323.ip-10-10-10-28
-</code><br>Once you run the qsub command, you will get a job id.  To get more information about this job, run <code>qstat -f 3323</code> (or <code>qstat -f 3323 -x</code> is the job is already terminated).
+</code></pre><br>Once you run the qsub command, you will get a job id.  To get more information about this job, run <code class="language-bash">qstat -f 3323</code> (or <code class="language-bash">qstat -f 3323 -x</code> is the job is already terminated).
                                   <br>Your job will start as soon as resources are available (usually within 5 minutes after job submission)
 <hr>
                                   <h4>Custom AWS scheduler resources (optional)</h4>
                                   Here is a list of scheduler resources specially designed for workloads running on AWS.The line starting with -l (lowercase L) is meant to define scheduler resource which will be used by this job. Syntax is as follow: <br>
-                                  <code>#PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2</code> <br>
-                                  If you don't use them, your job will use the default values configured for your queue (see <code>/apps/soca/cluster_manager/queue_mapping.yml</code>)
+                                  <code class="language-bash">#PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2</code> <br>
+                                  If you don't use them, your job will use the default values configured for your queue (see <code class="language-bash">/apps/soca/cluster_manager/settings/queue_mapping.yml</code>)<br><br>
                                   <table class="table table-striped">
                                       <tbody>
                                         <tr>
@@ -97,7 +97,7 @@ Placement group is automatically enabled if simulation is running on > 1 host (u
 SOCA support all types of EC2 instance from AWS. If you don't specify it, job will use a default type which may not be optimal (eg: simulation is memory intensive but default EC2 is compute intensive)
 If you are not familiar with EC2 instances, take some time to review  <a href="https://aws.amazon.com/ec2/instance-types/" target="_blank">https://aws.amazon.com/ec2/instance-types/</a><br>
 If you want to force utilization of a specific instance type (and not use the default one), simply change the line and add instance_type value<br>
-                                  <code>#PBS -l [existing_parameters...],instance_type=**instance_type_value**</code>
+                                  <code class="language-bash">#PBS -l [existing_parameters...],instance_type=**instance_type_value**</code>
                                   <hr>
                                   <h4>Specify a license restriction (optional)</h4>
                                      <div class="alert alert-info">Please refer to <code>/apps/soca/cluster_manager/settings/licenses_mapping.yml</code> for a list of licenses you can restrict. Contact your Administrator if your license is not available yet.
@@ -106,19 +106,102 @@ If your job needs to check-out a specific license to run, you want to make sure 
 
                                   Example: Your job will only start if we have at least 2 Synopsys VCSRuntime_Net licenses available.<br>
 
-                                  <code>#PBS -l [existing_parameters...],synopsys_lic_vcsruntimenet=2</code><br>
+                                  <code class="language-bash">#PBS -l [existing_parameters...],synopsys_lic_vcsruntimenet=2</code><br>
                                   <hr>
                                   <h4>Manage your application logs</h4>
 PBS will automatically generate a .qlog file once the job is complete as shown below.<br>
 
-                                  <code>#PBS -V -j oe -o **your_job_name**.qlog</code><br>
+                                  <code class="language-bash">#PBS -V -j oe -o **your_job_name**.qlog</code><br>
 If you need more verbose log, we recommend you using STDERR/STDOUT redirection on your code<br>
 
+<hr>
+                                  <h4>My job is queued. What next? (AWS orchestration)</h4>
 
-            <hr>
+                                  First, let's make sure your jobs have been sent to the queue. You can run default <code class="language-bash" >qstat</code> or use <code class="language-bash">aligoqstat</code> which is a custom wrapper we developed which provide a better UI
+                        <br>
+
+                                    <img width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-1.png') }}">
+
+                                  As soon as jobs are sent to the queue, we have our in-house dispatcher script which will decide if the job can start (based on hardware availabilities, priorities or license requirements). Run <code lang="bash"> qstat -f **job_id** | grep Resource</code>. <br>
+                                  If you see compute_node resource (under select), that means all requirements are met and capacity is being provisioned (aka: CloudFormation stack are created and capacity is being provisioned)
+<br><img  width="50%" height="auto" src="{{ url_for('static', filename='img/howtojob-5.png') }}">
+                                  <br>Look at your EC2 console. This is what you will see:<br>
+
+                                      <img  width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-2.png') }}">
+                                  Instances are being provisioned, now let's make sure they are correctly being added to the scheduler by running "pbsnodes -a"
+<br>
+                                  <strong>Note:</strong> PBS is updated as soon as the host are being added to EC2. You will need to wait a couple of minutes before the state change from "down" to "free" as we have to configure the system (install libraries, PBS ...)
+<pre>
+    <code class="language-bash">
+~pbsnodes -a
+#Host Ready
+ip-60-0-172-33
+     Mom = ip-60-0-172-33.us-west-2.compute.internal
+     ntype = PBS
+     state = free
+     pcpus = 4
+     jobs = 2.ip-60-0-31-223/0
+     resources_available.arch = linux
+     resources_available.availability_zone = us-west-2c
+     resources_available.compute_node = job2
+     resources_available.host = ip-60-0-172-33
+     resources_available.instance_type = m5.xlarge
+     resources_available.mem = 15950552kb
+     resources_available.ncpus = 4
+     resources_available.subnet_id = subnet-0f00f894b11bf3b5a
+     resources_available.vnode = ip-60-0-172-33
+     resources_assigned.accelerator_memory = 0kb
+     resources_assigned.hbmem = 0kb
+     resources_assigned.mem = 0kb
+     resources_assigned.naccelerators = 0
+     resources_assigned.ncpus = 1
+     resources_assigned.vmem = 0kb
+     queue = normal
+     resv_enable = True
+     sharing = default_shared
+     last_state_change_time = Sat Sep 28 21:39:35 2019
+
+# Host still being configured
+ip-60-0-100-3
+     Mom = ip-60-0-100-3.us-west-2.compute.internal
+     ntype = PBS
+     state = state-unknown,down
+     pcpus = 2
+     jobs = 1.ip-60-0-31-223/0
+     resources_available.arch = linux
+     resources_available.availability_zone = us-west-2a
+     resources_available.compute_node = job1
+     resources_available.host = ip-60-0-100-3
+     resources_available.instance_type = c5.large
+     resources_available.mem = 3793980kb
+     resources_available.ncpus = 2
+     resources_available.subnet_id = subnet-09637165fbecbb764
+     resources_available.vnode = ip-60-0-100-3
+     resources_assigned.accelerator_memory = 0kb
+     resources_assigned.hbmem = 0kb
+     resources_assigned.mem = 0kb
+     resources_assigned.naccelerators = 0
+     resources_assigned.ncpus = 1
+     resources_assigned.vmem = 0kb
+     queue = normal
+     resv_enable = True
+     sharing = default_shared
+     comment = node down: communication closed
+     last_state_change_time = Sat Sep 28 21:40:01 2019
+    </code>
+</pre>
+                                  Simply wait a couple of minutes. Your jobs will start as soon as the PBS nodes are configured. <br>
+                                   <img  width="100%" height="auto"  src="{{ url_for('static', filename='img/howtojob-3.png') }}"> <br>
+                                  Our wrapper also supports JSON output if needed: <br>
+                                   <img  width="100%" height="auto"  src="{{ url_for('static', filename='img/howtojob-4.png') }}">
+
+
+
+
+                                 <hr>
                                   <h4>Examples</h4>
                                   <h5>Run a simple script on 1 node using default settings for 'cpus' queue</h5>
-<pre><code>#!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
@@ -129,7 +212,8 @@ cd $HOME
 echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
                                   <h5>Run a simple script on 5 nodes using custom EC2 instance type</h5>
 This job will use a 5 c5.18xlarge instances.<br>
-<pre><code>#!/bin/bash
+                                   <section style="background-color: #eaecf4;">
+<pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
@@ -137,11 +221,11 @@ This job will use a 5 c5.18xlarge instances.<br>
 #PBS -l nodes=5,instance_type=c5.18xlarge
 ## END PBS SETTINGS
 cd $HOME
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre></section>
 
                                   <h5>Run a simple script on 5 nodes using custom License Restriction</h5>
 This job will only start if we have at least 4 Comsol Acoustic licenses available<br>
-<pre><code>#!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
@@ -151,7 +235,7 @@ This job will only start if we have at least 4 Comsol Acoustic licenses availabl
 cd $PBS_O_WORKDIR
 echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
    <h5>Run a MPI (OpenMPI script on 10 nodes</h5>
- <pre><code>#!/bin/bash
+ <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
@@ -167,7 +251,7 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 mpiexec -f mpi_nodes -n 10 -ppn 48 ./myscript > my_output.log</code></pre>
                                   <h5>Run a simple script on 5 m5.24xlarge SPOT instances as long as bid price is lower than $2.5 per hour</h5>
 This job will use SPOT instances. Instances will be automatically terminated if BID price is higher than $2.5 / per hour per instance<br>
-<pre><code>#!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
