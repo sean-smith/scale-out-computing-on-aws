@@ -95,12 +95,19 @@ def job_queue():
     jobs = qstat.get_user_queue(username)
     return render_template('qstat.html', username=username, jobs=jobs, view='qstat', sudoers=sudoers)
 
-@app.route('/howto', methods=['GET'])
+@app.route('/howto-job', methods=['GET'])
 @auth.login_required
-def howto():
+def howto_job():
     username = session_info()['username']
     sudoers = session_info()['sudoers']
-    return render_template('howto.html', username=username, sudoers=sudoers)
+    return render_template('howto_job.html', username=username, sudoers=sudoers)
+
+@app.route('/howto-queue', methods=['GET'])
+@auth.login_required
+def howto_queue():
+    username = session_info()['username']
+    sudoers = session_info()['sudoers']
+    return render_template('howto_queue.html', username=username, sudoers=sudoers)
 
 @app.route('/budget', methods=['GET'])
 @auth.login_required
