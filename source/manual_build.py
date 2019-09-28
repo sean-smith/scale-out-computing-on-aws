@@ -33,10 +33,14 @@ if __name__ == "__main__":
 
     print("\n====== Build COMPLETE ======")
     print("\n====== Installation Instructions ======")
-    print("1: Create or use an S3 bucket on your AWS account (eg: 'mysocacluster')")
+    print("1: Create or use an existing S3 bucket on your AWS account (eg: 'mysocacluster')")
     print("2: Drag & Drop " + build_path + "/" + build_folder + " to your S3 bucket (eg: 'mysocacluster/" + build_folder + ")")
     print("3: Launch CloudFormation and use solution-for-scale-out-computing-on-aws.template as base template")
     print("4: Enter your cluster information.")
+    print("")
+    print("")
+    input("Press Enter key to close ..")
+
 
 
 

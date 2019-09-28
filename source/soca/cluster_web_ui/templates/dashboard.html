@@ -30,7 +30,46 @@
                               <div class="card-body">
                                   <h3>Dashboard URL</h3>
                                   Please click here to access your dashboard url: <a href="{{analytics_url}}" target="_blank" class="btn btn-primary my-2">{{analytics_url}}</a>
-                                    <hr>
+                                  <hr>
+                                  <h3>First Time User</h3>
+                                  <br>
+                                  If you are not already familiar with Kibana, read the instructions below. Since it's the first time you access this endpoint, you will need to configure your indexes.
+                                    <br>
+                                  <table class="table">
+                                      <thead>
+                                      <tr>
+                                          <th scope="col">Step</th>
+                                          <th scope="col">Action</th>
+                                          <th scope="col">Screenshot</th>
+                                      </tr>
+                                      </thead>
+                                      <tbody>
+                                      <tr>
+                                          <th scope="row">1</th>
+                                          <td>First, access  <a href="{{analytics_url}}" target="_blank">Kibana URL</a> and click "Explore on my Own"</td>
+                                          <td><img  width="300" height="300" src="{{ url_for('static', filename='img/kibana-1.png') }}"></td>
+                                      </tr>
+                                      <tr>
+                                          <th scope="row">2</th>
+                                          <td>Go under Management and Click Index Patterns</td>
+                                          <td><img src="{{ url_for('static', filename='img/kibana-2.png') }}"></td>
+                                      </tr>
+                                      <tr>
+                                          <th scope="row">3</th>
+                                          <td>Select the Index you want to query.</td>
+                                          <td><img src="{{ url_for('static', filename='img/kibana-3.png') }}"></td>
+                                      </tr>
+                                      <th scope="row">4</th>
+                                      <td>Click next, and then specify the Time Filter key (refer to section below for timestamp id). Once done, click Create Index Pattern</td>
+                                      <td><img  width="500" src="{{ url_for('static', filename='img/kibana-4.png') }}"></td>
+                                      </tr>
+                                      <th scope="row">5</th>
+                                      <td>Once your Index is configured, go to Kibana, select "Discover" tab to start visualizing the data</td>
+                                      <td><img src="{{ url_for('static', filename='img/kibana-5.png') }}"></td>
+                                      </tr>
+                                      </tbody>
+                                  </table>
+                                  <hr>
                                   <h3> Index Information</h3>
                                   <br>
                                   <table class="table">
@@ -70,45 +109,7 @@
                                       <tr>
                                       </tbody>
                                   </table>
-                                  <hr>
-                                  <h3>First Time User</h3>
-                                  <br>
-                                  If you are not already familiar with Kibana, read the instructions below. Since it's the first time you access this endpoint, you will need to configure your indexes.
-                                    <br>
-                                  <table class="table">
-                                      <thead>
-                                      <tr>
-                                          <th scope="col">Step</th>
-                                          <th scope="col">Action</th>
-                                          <th scope="col">Screenshot</th>
-                                      </tr>
-                                      </thead>
-                                      <tbody>
-                                      <tr>
-                                          <th scope="row">1</th>
-                                          <td>First, access  <a href="{{analytics_url}}" target="_blank">Kibana URL</a> and click "Explore on my Own"</td>
-                                          <td><img  width="300" height="300" src="{{ url_for('static', filename='img/kibana-1.png') }}"></td>
-                                      </tr>
-                                      <tr>
-                                          <th scope="row">2</th>
-                                          <td>Go under Management and Click Index Patterns</td>
-                                          <td><img src="{{ url_for('static', filename='img/kibana-2.png') }}"></td>
-                                      </tr>
-                                      <tr>
-                                          <th scope="row">3</th>
-                                          <td>Select the Index you want to query.</td>
-                                          <td><img src="{{ url_for('static', filename='img/kibana-3.png') }}"></td>
-                                      </tr>
-                                      <th scope="row">4</th>
-                                      <td>Click next, and then specify the Time Filter key. Once done, click Create Index Pattern</td>
-                                      <td><img  width="500" src="{{ url_for('static', filename='img/kibana-4.png') }}"></td>
-                                      </tr>
-                                      <th scope="row">5</th>
-                                      <td>Once your Index is configured, go to Kibana, select "Discover" tab to start visualizing the data</td>
-                                      <td><img src="{{ url_for('static', filename='img/kibana-5.png') }}"></td>
-                                      </tr>
-                                      </tbody>
-                                  </table>
+
                                     <hr>
                                   <h3>Examples</h3><br>
                                   <div class="row">

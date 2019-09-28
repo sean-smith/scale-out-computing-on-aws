@@ -5,6 +5,7 @@ import hashlib
 from base64 import b64encode as encode
 import shutil
 import os
+
 sys.path.append(os.path.dirname(__file__))
 import configuration
 import binascii
@@ -14,6 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 import subprocess
 
+
 def run_command(cmd):
     try:
         command = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -21,6 +23,7 @@ def run_command(cmd):
         return stdout
     except subprocess.CalledProcessError as e:
         exit(1)
+
 
 def find_ids():
     used_uid = []
@@ -30,7 +33,6 @@ def find_ids():
                        'objectClass=posixAccount', ['uidNumber', 'gidNumber']
                        )
     # Any users/group created will start with uid/gid => 5000
-
     uid = 5000
     gid = 5000
     for a in res:
@@ -42,7 +44,6 @@ def find_ids():
     for a in res:
         gid_temp = int(a[1].get('gidNumber')[0])
         used_gid.append(gid_temp)
-
         if gid_temp > gid:
             gid = gid_temp
 
@@ -54,12 +55,12 @@ def find_ids():
 
 def create_home(username):
     try:
-
-        key = rsa.generate_private_key(backend=crypto_default_backend(),public_exponent=65537, key_size=2048)
+        key = rsa.generate_private_key(backend=crypto_default_backend(), public_exponent=65537, key_size=2048)
         private_key = key.private_bytes(
             crypto_serialization.Encoding.PEM,
             crypto_serialization.PrivateFormat.TraditionalOpenSSL,
             crypto_serialization.NoEncryption())
+
         public_key = key.public_key().public_bytes(
             crypto_serialization.Encoding.OpenSSH,
             crypto_serialization.PublicFormat.OpenSSH
@@ -165,7 +166,41 @@ def add_sudo(username):
         return e
 
 
+def delete_user(username):
+    try:
+        entries_to_delete = ["uid=" + username + ",ou=People," + ldap_base,
+                             "cn=" + username + ",ou=Group," + ldap_base,
+                             "cn=" + username + ",ou=Sudoers," + ldap_base]
+        run_command('mv /data/home/' + username + ' /data/home/' + username + '_deleted')
+        for entry in entries_to_delete:
+            try:
+                con.delete_s(entry)
+            except ldap.NO_SUCH_OBJECT:
+                pass
+
+        return True
+    except Exception as e:
+        return e
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    subparser = parser.add_subparsers(dest="command")
+    subparser_add_user = subparser.add_parser("add-user")
+    subparser_add_user.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
+    subparser_add_user.add_argument('-p', '--password', nargs='?', required=True, help='User password')
+    subparser_add_user.add_argument('-e', '--email', nargs='?', help='User email')
+    subparser_add_user.add_argument('--uid', nargs='?', help='Specify custom Uid')
+    subparser_add_user.add_argument('--gid', nargs='?', help='Specific custom Gid')
+    subparser_add_user.add_argument('--admin', action='store_const', const=True,
+                                    help='If flag is specified, user will be added to sudoers group')
+
+    subparser_delete_user = subparser.add_parser("delete-user")
+    subparser_delete_user.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
+
+    arg = parser.parse_args()
+    ldap_action = arg.command
+    # Soca Parameters
     aligo_configuration = configuration.get_aligo_configuration()
     ldap_base = 'DC=soca,DC=local'
     user_home = '/data/home'
@@ -174,45 +209,44 @@ if __name__ == "__main__":
     root_pw = open('/root/OpenLdapAdminPassword.txt', 'r').read()
     ldap_args = '-ZZ -x -H "ldap://' + aligo_configuration[
         'SchedulerPrivateDnsName'] + '" -D ' + root_dn + ' -y ' + root_pw
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
-    parser.add_argument('-p', '--password', nargs='?', required=True, help='User password')
-    parser.add_argument('-e', '--email', nargs='?', help='User email')
-    parser.add_argument('--uid', nargs='?', help='Specify custom Uid')
-    parser.add_argument('--gid', nargs='?', help='Specific custom Gid')
-    parser.add_argument('--admin', action='store_const', const=True,
-                        help='If flag is specified, user will be added to sudoers group')
-    arg = parser.parse_args()
     con = ldap.initialize('ldap://' + aligo_configuration['SchedulerPrivateDnsName'])
     con.simple_bind_s(root_dn, root_pw)
-    ldap_ids = find_ids()
-    gid = ldap_ids['next_gid']
-    uid = ldap_ids['next_uid']
 
-    if arg.email is not None:
-        email = arg.email
-    else:
-        email = False
+    if ldap_action == 'delete-user':
+        delete = delete_user(str(arg.username))
 
-    add_user = create_user(str(arg.username), str(arg.password), arg.admin, email, uid, gid)
-    add_group = create_group(str(arg.username), gid)
-    add_home = create_home(arg.username)
+    elif ldap_action == 'add-user':
+        if arg.email is not None:
+            email = arg.email
+        else:
+            email = False
 
-    if add_user is True:
-        print('Created User: ' + str(arg.username) + ' id: ' + str(uid))
-    else:
-        print('Unable to create user:' + add_user)
-        sys.exit(1)
-    if add_group is True:
-        print('Created group')
-    else:
-        print('Unable to create group:' + add_group)
-        sys.exit(1)
+        # Get next available group/user ID
+        ldap_ids = find_ids()
+        gid = ldap_ids['next_gid']
+        uid = ldap_ids['next_uid']
+        add_user = create_user(str(arg.username), str(arg.password), arg.admin, email, uid, gid)
+        add_group = create_group(str(arg.username), gid)
+        add_home = create_home(arg.username)
 
-    if add_home is True:
-        print('Home directory created correctly')
+        if add_user is True:
+            print('Created User: ' + str(arg.username) + ' id: ' + str(uid))
+        else:
+            print('Unable to create user:' + add_user)
+            sys.exit(1)
+        if add_group is True:
+            print('Created group')
+        else:
+            print('Unable to create group:' + add_group)
+            sys.exit(1)
+
+        if add_home is True:
+            print('Home directory created correctly')
+        else:
+            print('Unable to create Home structure:' + add_home)
+            sys.exit(1)
+
     else:
-        print('Unable to create Home structure:' + add_home)
-        sys.exit(1)
+        exit(1)
 
     con.unbind_s()

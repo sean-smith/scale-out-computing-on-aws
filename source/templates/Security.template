@@ -170,7 +170,6 @@ Resources:
                 - !Sub "ssm.${AWS::URLSuffix}"
             Action:
               - sts:AssumeRole
-      #RoleName: !Sub ${ClusterId}-ComputeNodeIAMRole
       Policies:
         - PolicyName: ComputeNodePermissions
           PolicyDocument:
@@ -192,7 +191,7 @@ Resources:
       Path: /
       Roles:
         - !Ref ComputeNodeIAMRole
-      InstanceProfileName: !Sub ${ClusterId}-ComputeNodeInstanceProfile
+      #InstanceProfileName: !Sub ${ClusterId}-ComputeNodeInstanceProfile
 
   SchedulerIAMRole:
     Metadata:
@@ -213,7 +212,6 @@ Resources:
                 - !Sub "ec2.${AWS::URLSuffix}"
             Action:
               - sts:AssumeRole
-      #RoleName: !Sub ${ClusterId}-SchedulerIAMRole
       Policies:
         - PolicyName: SchedulerReadPermissions
           PolicyDocument:
@@ -314,7 +312,7 @@ Resources:
       Path: /
       Roles:
         - !Ref SchedulerIAMRole
-      InstanceProfileName: !Sub ${ClusterId}-SchedulerIAMInstanceProfile
+      #InstanceProfileName: !Sub ${ClusterId}-SchedulerIAMInstanceProfile
 
 
 

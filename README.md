@@ -5,7 +5,7 @@
 
 Visit https://aws.amazon.com/solutions/solution-for-scale-out-computing-on-aws/
 
-:rotating_light: 1-Click installer is only recommended for PoC/demos. For production workload, it's recommended you go with option 2 instead.
+:rotating_light: 1-Click installer is only great for PoC or demos. For production workload, it's recommended you go with option 2 instead.
 
 ### 2) Build and install SOCA on your own AWS account
 

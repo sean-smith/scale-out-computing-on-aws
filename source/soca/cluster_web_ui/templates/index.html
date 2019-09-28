@@ -19,14 +19,69 @@
                         <div class="container">
                           <h1 class="jumbotron-heading">Welcome to your SOCA HPC cluster</h1>
                           <p class="lead text-muted">This website is designed to simplify user on-boarding process as well as interactions with our remote AWS cluster. Refer to the links below for more documentation</p>
-                          <p>
-                              <a href="https://confluence.amazon.com/display/DTHPC/DT+HPC+Learning+Series" target="_blank" class="btn btn-primary my-2"><span class="badge badge-success">START HERE</span> New User Documentation</a>
-                              <a href="https://confluence.amazon.com/display/DTHPC/" target="_blank" class="btn btn-secondary my-2">General Documentation</a>
-                              <hr>
-
-                          </p>
                         </div>
                 </section>
+
+                  <div class="row">
+                      <div class="col-md-4">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Access the Cluster</h6>
+                              </div>
+                              <div class="card-body">
+                                  <div align="center">
+                                      <i class="fas fa-sign-in-alt fa-4x"></i>
+                                  </div>
+                                  <hr>
+                                  <a href="/ssh"><h3> SSH access</h3></a>
+                                  Easily download your private key in pem/ppk format and access the cluster directly.<br><br>
+                                  <a href="/remotedesktop"><h3> Remote Desktop</h3></a>
+                                  DCV is a remote visualization technology that enables users to securely connect to graphic-intensive applications hosted on AWS.
+                              </div>
+                          </div>
+                      </div>
+
+
+                      <div class="col-md-4">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Job Management</h6>
+                              </div>
+                              <div class="card-body">
+                                  <div align="center">
+                                      <i class="fas fa-network-wired fa-4x"></i>
+                                  </div>
+                                  <hr>
+                                  <h3>Launch your job</h3>
+                                  SOCA leverages AWS flexibility and scalability. To learn how to take advantage of AWS ecosystem to run your job, refer to <a href="/howto"> this page.</a>
+                                  <br><br>
+                                  <h3>Check your queue</h3>
+                                  Stay up-to-date with your job process using our web-based <a href="/qstat">queue viewer</a>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div class="col-md-4">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Analytics and Budget</h6>
+                              </div>
+                              <div class="card-body">
+                                  <div align="center">
+                                      <i class="fas fa-chart-pie fa-4x"></i>
+                                  </div>
+                                  <hr>
+                                  <h3>Budget Management</h3>
+                                  Control your HPC spend using <a href="/budget">AWS Cost Explorer and AWS Budget</a> <br><br>
+                                  <h3>Cluster Analytics</h3>
+                                  Access your cluster information in real time using <a href="/dashboard"> your own ElasticSearch domain</a>
+                              </div>
+                          </div>
+                      </div>
+
+
+
+                  </div>
 
 
                     </main>
