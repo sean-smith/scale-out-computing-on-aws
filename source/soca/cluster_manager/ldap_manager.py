@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 import subprocess
-
+import datetime
 
 def run_command(cmd):
     try:
@@ -171,7 +171,8 @@ def delete_user(username):
         entries_to_delete = ["uid=" + username + ",ou=People," + ldap_base,
                              "cn=" + username + ",ou=Group," + ldap_base,
                              "cn=" + username + ",ou=Sudoers," + ldap_base]
-        run_command('mv /data/home/' + username + ' /data/home/' + username + '_deleted')
+        today = datetime.datetime.utcnow().strftime('%s')
+        run_command('mv /data/home/' + username + ' /data/home/' + username + '_'+str(today))
         for entry in entries_to_delete:
             try:
                 con.delete_s(entry)

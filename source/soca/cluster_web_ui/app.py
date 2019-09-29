@@ -46,7 +46,6 @@ def logout():
 
     return redirect('/')
 
-
 @app.route('/auth', methods=['POST'])
 def authenticate():
     username = request.form.get('username')
@@ -134,7 +133,7 @@ def sftp():
     return render_template('sftp.html', scheduler_ip=scheduler_ip, username=username, sudoers=sudoers)
 
 @app.route('/users', methods=['GET'])
-#@auth.login_required
+@auth.login_required
 def users():
     username = session_info()['username']
     sudoers = session_info()['sudoers']
@@ -167,6 +166,12 @@ def create_new_account():
 def delete_account():
     if session_info()['sudoers'] is True:
         username = str(request.form.get('user_to_delete'))
+        if session_info()['username'] == username:
+            msg = {'success': False,
+                   'message': 'You cannot delete your own account.'}
+            flash(msg)
+            return redirect('/users')
+
         delete_account = openldap.delete_user(username)
         if int(delete_account['exit_code']) == 0:
             msg = {'success': True,
@@ -180,7 +185,6 @@ def delete_account():
 
     else:
         return redirect('/')
-
 
 @app.route('/ping', methods=['GET'])
 def check_alive():

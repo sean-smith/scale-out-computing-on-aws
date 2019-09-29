@@ -36,7 +36,7 @@
                               <div class="card-body">
 
                                   <h4>Basic template</h4>
-                                  Create a simple text file, name it "job_submit.que". See below for a simple template, you will be required to edit whatever is between **.
+                                  Create a simple text file and name it "job_submit.que". See below for a simple template (you will be required to edit whatever is between **)
                                   <pre><code class="language-bash">
  #!/bin/bash
  ## BEGIN PBS SETTINGS: Note PBS lines MUST start with #
@@ -52,17 +52,17 @@
                                   </code></pre>
                                   <hr>
 <h4>Run your job</h4>
-Run "qsub job_submit.que" to submit you job to the queue.<br>
+    Run <code class="language-bash">qsub job_submit.que</code> to submit your job to the queue.<br>
 <pre><code class="language-bash">
 #qsub job_submit.que
 3323.ip-10-10-10-28
-</code></pre><br>Once you run the qsub command, you will get a job id.  To get more information about this job, run <code class="language-bash">qstat -f 3323</code> (or <code class="language-bash">qstat -f 3323 -x</code> is the job is already terminated).
+</code></pre><br>If your qsub command succeed, you will receive an id for your job (3323 in this example).  To get more information about this job, run <code class="language-bash">qstat -f 3323</code> (or <code class="language-bash">qstat -f 3323 -x</code> is the job is already terminated).
                                   <br>Your job will start as soon as resources are available (usually within 5 minutes after job submission)
 <hr>
                                   <h4>Custom AWS scheduler resources (optional)</h4>
-                                  Here is a list of scheduler resources specially designed for workloads running on AWS.The line starting with -l (lowercase L) is meant to define scheduler resource which will be used by this job. Syntax is as follow: <br>
+                                  Here is a list of scheduler resources specially designed for workloads running on AWS. The line starting with -l (lowercase L) is meant to define scheduler resources which will be used by this job. Syntax is as follow: <br>
                                   <code class="language-bash">#PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2</code> <br>
-                                  If you don't use them, your job will use the default values configured for your queue (see <code class="language-bash">/apps/soca/cluster_manager/settings/queue_mapping.yml</code>)<br><br>
+                                  If you don't specify them, your job will use the default values configured for your queue (see <code class="language-bash">/apps/soca/cluster_manager/settings/queue_mapping.yml</code>)<br><br>
                                   <table class="table table-striped">
                                       <tbody>
                                         <tr>
@@ -94,15 +94,15 @@ Placement group is automatically enabled if simulation is running on > 1 host (u
                                   </table>
 <hr>
 <h4>Specify an EC2 Instance Type (optional)</h4>
-SOCA support all types of EC2 instance from AWS. If you don't specify it, job will use a default type which may not be optimal (eg: simulation is memory intensive but default EC2 is compute intensive)
+SOCA supports all type of EC2 instance. If you don't specify it, job will use a default type which may not be optimal (eg: simulation is memory intensive but default EC2 is compute optimized)
 If you are not familiar with EC2 instances, take some time to review  <a href="https://aws.amazon.com/ec2/instance-types/" target="_blank">https://aws.amazon.com/ec2/instance-types/</a><br>
-If you want to force utilization of a specific instance type (and not use the default one), simply change the line and add instance_type value<br>
+If you want to force utilization of a specific instance type (and not use the default one), simply change the line and modify instance_type value<br>
                                   <code class="language-bash">#PBS -l [existing_parameters...],instance_type=**instance_type_value**</code>
                                   <hr>
                                   <h4>Specify a license restriction (optional)</h4>
                                      <div class="alert alert-info">Please refer to <code>/apps/soca/cluster_manager/settings/licenses_mapping.yml</code> for a list of licenses you can restrict. Contact your Administrator if your license is not available yet.
                                      </div>
-If your job needs to check-out a specific license to run, you want to make sure enough licenses are available before we provision capacity and start the job. To do so, you can add a new resource which will be your license name and the number of license you need.<br>
+If your job needs to check-out a specific license to run, you want to make sure enough licenses are available before provisioning capacity for the job. To do so, you can add a new resource which will be your license name and the number of license you need.<br>
 
                                   Example: Your job will only start if we have at least 2 Synopsys VCSRuntime_Net licenses available.<br>
 
@@ -117,66 +117,88 @@ If you need more verbose log, we recommend you using STDERR/STDOUT redirection o
 <hr>
                                   <h4>My job is queued. What next? (AWS orchestration)</h4>
 
-                                  First, let's make sure your jobs have been sent to the queue. You can run default <code class="language-bash" >qstat</code> or use <code class="language-bash">aligoqstat</code> which is a custom wrapper we developed which provide a better UI
-                        <br>
+                                  First, let's make sure your jobs have been sent to the queue. You can run default <code class="language-bash" >qstat</code> or use <code class="language-bash">aligoqstat</code> which is a custom wrapper developed for SOCA. If you prefer web based solution, you can <a href="/qstat">check your current queue on this page as well</a>
+                                  <br>
+                                  <div class="row">
+                                    <div class="col-md-6">
+                                         <div class="card shadow mb-4">
+                                             <div class="card-header py-3">
+                                                 <h6 class="m-0 font-weight-bold text-primary">Web Based</h6>
+                                             </div>
+                                             <div class="card-body">
+                                                 <img width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-10.png') }}">
+                                             </div>
+                                         </div>
 
-                                    <img width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-1.png') }}">
+                                    </div>
+                                      <div class="col-md-6">
+                                          <div class="card shadow mb-4">
+                                             <div class="card-header py-3">
+                                                 <h6 class="m-0 font-weight-bold text-primary">CLI</h6>
+                                             </div>
+                                             <div class="card-body">
+                                                 <img width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-1.png') }}">
+                                             </div>
+                                         </div>
 
-                                  As soon as jobs are sent to the queue, we have our in-house dispatcher script which will decide if the job can start (based on hardware availabilities, priorities or license requirements). Run <code lang="bash"> qstat -f **job_id** | grep Resource</code>. <br>
-                                  If you see compute_node resource (under select), that means all requirements are met and capacity is being provisioned (aka: CloudFormation stack are created and capacity is being provisioned)
-<br><img  width="50%" height="auto" src="{{ url_for('static', filename='img/howtojob-5.png') }}">
-                                  <br>Look at your EC2 console. This is what you will see:<br>
+                                    </div>
+
+                                  </div>
+
+                                  As soon as jobs are sent to the queue, our in-house dispatcher script which will decide if the job can start based on hardware availabilities, priorities or license requirements. <br>Run <code lang="bash"> qstat -f **job_id** | grep Resource</code>.
+                                  <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card shadow mb-4">
+                                             <div class="card-header py-3">
+                                                 <h6 class="m-0 font-weight-bold text-primary">Web Based</h6>
+                                             </div>
+                                             <div class="card-body">
+                                                 <img width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-13.png') }}">
+                                             </div>
+                                         </div>
+                                    </div>
+                                      <div class="col-md-6">
+                                         <div class="card shadow mb-4">
+                                             <div class="card-header py-3">
+                                                 <h6 class="m-0 font-weight-bold text-primary">CLI</h6>
+                                             </div>
+                                             <div class="card-body">
+                                                 <img width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-12.png') }}">
+                                             </div>
+                                         </div>
+
+                                    </div>
+
+                                  </div>
+                                   If you see "stack_id" / "compute_node" resource (under select), that means all requirements are met and capacity is being provisioned (aka: CloudFormation stack is created and capacity is being provisioned).
+
+
+                                <br><img  width="50%" height="auto" src="{{ url_for('static', filename='img/howtojob-5.png') }}">
+                                  <br>Look at your EC2 console. This is what you will see (syntax is **cluster_id**-compute-node-**job_id**):<br>
 
                                       <img  width="100%" height="auto" src="{{ url_for('static', filename='img/howtojob-2.png') }}">
-                                  Instances are being provisioned, now let's make sure they are correctly being added to the scheduler by running "pbsnodes -a"
+                                  <br>Instances are being provisioned successfully, now let's make sure they are correctly being added to the scheduler by running <code class="language-bash">pbsnodes -a</code>
 <br>
-                                  <strong>Note:</strong> PBS is updated as soon as the host are being added to EC2. You will need to wait a couple of minutes before the state change from "down" to "free" as we have to configure the system (install libraries, PBS ...)
+                                  <strong>Note:</strong> PBS is updated as soon as the host are being added to EC2. You will need to wait a couple of minutes before the state change from "down" to "free" as SOCA has to configure each node (install libraries, scheduler ...)
 <pre>
     <code class="language-bash">
 ~pbsnodes -a
 #Host Ready
-ip-60-0-172-33
-     Mom = ip-60-0-172-33.us-west-2.compute.internal
+ip-90-0-118-49
+     Mom = ip-90-0-118-49.us-west-2.compute.internal
      ntype = PBS
      state = free
-     pcpus = 4
-     jobs = 2.ip-60-0-31-223/0
-     resources_available.arch = linux
-     resources_available.availability_zone = us-west-2c
-     resources_available.compute_node = job2
-     resources_available.host = ip-60-0-172-33
-     resources_available.instance_type = m5.xlarge
-     resources_available.mem = 15950552kb
-     resources_available.ncpus = 4
-     resources_available.subnet_id = subnet-0f00f894b11bf3b5a
-     resources_available.vnode = ip-60-0-172-33
-     resources_assigned.accelerator_memory = 0kb
-     resources_assigned.hbmem = 0kb
-     resources_assigned.mem = 0kb
-     resources_assigned.naccelerators = 0
-     resources_assigned.ncpus = 1
-     resources_assigned.vmem = 0kb
-     queue = normal
-     resv_enable = True
-     sharing = default_shared
-     last_state_change_time = Sat Sep 28 21:39:35 2019
-
-# Host still being configured
-ip-60-0-100-3
-     Mom = ip-60-0-100-3.us-west-2.compute.internal
-     ntype = PBS
-     state = state-unknown,down
-     pcpus = 2
-     jobs = 1.ip-60-0-31-223/0
+     pcpus = 16
+     jobs = 1.ip-90-0-24-214/0
      resources_available.arch = linux
      resources_available.availability_zone = us-west-2a
      resources_available.compute_node = job1
-     resources_available.host = ip-60-0-100-3
-     resources_available.instance_type = c5.large
-     resources_available.mem = 3793980kb
-     resources_available.ncpus = 2
-     resources_available.subnet_id = subnet-09637165fbecbb764
-     resources_available.vnode = ip-60-0-100-3
+     resources_available.host = ip-90-0-118-49
+     resources_available.instance_type = c5.4xlarge
+     resources_available.mem = 31890060kb
+     resources_available.ncpus = 16
+     resources_available.subnet_id = subnet-055c0dcdd6ddbb020
+     resources_available.vnode = ip-90-0-118-49
      resources_assigned.accelerator_memory = 0kb
      resources_assigned.hbmem = 0kb
      resources_assigned.mem = 0kb
@@ -186,21 +208,45 @@ ip-60-0-100-3
      queue = normal
      resv_enable = True
      sharing = default_shared
+     last_state_change_time = Sun Sep 29 23:30:05 2019
+
+# Host not ready yet
+ip-90-0-188-37
+     Mom = ip-90-0-188-37.us-west-2.compute.internal
+     ntype = PBS
+     state = state-unknown,down
+     resources_available.availability_zone = us-west-2c
+     resources_available.compute_node = job2
+     resources_available.host = ip-90-0-188-37
+     resources_available.instance_type = r5.xlarge
+     resources_available.subnet_id = subnet-0d046c8668ccfdcb0
+     resources_available.vnode = ip-90-0-188-37
+     resources_assigned.accelerator_memory = 0kb
+     resources_assigned.hbmem = 0kb
+     resources_assigned.mem = 0kb
+     resources_assigned.naccelerators = 0
+     resources_assigned.ncpus = 0
+     resources_assigned.vmem = 0kb
+     queue = normal
      comment = node down: communication closed
-     last_state_change_time = Sat Sep 28 21:40:01 2019
+     resv_enable = True
+     sharing = default_shared
+     last_state_change_time = Sun Sep 29 23:28:05 2019
+
     </code>
 </pre>
                                   Simply wait a couple of minutes. Your jobs will start as soon as the PBS nodes are configured. <br>
                                    <img  width="100%" height="auto"  src="{{ url_for('static', filename='img/howtojob-3.png') }}"> <br>
-                                  Our wrapper also supports JSON output if needed: <br>
-                                   <img  width="100%" height="auto"  src="{{ url_for('static', filename='img/howtojob-4.png') }}">
+
+                                  <br><a href="/qstat">Web Based queue viewer</a> will also reflect the state of the job in real-time<br>
+                                   <img  width="50%" height="auto"  src="{{ url_for('static', filename='img/howtojob-14.png') }}">
 
 
 
 
                                  <hr>
                                   <h4>Examples</h4>
-                                  <h5>Run a simple script on 1 node using default settings for 'cpus' queue</h5>
+                                  <h5>Run a simple script on 1 node using default settings on 'cpus' queue</h5>
 <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog

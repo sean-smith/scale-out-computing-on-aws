@@ -3,7 +3,6 @@ import generic.parameters as parameters
 import subprocess
 from flask import session, redirect, request
 
-
 def create_new_user(username, password, sudoers):
     if sudoers is None:
         create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password]
