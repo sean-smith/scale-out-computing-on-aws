@@ -39,7 +39,12 @@ if __name__ == "__main__":
     print("4: Enter your cluster information.")
     print("")
     print("")
-    input("Press Enter key to close ..")
+
+    if sys.version_info[0] >= 3:
+        input("Press Enter key to close ..")
+    else:
+        #Python 2
+        raw_input("Press Enter key to close ..")
 
 
 
