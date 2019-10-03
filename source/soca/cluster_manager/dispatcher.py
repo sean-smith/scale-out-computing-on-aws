@@ -274,7 +274,7 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
             if now > (stack_creation_time + timedelta(hours=1)):
                 logpush(job_id + ' Stack has been created for more than 1 hour. Because job has not started by then, rollback compute_node value')
                 new_job_select = job_select_resource.split(':compute_node')[0] + ':compute_node=tbd'
-                qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=tbd", "-l", "select=" + new_job_select + " " + str(job_id)]
+                qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "-l", "select=" + new_job_select, str(job_id)]
                 run_command(qalter_cmd, "call")
                 cloudformation.delete_stack(StackName=stack_id)
             else:
@@ -287,7 +287,7 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
         elif check_stack_status['Stacks'][0]['StackStatus'] in ['CREATE_FAILED', 'ROLLBACK_COMPLETE']:
             logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is ' + str(check_stack_status['Stacks'][0]['StackStatus']) +'.  Because job has not started by then, rollback compute_node value and delete stack')
             new_job_select = job_select_resource.split(':compute_node')[0] + ':compute_node=tbd'
-            qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=tbd", "-l", "select=" + new_job_select + " " + str(job_id)]
+            qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "-l", "select=" + new_job_select, str(job_id)]
             run_command(qalter_cmd, "call")
             cloudformation.delete_stack(StackName=stack_id)
 
@@ -299,7 +299,7 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
         logpush(job_id + ' is queued with a valid compute Unit. However we did not detect any cloudformation stack. To ensure job can start, we rollback compute_node to default value in order for hosts to be re-provisioned')
         # Rollback compute_node value to default 'tobereplaced' to retry job
         new_job_select = job_select_resource.split(':compute_node')[0] + ':compute_node=tbd'
-        qalter_cmd = [system_cmds['qalter'], "-l", "select=" + new_job_select + " " + str(job_id)]
+        qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "select=" + new_job_select, str(job_id)]
         run_command(qalter_cmd, "call")
 
     return True
@@ -336,6 +336,7 @@ if __name__ == "__main__":
     custom_ami = None
     asg_name = None
     spot_price = None
+    efa_support = None
     placement_group = 'true' # use str, not bool
     fair_share_running_job_malus = -60
     fair_share_start_score = 100
@@ -484,9 +485,9 @@ if __name__ == "__main__":
                                 logpush('instancetype resource is specified, will use new ec2 instance type: ' + job_required_resource['instance_type'])
                                 instance_type = job_required_resource['instance_type']
 
-                            if 'ami_id' in res:
-                                logpush('image resource is specified, will use new ec2 AMI: ' + job_required_resource['ami_id'])
-                                custom_ami = job_required_resource['ami_id']
+                            if 'instance_ami' in res:
+                                logpush('image resource is specified, will use new ec2 AMI: ' + job_required_resource['instance_ami'])
+                                custom_ami = job_required_resource['instance_ami']
 
                             if 'scratch_size' in res:
                                 logpush('scratch_size resource is specified, will use custom scratch of (GB): ' + job_required_resource['scratch_size'])
@@ -504,6 +505,12 @@ if __name__ == "__main__":
                                 if job_required_resource['placement_group'] in ['true', 'false']:
                                     logpush('placement_group resource is specified, will use custom scratch of (GB): ' + job_required_resource['placement_group'])
                                     placement_group = job_required_resource['placement_group']
+
+
+                            if 'efa_support' in res:
+                                logpush('efa_support resource is specified, will attach one EFA adapter')
+                                efa_support = 'true'
+
 
 
                             try:
@@ -556,6 +563,7 @@ if __name__ == "__main__":
                                                                     scratch_size,
                                                                     placement_group,
                                                                     spot_price if spot_price is not None else 'false',
+                                                                    efa_support,
                                                                     # Additional tags below
                                                                     {})
 

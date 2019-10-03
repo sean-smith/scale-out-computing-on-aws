@@ -280,6 +280,17 @@ This job will only start if we have at least 4 Comsol Acoustic licenses availabl
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
 echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+                                  <h5>Run a simple script on 5 nodes using custom AMI</h5>
+This job will use a user-specified AMI ID<br>
+<pre><code class="language-bash">#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=5,ami_id=ami-1234abcde
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
    <h5>Run a MPI (OpenMPI script on 10 nodes</h5>
  <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name

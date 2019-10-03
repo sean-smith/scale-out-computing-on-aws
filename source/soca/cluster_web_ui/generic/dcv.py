@@ -106,6 +106,7 @@ eof
     with open(yaml_config, 'w') as outfile:
         yaml.dump(dcv_session_data, outfile, default_flow_style=False)
 
+    os.chmod(yaml_config, 0o700)
     return True
 
 
@@ -154,6 +155,7 @@ def update_yaml(yaml_file, exec_host):
 
         with open(yaml_file, "w") as f:
             yaml.dump(session_info, f, default_flow_style=False)
+        os.chmod(yaml_file, 0o700)
 
 
 def demote(user):

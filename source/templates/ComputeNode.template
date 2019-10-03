@@ -73,6 +73,13 @@ Parameters:
   BaseOS:
     Type: String
 
+  Efa:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+
   S3InstallFolder:
     Type: String
 
@@ -82,6 +89,7 @@ Parameters:
 
 Conditions:
   UsePlacementGroup: !Equals [ !Ref PlacementGroup, true]
+  UseEFA: !Equals [ !Ref Efa, true]
   UseSpotInstance: !Not [!Equals [ !Ref SpotPrice, false]]
 
 Resources:
@@ -91,66 +99,79 @@ Resources:
     Properties:
       Strategy: cluster
 
-
-  LaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
+  NodeLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchConfigurationName: !Sub ${ClusterId}-${JobId}
-      ImageId: !Ref ImageId
-      InstanceType: !Ref InstanceType
-      SpotPrice: !If [UseSpotInstance, !Ref SpotPrice, !Ref "AWS::NoValue"]
-      EbsOptimized: true
-      IamInstanceProfile: !Ref ComputeNodeInstanceProfile
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvdbx
-          Ebs:
-            VolumeSize: !Ref ScratchSize
-            VolumeType: gp2
+      LaunchTemplateName: !Sub ${ClusterId}-${JobId}
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvdbx
+            Ebs:
+              VolumeSize: !Ref ScratchSize
+              VolumeType: gp2
+              DeleteOnTermination: true
+        EbsOptimized: true
+        IamInstanceProfile:
+          Name: !Ref ComputeNodeInstanceProfile
+        KeyName: !Ref SSHKeyPair
+        ImageId: !Ref ImageId
+        InstanceMarketOptions:
+          MarketType: !If [UseSpotInstance, "spot", !Ref "AWS::NoValue"]
+          SpotOptions:
+            MaxPrice: !If [UseSpotInstance, !Ref SpotPrice, !Ref "AWS::NoValue"]
 
-      KeyName: !Ref SSHKeyPair
-      SecurityGroups: !Ref SecurityGroupId
-      UserData:
-        "Fn::Base64": !Sub |
-          #!/bin/bash -xe
-          ## Aligo Specific - DO NOT EDIT
-          export PATH=$PATH:/usr/local/bin
-          if [ "${BaseOS}" == "Centos7" ] || [ "${BaseOS}" == "Rhel7" ];
+        InstanceType: !Ref InstanceType
+        NetworkInterfaces:
+          - InterfaceType: !If [UseEFA, "efa", !Ref "AWS::NoValue"]
+            DeleteOnTermination: true
+            DeviceIndex: 0
+            Groups: !Ref SecurityGroupId
+
+        UserData:
+          "Fn::Base64": !Sub |
+            #!/bin/bash -xe
+            ## Aligo Specific - DO NOT EDIT
+            export PATH=$PATH:/usr/local/bin
+            if [ "${BaseOS}" == "Centos7" ] || [ "${BaseOS}" == "Rhel7" ];
+              then
+                EASY_INSTALL=$(which easy_install-2.7)
+                $EASY_INSTALL pip
+                PIP=$(which pip2.7)
+                $PIP install awscli
+            fi
+
+            if [ "${BaseOS}" == "AmazonLinux2" ];
             then
-              EASY_INSTALL=$(which easy_install-2.7)
-              $EASY_INSTALL pip
-              PIP=$(which pip2.7)
-              $PIP install awscli
-          fi
+              /usr/sbin/update-motd --disable
+            fi
+            echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
+            echo export "SOCA_JOB_QUEUE=${JobQueue}" >> /etc/environment
+            echo export "SOCA_JOB_OWNER=${JobOwner}" >> /etc/environment
+            echo export "SOCA_JOB_NAME=${JobName}" >> /etc/environment
+            echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
+            echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
+            echo export "SOCA_VERSION=${Version}" >> /etc/environment
+            echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
+            source /etc/environment
 
-          if [ "${BaseOS}" == "AmazonLinux2" ];
-          then
-            /usr/sbin/update-motd --disable
-          fi
-          echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
-          echo export "SOCA_JOB_QUEUE=${JobQueue}" >> /etc/environment
-          echo export "SOCA_JOB_OWNER=${JobOwner}" >> /etc/environment
-          echo export "SOCA_JOB_NAME=${JobName}" >> /etc/environment
-          echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
-          echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
-          echo export "SOCA_VERSION=${Version}" >> /etc/environment
-          echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
-          source /etc/environment
+            # Give some sudo permission to the user on this specific machine
+            echo "${JobOwner} ALL=(ALL) /bin/yum" >> /etc/sudoers
 
-          # Give some sudo permission to the user on this specific machine
-          echo "${JobOwner} ALL=(ALL) /bin/yum" >> /etc/sudoers
+            echo "@reboot /bin/aws s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodePostReboot.sh /root && /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
+            # Feel free to add new scripts based on your own requirement.
+            AWS=$(which aws)
+            $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
+            $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
+            /bin/bash /root/ComputeNode.sh ${S3Bucket} ${EFSDataDns} ${EFSAppsDns} ${SchedulerHostname}
 
-          echo "@reboot /bin/aws s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodePostReboot.sh /root && /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
-          # Feel free to add new scripts based on your own requirement.
-          AWS=$(which aws)
-          $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-          $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
-          /bin/bash /root/ComputeNode.sh ${S3Bucket} ${EFSDataDns} ${EFSAppsDns} ${SchedulerHostname}
 
   AutoScalingComputeGroup:
-    DependsOn: LaunchConfiguration
+    DependsOn: NodeLaunchTemplate
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      LaunchConfigurationName: !Ref LaunchConfiguration
+      LaunchTemplate:
+        LaunchTemplateId: !Ref NodeLaunchTemplate
+        Version: !GetAtt NodeLaunchTemplate.LatestVersionNumber
       MinSize: !Ref DesiredCapacity
       MaxSize: !Ref DesiredCapacity
       VPCZoneIdentifier: !Ref SubnetId

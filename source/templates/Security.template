@@ -111,12 +111,18 @@ Resources:
   ComputeNodeInboundRuleItSelf:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      IpProtocol: tcp
-      FromPort: 0
-      ToPort: 65535
+      IpProtocol: -1
       SourceSecurityGroupId: !GetAtt ComputeNodeSecurityGroup.GroupId
       GroupId: !Ref ComputeNodeSecurityGroup
-      Description: "Allow all connectivity within compute nodes"
+      Description: "Allow ALL traffic for ComputeNode and EFA"
+
+  ComputeNodeOutboundItself:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: -1
+      DestinationSecurityGroupId: !Ref ComputeNodeSecurityGroup
+      GroupId: !Ref ComputeNodeSecurityGroup
+      Description: "Egress ALL traffic for ComputeNode and EFA"
 
   ComputeNodeOutbound:
     Type: AWS::EC2::SecurityGroupEgress
@@ -229,6 +235,8 @@ Resources:
                   - ec2:DescribeVpcClassicLink
                   - ec2:DescribePlacementGroups
                   - ec2:DescribeKeyPairs
+                  - ec2:DescribeLaunchTemplates
+                  - ec2:DescribeLaunchTemplateVersions
                   - autoscaling:DescribeAutoScalingGroups
                   - autoscaling:DescribeScalingActivities
                   - autoscaling:DescribeLaunchConfigurations
@@ -246,8 +254,8 @@ Resources:
                   - autoscaling:UpdateAutoScalingGroup
                   - autoscaling:DeleteAutoScalingGroup
                   - autoscaling:CreateAutoScalingGroup
-                  - autoscaling:CreateLaunchConfiguration
-                  - autoscaling:DeleteLaunchConfiguration
+                  - ec2:DeleteLaunchTemplate
+                  - ec2:CreateLaunchTemplate
                 Resource: "*"
                 Condition:
                   StringLikeIfExists:

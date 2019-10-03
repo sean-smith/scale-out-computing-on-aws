@@ -41,7 +41,9 @@ def main(instance_type,
          scratch_size,
          placement_group,
          spot_price,
-         tags):
+         efa,
+         tags
+         ):
 
     cloudformation = boto3.client('cloudformation')
     s3 = boto3.resource('s3')
@@ -95,6 +97,7 @@ def main(instance_type,
         'KeepForever': 'true' if keep_forever is True else 'false', # needs to be lowercase
         'SSHKeyPair': aligo_configuration['SSHKeyPair'],
         'ComputeNodeInstanceProfile': aligo_configuration['ComputeNodeInstanceProfile'],
+        'Efa': 'true' if efa is not None else 'false',
         'JobId': job_id,
         'ScratchSize': scratch_size,
         'ImageId': custom_ami if custom_ami is not None else aligo_configuration['CustomAMI'],
@@ -112,7 +115,6 @@ def main(instance_type,
         'BaseOS': aligo_configuration['BaseOS'],
         'SpotPrice': spot_price if spot_price is not None else 'false',
     }
-
     stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
     stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v)} for k, v in job_parameters.items() if v]
 
@@ -152,6 +154,8 @@ if __name__ == "__main__":
     parser.add_argument('--placement_group', help="Enable or disable placement group")
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
     parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
+    parser.add_argument('--efa', action='store_const', const=True, help="Support for EFA")
+
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
 
     arg = parser.parse_args()
@@ -195,6 +199,7 @@ if __name__ == "__main__":
                arg.scratch_size,
                arg.placement_group,
                arg.spot_price,
+               arg.efa,
                arg.tags))
 
     if launch['success'] is True:
@@ -203,3 +208,5 @@ if __name__ == "__main__":
             IMPORTANT:
             You specified --keep-forever flag. This instance will be running 24/7 until you MANUALLY terminate the Cloudformation Stack  
             """)
+    else:
+        print('Error: ' +str(launch))
