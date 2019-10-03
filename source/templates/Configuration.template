@@ -73,9 +73,6 @@ Parameters:
   ComputeNodeInstanceProfile:
     Type: String
 
-  ComputeNodeInstanceProfileArn:
-    Type: String
-
   ESDomainEndpoint:
     Type: String
 
