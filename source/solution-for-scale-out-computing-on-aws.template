@@ -122,84 +122,84 @@ Mappings:
       ClusterIdPrefix: soca
       Version: 1.0.0
     User:
-      Centos7: centos
-      AmazonLinux2: ec2-user
-      Rhel7: ec2-user
+      centos7: centos
+      amazonlinux2: ec2-user
+      rhel7: ec2-user
 
 
   RegionMap:
     ap-east-1: # Hong Kong
-      Rhel7: ami-1a453e6b
-      Centos7: ami-68e59c19
-      AmazonLinux2: ami-570c7726
+      rhel7: ami-1a453e6b
+      centos7: ami-68e59c19
+      amazonlinux2: ami-570c7726
     ap-northeast-1: # Tokyo
-      Rhel7: ami-00b95502a4d51a07e
-      Centos7: ami-045f38c93733dd48d
-      AmazonLinux2: ami-0c3fd0f5d33134a76
+      rhel7: ami-00b95502a4d51a07e
+      centos7: ami-045f38c93733dd48d
+      amazonlinux2: ami-0c3fd0f5d33134a76
     ap-northeast-2: # Seoul
-      Rhel7: ami-041b16ca28f036753
-      Centos7: ami-06cf2a72dadf92410
-      AmazonLinux2: ami-095ca789e0549777d
+      rhel7: ami-041b16ca28f036753
+      centos7: ami-06cf2a72dadf92410
+      amazonlinux2: ami-095ca789e0549777d
     ap-south-1: # Mumbai
-      Rhel7: ami-0963937a03c01ecd4
-      Centos7: ami-02e60be79e78fef21
-      AmazonLinux2: ami-0d2692b6acea72ee6
+      rhel7: ami-0963937a03c01ecd4
+      centos7: ami-02e60be79e78fef21
+      amazonlinux2: ami-0d2692b6acea72ee6
     ap-southeast-1: # Singapore
-      Rhel7: ami-055c55112e25b1f1f
-      Centos7: ami-0b4dd9d65556cac22
-      AmazonLinux2: ami-01f7527546b557442
+      rhel7: ami-055c55112e25b1f1f
+      centos7: ami-0b4dd9d65556cac22
+      amazonlinux2: ami-01f7527546b557442
     ap-southeast-2: # Sydney
-      Rhel7: ami-036b423b657376f5b
-      Centos7: ami-08bd00d7713a39e7d
-      AmazonLinux2: ami-0dc96254d5535925f
+      rhel7: ami-036b423b657376f5b
+      centos7: ami-08bd00d7713a39e7d
+      amazonlinux2: ami-0dc96254d5535925f
     ca-central-1: # Canada
-      Rhel7: ami-06ca3c0058d0275b3
-      Centos7: ami-033e6106180a626d0
-      AmazonLinux2: ami-0d4ae09ec9361d8ac
+      rhel7: ami-06ca3c0058d0275b3
+      centos7: ami-033e6106180a626d0
+      amazonlinux2: ami-0d4ae09ec9361d8ac
     eu-central-1: # Frankfurt
-      Rhel7: ami-09de4a4c670389e4b
-      Centos7: ami-04cf43aca3e6f3de3
-      AmazonLinux2: ami-0cc293023f983ed53
+      rhel7: ami-09de4a4c670389e4b
+      centos7: ami-04cf43aca3e6f3de3
+      amazonlinux2: ami-0cc293023f983ed53
     eu-north-1: # Stockholm
-      Rhel7: ami-66f67f18
-      Centos7: ami-5ee66f20
-      AmazonLinux2: ami-3f36be41
+      rhel7: ami-66f67f18
+      centos7: ami-5ee66f20
+      amazonlinux2: ami-3f36be41
     eu-west-1: # Dublin
-      Rhel7: ami-0202869bdd0fc8c75
-      Centos7: ami-0ff760d16d9497662
-      AmazonLinux2: ami-0bbc25e23a7640b9b
+      rhel7: ami-0202869bdd0fc8c75
+      centos7: ami-0ff760d16d9497662
+      amazonlinux2: ami-0bbc25e23a7640b9b
     eu-west-2: # London
-      Rhel7: ami-0188c0c5eddd2d032
-      Centos7: ami-0eab3a90fc693af19
-      AmazonLinux2: ami-0d8e27447ec2c8410
+      rhel7: ami-0188c0c5eddd2d032
+      centos7: ami-0eab3a90fc693af19
+      amazonlinux2: ami-0d8e27447ec2c8410
     eu-west-3: # Paris
-      Rhel7: ami-0c4224e392ec4e440
-      Centos7: ami-0e1ab783dc9489f34
-      AmazonLinux2: ami-0adcddd3324248c4c
+      rhel7: ami-0c4224e392ec4e440
+      centos7: ami-0e1ab783dc9489f34
+      amazonlinux2: ami-0adcddd3324248c4c
     me-south-1: # Bahrain
-      Rhel7: AMI_NOT_ADDED_YET # /todo Update AMI ID when available
-      Centos7: ami-08529c51dbe004acb
-      AmazonLinux2: ami-0624cbc1598d12691
+      rhel7: AMI_NOT_ADDED_YET # /todo Update AMI ID when available
+      centos7: ami-08529c51dbe004acb
+      amazonlinux2: ami-0624cbc1598d12691
     us-east-1: # Virginia
-      Rhel7: ami-000db10762d0c4c05
-      Centos7: ami-02eac2c0129f6376b
-      AmazonLinux2: ami-0b898040803850657
+      rhel7: ami-000db10762d0c4c05
+      centos7: ami-02eac2c0129f6376b
+      amazonlinux2: ami-0b898040803850657
     us-east-2: # Ohio
-      Rhel7: ami-094720ddca649952f
-      Centos7: ami-0f2b4fc905b0bd1f1
-      AmazonLinux2: ami-0d8f6eb4f641ef691
+      rhel7: ami-094720ddca649952f
+      centos7: ami-0f2b4fc905b0bd1f1
+      amazonlinux2: ami-0d8f6eb4f641ef691
     us-west-1: # Northern California
-      Rhel7: ami-04642fc8fca1e8e67
-      Centos7: ami-074e2d6769f445be5
-      AmazonLinux2: ami-056ee704806822732
+      rhel7: ami-04642fc8fca1e8e67
+      centos7: ami-074e2d6769f445be5
+      amazonlinux2: ami-056ee704806822732
     us-west-2: # Oregon
-      Rhel7: ami-036affea69a1101c9
-      Centos7: ami-01ed306a12b7d1c96
-      AmazonLinux2: ami-082b5a644766e0e6f
+      rhel7: ami-036affea69a1101c9
+      centos7: ami-01ed306a12b7d1c96
+      amazonlinux2: ami-082b5a644766e0e6f
     sa-east-1: # Sao Paulo
-      Rhel7: ami-05c1c16cac05a7c0b
-      Centos7: ami-0b8d86d4bf91850af
-      AmazonLinux2: ami-058943e7d9b9cabfb
+      rhel7: ami-05c1c16cac05a7c0b
+      centos7: ami-0b8d86d4bf91850af
+      amazonlinux2: ami-058943e7d9b9cabfb
 
 Resources:
   Network:

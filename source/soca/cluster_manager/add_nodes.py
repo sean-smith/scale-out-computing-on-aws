@@ -10,13 +10,13 @@ sys.path.append(os.path.dirname(__file__))
 import configuration
 
 
-def can_launch_capacity(instance_type, count, image_id, subnet):
+def can_launch_capacity(instance_type, count, image_id, subnet_id):
     try:
         ec2 = boto3.client('ec2')
         ec2.run_instances(
             ImageId=image_id,
             InstanceType=instance_type,
-            SubnetId=subnet,
+            SubnetId=subnet_id,
             MaxCount=int(count),
             MinCount=int(count),
             DryRun=True)
@@ -41,7 +41,7 @@ def main(instance_type,
          scratch_size,
          placement_group,
          spot_price,
-         efa,
+         efa_support,
          base_os,
          subnet,
          tags
@@ -51,12 +51,12 @@ def main(instance_type,
     s3 = boto3.resource('s3')
 
     aligo_configuration = configuration.get_aligo_configuration()
-
     # Note: If you change the ComputeNode, you also need to adjust the IAM policy to match your new template name
     create_stack_location = s3.Object(aligo_configuration['S3Bucket'], aligo_configuration['S3InstallFolder'] +'/templates/ComputeNode.template')
     stack_template = create_stack_location.get()['Body'].read().decode('utf-8')
     soca_private_subnets = [aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']]
-    if subnet is None:
+
+    if subnet == 'false':
         subnet_id = random.choice(soca_private_subnets)
     else:
        if subnet in soca_private_subnets:
@@ -64,7 +64,6 @@ def main(instance_type,
        else:
            return {'success': False,
                    'error': 'Incorrect subnet_id. Must be one of ' + str(soca_private_subnets)}
-
 
     if int(desired_capacity) > 1:
         if placement_group == 'false':
@@ -97,7 +96,6 @@ def main(instance_type,
     if 'Name' not in tags.keys():
         tags['Name'] = stack_name.replace('_', '-')
 
-
     job_parameters = {
         'Version': aligo_configuration['Version'],
         'S3InstallFolder': aligo_configuration['S3InstallFolder'],
@@ -107,7 +105,7 @@ def main(instance_type,
         'KeepForever': 'true' if keep_forever is True else 'false', # needs to be lowercase
         'SSHKeyPair': aligo_configuration['SSHKeyPair'],
         'ComputeNodeInstanceProfile': aligo_configuration['ComputeNodeInstanceProfile'],
-        'Efa': 'true' if efa is not None else 'false',
+        'Efa': efa_support,
         'JobId': job_id,
         'ScratchSize': scratch_size,
         'ImageId': custom_ami if custom_ami is not None else aligo_configuration['CustomAMI'],
@@ -117,7 +115,7 @@ def main(instance_type,
         'JobProject': job_project,
         'ClusterId': aligo_configuration['ClusterId'],
         'EFSAppsDns': aligo_configuration['EFSAppsDns'],
-        'EFSDataDns':aligo_configuration['EFSDataDns'],
+        'EFSDataDns': aligo_configuration['EFSDataDns'],
         'SubnetId': subnet_id,
         'InstanceType': instance_type,
         'SchedulerHostname': aligo_configuration['SchedulerPrivateDnsName'],
@@ -125,7 +123,6 @@ def main(instance_type,
         'BaseOS': aligo_configuration['BaseOS'] if base_os is None else base_os,
         'SpotPrice': spot_price if spot_price is not None else 'false',
     }
-
 
     stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
     stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v)} for k, v in job_parameters.items() if v]
@@ -139,14 +136,16 @@ def main(instance_type,
             return {'success': False,
                     'error': 'You have requested EFA support but your instance type does not support EFA: ' + str(job_parameters['InstanceType'])}
 
-    can_launch = can_launch_capacity(job_parameters['InstanceType'], job_parameters['DesiredCapacity'], job_parameters['ImageId'],  subnet)
+    can_launch = can_launch_capacity(job_parameters['InstanceType'], job_parameters['DesiredCapacity'], job_parameters['ImageId'], subnet_id)
+
     if can_launch is True:
         try:
-            cloudformation.create_stack(StackName=stack_name,
+            launch = cloudformation.create_stack(StackName=stack_name,
                                         TemplateBody=stack_template,
                                         Parameters=stack_params,
                                         Tags=stack_tags)
 
+            print(launch)
             # PBS configuration is automatically updated by nodes_manager
             return {'success': True,
                     'stack_name': stack_name,
@@ -157,7 +156,7 @@ def main(instance_type,
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             return {'success': False,
-                    'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e)}
+                    'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e) + ' : ' + str(launch)}
     else:
         return {'success': False }
 
@@ -177,8 +176,7 @@ if __name__ == "__main__":
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
     parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
     parser.add_argument('--base_os', help="Specify custom Base OK")
-    parser.add_argument('--efa', action='store_const', const=True, help="Support for EFA")
-
+    parser.add_argument('--efa', action='store_const', const='true', help="Support for EFA")
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
 
     arg = parser.parse_args()
@@ -222,9 +220,9 @@ if __name__ == "__main__":
                arg.scratch_size,
                arg.placement_group,
                arg.spot_price,
-               arg.efa,
+               'false' if arg.efa is None else arg.efa,
                arg.base_os,
-               arg.subnet_id,
+               'false' if arg.subnet_id is None else arg.subnet_id,
                arg.tags))
 
     if launch['success'] is True:

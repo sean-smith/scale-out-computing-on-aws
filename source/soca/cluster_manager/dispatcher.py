@@ -336,9 +336,9 @@ if __name__ == "__main__":
     custom_ami = None
     asg_name = None
     spot_price = None
-    efa_support = None
-    subnet_id = None
+    subnet_id = 'false'
     placement_group = 'true' # use str, not bool
+    efa_support = 'false' # use str, not bool
     base_os = aligo_configuration['BaseOS']
     fair_share_running_job_malus = -60
     fair_share_start_score = 100
@@ -574,8 +574,8 @@ if __name__ == "__main__":
                                                                     scratch_size,
                                                                     placement_group,
                                                                     spot_price if spot_price is not None else 'false',
-                                                                    base_os,
                                                                     efa_support,
+                                                                    base_os,
                                                                     subnet_id,
                                                                     # Additional tags below
                                                                     {})
