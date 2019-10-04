@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 
 source /etc/environment
+source /root/config.cfg
 AWS=$(which aws)
 echo "BEGIN"  >> /root/ComputeNodeUserCustomization.log 2>&1
 
@@ -23,6 +24,21 @@ if [ "$SOCA_JOB_QUEUE" == "desktop" ]; then
     sleep 30
 fi
 # End DCV Customization
+
+# Begin EFA Customization
+if [ $SOCA_JOB_EFA == "true" ]; then
+    echo "Installing EFA"
+    cd /root/
+    curl --silent -O $EFA_URL
+    if [[ $(md5sum $EFA_TGZ | awk '{print $1}') != $EFA_HASH ]];  then
+        echo -e "FATAL ERROR: Checksum for EFA failed. File may be compromised." > /etc/motd
+        exit 1
+    fi
+    tar -xf $EFA_TGZ
+    cd aws-efa-installer
+    /bin/bash efa_installer.sh -y
+fi
+# End EFA customization
 
 # Post-Boot routine completed, starting PBS
 systemctl start pbs

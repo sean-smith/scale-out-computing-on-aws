@@ -42,6 +42,8 @@ def main(instance_type,
          placement_group,
          spot_price,
          efa,
+         base_os,
+         subnet,
          tags
          ):
 
@@ -53,8 +55,16 @@ def main(instance_type,
     # Note: If you change the ComputeNode, you also need to adjust the IAM policy to match your new template name
     create_stack_location = s3.Object(aligo_configuration['S3Bucket'], aligo_configuration['S3InstallFolder'] +'/templates/ComputeNode.template')
     stack_template = create_stack_location.get()['Body'].read().decode('utf-8')
+    soca_private_subnets = [aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']]
+    if subnet is None:
+        subnet_id = random.choice(soca_private_subnets)
+    else:
+       if subnet in soca_private_subnets:
+            subnet_id = subnet
+       else:
+           return {'success': False,
+                   'error': 'Incorrect subnet_id. Must be one of ' + str(soca_private_subnets)}
 
-    subnet = random.choice([aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']])
 
     if int(desired_capacity) > 1:
         if placement_group == 'false':
@@ -108,15 +118,26 @@ def main(instance_type,
         'ClusterId': aligo_configuration['ClusterId'],
         'EFSAppsDns': aligo_configuration['EFSAppsDns'],
         'EFSDataDns':aligo_configuration['EFSDataDns'],
-        'SubnetId': subnet,
+        'SubnetId': subnet_id,
         'InstanceType': instance_type,
         'SchedulerHostname': aligo_configuration['SchedulerPrivateDnsName'],
         'DesiredCapacity': desired_capacity,
-        'BaseOS': aligo_configuration['BaseOS'],
+        'BaseOS': aligo_configuration['BaseOS'] if base_os is None else base_os,
         'SpotPrice': spot_price if spot_price is not None else 'false',
     }
+
+
     stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
     stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v)} for k, v in job_parameters.items() if v]
+
+    if job_parameters['BaseOS'] not in ['rhel7', 'centos7', 'amazonlinux2']:
+        return {'success': False,
+                'error': 'base_os must be one of the following value: centos7, amazonlinux2, rhel7'}
+
+    if job_parameters['Efa'] == 'true':
+        if not 'n' in job_parameters['InstanceType']:
+            return {'success': False,
+                    'error': 'You have requested EFA support but your instance type does not support EFA: ' + str(job_parameters['InstanceType'])}
 
     can_launch = can_launch_capacity(job_parameters['InstanceType'], job_parameters['DesiredCapacity'], job_parameters['ImageId'],  subnet)
     if can_launch is True:
@@ -145,7 +166,8 @@ if __name__ == "__main__":
     parser.add_argument('--instance_type', nargs='?', required=True, help="Instance type you want to deploy")
     parser.add_argument('--desired_capacity', nargs='?', required=True, help="Number of EC2 instances to deploy")
     parser.add_argument('--queue', nargs='?', required=True, help="Queue to map the capacity")
-    parser.add_argument('--custom_ami', nargs='?', help="AMI to use")
+    parser.add_argument('--instance_ami', nargs='?', help="AMI to use")
+    parser.add_argument('--subnet_id', default=None, help='Launch capacity in a special subnet')
     parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
     parser.add_argument('--job_name', nargs='?', required=True, help="Job Name for which the capacity is being provisioned")
     parser.add_argument('--job_owner', nargs='?', required=True, help="Job Owner for which the capacity is being provisioned")
@@ -154,6 +176,7 @@ if __name__ == "__main__":
     parser.add_argument('--placement_group', help="Enable or disable placement group")
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
     parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
+    parser.add_argument('--base_os', help="Specify custom Base OK")
     parser.add_argument('--efa', action='store_const', const=True, help="Support for EFA")
 
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
@@ -190,7 +213,7 @@ if __name__ == "__main__":
     launch = (main(arg.instance_type,
                arg.desired_capacity,
                arg.queue,
-               arg.custom_ami,
+               arg.instance_ami,
                arg.job_id,
                arg.job_name,
                arg.job_owner,
@@ -200,6 +223,8 @@ if __name__ == "__main__":
                arg.placement_group,
                arg.spot_price,
                arg.efa,
+               arg.base_os,
+               arg.subnet_id,
                arg.tags))
 
     if launch['success'] is True:

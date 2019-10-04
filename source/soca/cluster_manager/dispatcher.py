@@ -337,7 +337,9 @@ if __name__ == "__main__":
     asg_name = None
     spot_price = None
     efa_support = None
+    subnet_id = None
     placement_group = 'true' # use str, not bool
+    base_os = aligo_configuration['BaseOS']
     fair_share_running_job_malus = -60
     fair_share_start_score = 100
 
@@ -511,6 +513,15 @@ if __name__ == "__main__":
                                 logpush('efa_support resource is specified, will attach one EFA adapter')
                                 efa_support = 'true'
 
+                            if 'base_os' in res:
+                                logpush('base_os resource is specified, will use the following OS' + job_required_resource['base_os'])
+                                base_os = job_required_resource['base_os']
+
+                            if 'subnet_id' in res:
+                                logpush('subnet_id resource is specified, will use the specific subnet' + job_required_resource['subnet_id'])
+                                subnet_id = job_required_resource['subnet_id']
+
+
 
 
                             try:
@@ -563,7 +574,9 @@ if __name__ == "__main__":
                                                                     scratch_size,
                                                                     placement_group,
                                                                     spot_price if spot_price is not None else 'false',
+                                                                    base_os,
                                                                     efa_support,
+                                                                    subnet_id,
                                                                     # Additional tags below
                                                                     {})
 

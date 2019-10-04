@@ -64,11 +64,11 @@ Parameters:
   BaseOS:
     Type: String
     "AllowedValues": [
-      "Centos7",
-      "Rhel7",
-      "AmazonLinux2",
+      "centos7",
+      "rhel7",
+      "amazonlinux2",
     ]
-    "Default": "AmazonLinux2"
+    "Default": "amazonlinux2"
     "Description": IMPORTANT CENTOS USERS > You MUST subscribe to https://aws.amazon.com/marketplace/pp/B00O7WM7QW first if using CentOS
 
 
@@ -341,7 +341,7 @@ Outputs:
   AnalyticsDashboard:
     Value: !Join [ "", [ "https://", !GetAtt Analytics.Outputs.ESDomainEndpoint, "/_plugin/kibana/"]]
   ConnectionString:
-    Value: !Join [ "", [ "ssh -i ", !Ref SSHKeyPair, " ", !FindInMap [ Info, User, !Ref BaseOS ], "@", !GetAtt Scheduler.Outputs.SchedulerPublicIP]]
+    Value: !Join [ "", [ "ssh -i ", !Ref SSHKeyPair, ".pem ", !FindInMap [ Info, User, !Ref BaseOS ], "@", !GetAtt Scheduler.Outputs.SchedulerPublicIP]]
   WebUserInterface:
     Value: !Join [ "", [ "https://", !GetAtt Viewer.Outputs.LoadBalancerDNSName]]
   BaseOS:

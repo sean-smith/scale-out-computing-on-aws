@@ -8,11 +8,11 @@ INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-t
 
 
 # Install Gnome
-if [[ $SOCA_BASE_OS == "Rhel7" ]]
+if [[ $SOCA_BASE_OS == "rhel7" ]]
 then
    yum groupinstall "Server with GUI" -y
 
-elif [[ $SOCA_BASE_OS == "AmazonLinux2" ]]
+elif [[ $SOCA_BASE_OS == "amazonlinux2" ]]
 then
    yum install -y $(echo ${DCV_AMAZONLINUX_PKGS[*]})
 

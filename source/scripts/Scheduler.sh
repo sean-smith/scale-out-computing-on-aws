@@ -15,7 +15,7 @@ SERVER_HOSTNAME=$(hostname)
 SERVER_HOSTNAME_ALT=$(echo $SERVER_HOSTNAME | cut -d. -f1)
 echo $SERVER_IP $SERVER_HOSTNAME $SERVER_HOSTNAME_ALT >> /etc/hosts
 
-if [[ $SOCA_BASE_OS = "Rhel7" ]]
+if [[ $SOCA_BASE_OS = "rhel7" ]]
 then
     yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
     yum install -y $(echo ${SCHEDULER_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
@@ -80,6 +80,7 @@ scratch_size type=string
 placement_group type=string
 spot_price type=string
 efa_support type=string
+base_os type=string
 EOF
 
 systemctl enable pbs

@@ -132,12 +132,12 @@ Cluster: $SOCA_CONFIGURATION
 > source /etc/environment to load SOCA paths
 " > /etc/motd
 
-if [ "$SOCA_BASE_OS" == "AmazonLinux2" ] || [ "$SOCA_BASE_OS" == "Rhel7" ];
+if [ "$SOCA_BASE_OS" == "amazonlinux2" ] || [ "$SOCA_BASE_OS" == "rhel7" ];
      then
      usermod --shell /bin/bash ec2-user
 fi
 
-if [ "$SOCA_BASE_OS" == "Centos7" ];
+if [ "$SOCA_BASE_OS" == "centos7" ];
      then
      usermod --shell /bin/bash centos
 fi

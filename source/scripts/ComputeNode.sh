@@ -44,7 +44,7 @@ cd ~
 
 # Install System required libraries
 
-if [[ $SOCA_BASE_OS = "Rhel7" ]]
+if [[ $SOCA_BASE_OS = "rhel7" ]]
 then
     yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
     yum install -y $(echo ${SCHEDULER_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
