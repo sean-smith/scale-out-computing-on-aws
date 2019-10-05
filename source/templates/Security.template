@@ -47,6 +47,10 @@ Resources:
             reason: "All traffic permitted between Scheduler and Compute Nodes"
           - id: W29
             reason: "All ports open for Egress traffic - esp required in case of FlexLM licensing"
+          - id: W40
+            reason: "All traffic egress traffic required for EFA"
+          - id: W42
+            reason: "All traffic ingress traffic required for EFA"
 
     Type: AWS::EC2::SecurityGroup
     Properties:

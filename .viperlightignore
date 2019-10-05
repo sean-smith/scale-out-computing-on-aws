@@ -23,3 +23,4 @@ source/soca/cluster_hooks/execjob_begin/soca_aws_infos.py
 source/soca/cluster_manager/ldap_manager.py
 source/soca/cluster_web_ui/generic/dcv.py
 source/soca/cluster_web_ui/app.py
+source/soca/cluster_web_ui/manual_build.py

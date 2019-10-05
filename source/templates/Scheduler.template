@@ -53,7 +53,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !Ref ImageId
-      DisableApiTermination: false # TO CHANGE LATER
+      DisableApiTermination: false
       InstanceType: !Ref SchedulerInstanceType
       IamInstanceProfile:
         Ref: SchedulerIAMInstanceProfile

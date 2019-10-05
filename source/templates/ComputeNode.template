@@ -161,6 +161,7 @@ Resources:
             echo export "SOCA_JOB_NAME=${JobName}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment
             echo export "SOCA_JOB_EFA=${Efa}" >> /etc/environment
+            echo export "SOCA_SCRATCH_SIZE=${ScratchSize}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment

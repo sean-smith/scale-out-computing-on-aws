@@ -68,26 +68,46 @@
                                         <tr>
                                             <th>-l instance_type</th>
                                             <td>Reference to the type of instance you want to provision for this job</td>
+                                            <td>-l instance=c5.9xlarge</td>
                                         </tr>
                                        <tr>
                                             <th>-l scratch_size</th>
                                             <td>Reference to the type of instance you want to provision for this job (in GB)</td>
+                                           <td>-l scratch_size=250</td>
                                         </tr>
                                         <tr>
                                             <th>-l placement_group</th>
                                             <td>Enable support for placement group<br>
-
 Notes:<br>
 Placement group is automatically disabled if simulation is running on 1 host<br>
 Placement group is automatically enabled if simulation is running on > 1 host (unless placement_group=false is specified)</td>
+                                                   <td> -l placement_group=true|false</td>
                                         </tr>
                                       <tr>
-                                            <th>-l ami_id</th>
-                                            <td>Support for custom AMI	</td>
+                                            <th>-l instance_ami</th>
+                                            <td>Support for custom AMI (if AMI OS is different than scheduler OS, use -l base_os as well)</td>
+                                           <td> -l instance_ami=ami-123abc</td>
                                       </tr>
+                                          <tr>
+                                            <th>-l base_os</th>
+                                            <td>Select the base OS of the AMI </td>
+                                            <td> -l base_os=centos7|rhel7|amazonlinux2</td>
+                                      </tr>
+                                         <tr>
+                                            <th>-l efa_support</th>
+                                            <td>Support for EFA	</td>
+                                             <td> -l efa_support=true</td>
+                                      </tr>
+
                                       <tr>
                                             <th>-l spot_price</th>
-                                            <td>Support for SPOT instances	</td>
+                                            <td>Support for SPOT instances with maximum bid price in $	</td>
+                                          <td> -l spot_price=2.5</td>
+                                      </tr>
+                                       <tr>
+                                            <th>-l subnet_id</th>
+                                            <td>Deploy capacity in a specific private subnet</td>
+                                           <td> -l subnet_id=sub-123abc</td>
                                       </tr>
 
                                       </tbody>
@@ -317,7 +337,32 @@ This job will use SPOT instances. Instances will be automatically terminated if 
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
 echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
-
+<h5>Submit a job with EFA</h5>
+ Make sure to use an instance type supported by EFA <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html#efa-instance-types">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html#efa-instance-types</a>
+<pre><code class="language-bash">
+#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+#PBS -l nodes=5,instance_type=c5n.18xlarge,efa_support=yes
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code> </pre>
+<h5>Combine everything</h5>
+Custom AMI running on a different distribution than the scheduler, with EFA enable, without placement group and within a specific subnet_id
+<pre><code class="language-bash">
+#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q cpus
+## Resources can be specified on multiple lines
+#PBS -l nodes=5,instance_type=c5n.18xlarge,efa_support=yes
+#PBS -l placement_group=false,base_os=rhel7,ami_id=ami-12345,subnet_id=sub-abcde
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+echo "Hello from `hostname`" >> my_application_logs.log 2>&1 </code> </pre>
 
 
 

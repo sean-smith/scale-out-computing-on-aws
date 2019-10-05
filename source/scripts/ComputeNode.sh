@@ -21,24 +21,28 @@ echo "$EFS_DATA:/ /data/ nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo
 echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 mount -a
 
-# Configure Scratch Directory
-mkdir /scratch/
-check_storage=`lsblk | grep disk | tail -n 1 | awk '{print $1'}`
-
-if [$check_storage == 'xvda'];
+# Configure Scratch Directory if needed
+if [ $SOCA_SCRATCH_SIZE -ne 0 ];
 then
-    echo "Non NVME driver, device mapping is xvdbx"
-    DEVICE_NAME="/dev/xvdbx"
+    mkdir /scratch/
+    check_storage=`lsblk | grep disk | tail -n 1 | awk '{print $1'}`
+    if [$check_storage == 'xvda'];
+    then
+        echo "Non NVME driver, device mapping is xvdbx"
+        DEVICE_NAME="/dev/xvdbx"
 
-else
-    echo "NVME driver, device mapping is nvme1n1"
-    DEVICE_NAME="/dev/nvme1n1"
+    else
+        echo "NVME driver, device mapping is nvme1n1"
+        DEVICE_NAME="/dev/nvme1n1"
+    fi
+
+    echo "$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
+    mkfs -t ext4 $DEVICE_NAME
+    mount -t ext4 $DEVICE_NAME /scratch
+    chmod 777 /scratch/
 fi
 
-echo "$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
-mkfs -t ext4 $DEVICE_NAME
-mount -t ext4 $DEVICE_NAME /scratch
-chmod 777 /scratch/
+
 
 
 # Prepare PBS/System
