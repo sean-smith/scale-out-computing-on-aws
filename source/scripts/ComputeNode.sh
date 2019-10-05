@@ -1,5 +1,6 @@
 #!/bin/bash -xe
 
+source /etc/environment
 source /root/config.cfg
 
 if [ $# -lt 4 ]
@@ -12,7 +13,6 @@ EFS_DATA=$2
 EFS_APPS=$3
 SCHEDULER_HOSTNAME=$4
 
-
 # Mount EFS
 mkdir /data
 mkdir /apps
@@ -23,7 +23,7 @@ mount -a
 
 # Configure Scratch Directory
 mkdir /scratch/
-check_storage=`lsblk | grep disk | head -n 1 | awk '{print $1'}`
+check_storage=`lsblk | grep disk | tail -n 1 | awk '{print $1'}`
 
 if [$check_storage == 'xvda'];
 then
@@ -35,9 +35,11 @@ else
     DEVICE_NAME="/dev/nvme1n1"
 fi
 
+echo "$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
 mkfs -t ext4 $DEVICE_NAME
 mount -t ext4 $DEVICE_NAME /scratch
 chmod 777 /scratch/
+
 
 # Prepare PBS/System
 cd ~

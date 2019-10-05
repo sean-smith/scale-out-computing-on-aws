@@ -35,7 +35,7 @@ Parameters:
 
   ScratchSize:
     Type: Number
-    Default: 50
+    Default: 0
 
   ImageId:
     Type: String
@@ -91,6 +91,7 @@ Conditions:
   UsePlacementGroup: !Equals [ !Ref PlacementGroup, true]
   UseEFA: !Equals [ !Ref Efa, true]
   UseSpotInstance: !Not [!Equals [ !Ref SpotPrice, false]]
+  UseScratchDisk: !Not [!Equals [ !Ref ScratchSize, 0]]
 
 Resources:
   ComputeNodePlacementGroup:
@@ -105,11 +106,21 @@ Resources:
       LaunchTemplateName: !Sub ${ClusterId}-${JobId}
       LaunchTemplateData:
         BlockDeviceMappings:
-          - DeviceName: /dev/xvdbx
+          - DeviceName: "/dev/sda1" # root
             Ebs:
-              VolumeSize: !Ref ScratchSize
-              VolumeType: gp2
-              DeleteOnTermination: true
+                VolumeSize: 10
+                VolumeType: gp2
+                DeleteOnTermination: true
+
+          - !If
+            - UseScratchDisk
+            - DeviceName: '/dev/xvdbx' # /scratch
+              Ebs:
+                VolumeSize: !Ref ScratchSize
+                VolumeType: gp2
+                DeleteOnTermination: true
+            - !Ref AWS::NoValue
+
         EbsOptimized: true
         IamInstanceProfile:
           Name: !Ref ComputeNodeInstanceProfile

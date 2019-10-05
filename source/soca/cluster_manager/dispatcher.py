@@ -492,8 +492,8 @@ if __name__ == "__main__":
                                 custom_ami = job_required_resource['instance_ami']
 
                             if 'scratch_size' in res:
-                                logpush('scratch_size resource is specified, will use custom scratch of (GB): ' + job_required_resource['scratch_size'])
-                                scratch_size = job_required_resource['scratch_size']
+                                logpush('scratch_size resource is specified, will use custom scratch of (GB): ' + str(job_required_resource['scratch_size']))
+                                scratch_size = str(job_required_resource['scratch_size'])
 
                             if 'spot_price' in res:
                                 spot_price = job_required_resource['spot_price']
@@ -571,7 +571,7 @@ if __name__ == "__main__":
                                                                     job['get_job_owner'],
                                                                     job['get_job_project'],
                                                                     keep_forever,
-                                                                    scratch_size,
+                                                                    int(scratch_size) if scratch_size is not False else 0,
                                                                     placement_group,
                                                                     spot_price if spot_price is not None else 'false',
                                                                     efa_support,

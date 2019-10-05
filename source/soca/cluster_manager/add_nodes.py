@@ -145,7 +145,6 @@ def main(instance_type,
                                         Parameters=stack_params,
                                         Tags=stack_tags)
 
-            print(launch)
             # PBS configuration is automatically updated by nodes_manager
             return {'success': True,
                     'stack_name': stack_name,
@@ -171,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument('--job_name', nargs='?', required=True, help="Job Name for which the capacity is being provisioned")
     parser.add_argument('--job_owner', nargs='?', required=True, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
-    parser.add_argument('--scratch_size', default='100', nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--scratch_size', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--placement_group', help="Enable or disable placement group")
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
     parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
