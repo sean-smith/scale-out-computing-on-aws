@@ -14,7 +14,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = '9q50NGgFlwgacIPpB8r-fmFcfVpvQRIIKFS9I-OC8hg'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=90)
 app.register_blueprint(get_ppk_key)
 app.register_blueprint(get_pem_key)
 app.register_blueprint(dcv_management)

@@ -142,7 +142,6 @@ if [ "$SOCA_BASE_OS" == "centos7" ];
      usermod --shell /bin/bash centos
 fi
 
-
 # Create default LDAP user
 /apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin
 
@@ -155,6 +154,7 @@ rm -rf /root/config.cfg
 # This will take a while and is not system blocking, so adding at the end of the install process
 mkdir -p /apps/openmpi/installer
 cd /apps/openmpi/installer
+
 wget $OPENMPI_URL
 if [[ $(md5sum $OPENMPI_TGZ | awk '{print $1}') != $OPENMPI_HASH ]];  then
     echo -e "FATAL ERROR: Checksum for OpenMPI failed. File may be compromised." > /etc/motd

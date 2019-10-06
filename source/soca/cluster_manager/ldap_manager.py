@@ -60,12 +60,10 @@ def create_home(username):
             crypto_serialization.Encoding.PEM,
             crypto_serialization.PrivateFormat.TraditionalOpenSSL,
             crypto_serialization.NoEncryption())
-
         public_key = key.public_key().public_bytes(
             crypto_serialization.Encoding.OpenSSH,
             crypto_serialization.PublicFormat.OpenSSH
         )
-
         private_key_str = private_key.decode('utf-8')
         public_key_str = public_key.decode('utf-8')
         # Create user directory structure and permissions
@@ -143,9 +141,10 @@ def create_user(username, password, sudoers, email=False, uid=False, gid=False):
             if sudo is True:
                 print('Added user as sudoers')
             else:
-                print(sudo)
+                print('Unable to add user as sudoers: ' +str (sudo))
         return True
     except Exception as e:
+        print('Unable to create new user: ' +str(e))
         return e
 
 
@@ -193,8 +192,7 @@ if __name__ == "__main__":
     subparser_add_user.add_argument('-e', '--email', nargs='?', help='User email')
     subparser_add_user.add_argument('--uid', nargs='?', help='Specify custom Uid')
     subparser_add_user.add_argument('--gid', nargs='?', help='Specific custom Gid')
-    subparser_add_user.add_argument('--admin', action='store_const', const=True,
-                                    help='If flag is specified, user will be added to sudoers group')
+    subparser_add_user.add_argument('--admin', action='store_const', const=True, help='If flag is specified, user will be added to sudoers group')
 
     subparser_delete_user = subparser.add_parser("delete-user")
     subparser_delete_user.add_argument('-u', '--username', nargs='?', required=True, help='LDAP username')
@@ -208,8 +206,7 @@ if __name__ == "__main__":
     slappasswd = '/sbin/slappasswd'
     root_dn = 'CN=admin,DC=soca,DC=local'
     root_pw = open('/root/OpenLdapAdminPassword.txt', 'r').read()
-    ldap_args = '-ZZ -x -H "ldap://' + aligo_configuration[
-        'SchedulerPrivateDnsName'] + '" -D ' + root_dn + ' -y ' + root_pw
+    ldap_args = '-ZZ -x -H "ldap://' + aligo_configuration['SchedulerPrivateDnsName'] + '" -D ' + root_dn + ' -y ' + root_pw
     con = ldap.initialize('ldap://' + aligo_configuration['SchedulerPrivateDnsName'])
     con.simple_bind_s(root_dn, root_pw)
 
@@ -226,21 +223,22 @@ if __name__ == "__main__":
         ldap_ids = find_ids()
         gid = ldap_ids['next_gid']
         uid = ldap_ids['next_uid']
-        add_user = create_user(str(arg.username), str(arg.password), arg.admin, email, uid, gid)
-        add_group = create_group(str(arg.username), gid)
-        add_home = create_home(arg.username)
 
+        add_user = create_user(str(arg.username), str(arg.password), arg.admin, email, uid, gid)
         if add_user is True:
             print('Created User: ' + str(arg.username) + ' id: ' + str(uid))
         else:
             print('Unable to create user:' + add_user)
             sys.exit(1)
+
+        add_group = create_group(str(arg.username), gid)
         if add_group is True:
-            print('Created group')
+            print('Created group successfully')
         else:
             print('Unable to create group:' + add_group)
             sys.exit(1)
 
+        add_home = create_home(str(arg.username))
         if add_home is True:
             print('Home directory created correctly')
         else:
