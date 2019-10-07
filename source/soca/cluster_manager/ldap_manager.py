@@ -72,14 +72,14 @@ def create_home(username):
         print(private_key_str, file=open(user_path + '/id_rsa', 'w'))
         print(public_key_str, file=open(user_path + '/id_rsa.pub', 'w'))
         print(public_key_str, file=open(user_path + '/authorized_keys', 'w'))
-        os.chmod(user_home + '/' + username + '/.ssh', 0o700)
-        os.chmod(user_home + '/' + username + '/.ssh/id_rsa', 0o600)
-        os.chmod(user_home + '/' + username + '/.ssh/authorized_keys', 0o600)
-        shutil.chown(user_home + '/' + username + '/', user=username, group=username)
+        shutil.chown(user_home + '/' + username, user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh', user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh/authorized_keys', user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh/id_rsa', user=username, group=username)
         shutil.chown(user_home + '/' + username + '/.ssh/id_rsa.pub', user=username, group=username)
+        os.chmod(user_home + '/' + username + '/.ssh', 0o700)
+        os.chmod(user_home + '/' + username + '/.ssh/id_rsa', 0o600)
+        os.chmod(user_home + '/' + username + '/.ssh/authorized_keys', 0o600)
         return True
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -242,7 +242,7 @@ if __name__ == "__main__":
         if add_home is True:
             print('Home directory created correctly')
         else:
-            print('Unable to create Home structure:' + add_home)
+            print('Unable to create Home structure:' + str(add_home))
             sys.exit(1)
 
     else:
