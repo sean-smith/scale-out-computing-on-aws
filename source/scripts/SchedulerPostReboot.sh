@@ -25,7 +25,10 @@ queue_type:
     queues: ["high", "normal", "low"]
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
-    scratch_size: "100"
+    #scratch_size: "100"
+    #root_size: "30"
+    #efa_support: "false"
+    # .. Refer to the doc for more supported parameters
   desktop:
     queues: ["desktop"]
     instance_ami: "$SOCA_INSTALL_AMI"

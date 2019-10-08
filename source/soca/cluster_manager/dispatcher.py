@@ -350,6 +350,7 @@ if __name__ == "__main__":
                 custom_flexlm_resources[license_name] = license_output
     stream_flexlm_mapping.close()
 
+
     # General Variables
     asg_name = None
     fair_share_running_job_malus = -60
@@ -364,6 +365,7 @@ if __name__ == "__main__":
         formatter = logging.Formatter('[%(asctime)s] [%(lineno)d] [%(levelname)s] [%(message)s]')
         log_file.setFormatter(formatter)
         logger = logging.getLogger('tcpserver')
+        logpush("Detected Default Parameters for this queue: " + str(job_parameter_values))
         for hdlr in logger.handlers[:]:  # remove all old handlers
             logger.removeHandler(hdlr)
 
