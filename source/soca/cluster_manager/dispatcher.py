@@ -1,5 +1,5 @@
 """
-DT HPC DYNAMIC CLUSTER MANAGER
+SOCAC DYNAMIC CLUSTER MANAGER
 This script retrieve all queued jobs, calculate PBS resources required to launch each job
 and provision EC2 capacity if all resources conditions are met.
 """
@@ -226,8 +226,6 @@ def check_available_licenses(commands, license_to_check):
 
 
 # BEGIN EC2 FUNCTIONS
-
-
 def can_launch_capacity(instance_type, count, image_id, job_id):
     try:
         ec2.run_instances(
@@ -261,6 +259,7 @@ def clean_cloudformation_stack():
     # spot instance can't be fulfilled
     # user delete job from the queue
     # stakc will stay forever. Instead we need to describe all stacks and delete them if they are assigned to a job that no longer exist
+
 
 def check_cloudformation_status(stack_id, job_id, job_select_resource):
     # This function is only called if we detect a queued job with an already assigned Compute Unit
@@ -306,8 +305,6 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
 
 # END EC2 FUNCTIONS
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', nargs='?', required=True, help="Path to a configuration file")
@@ -329,45 +326,19 @@ if __name__ == "__main__":
     ec2 = boto3.client('ec2')
     cloudformation = boto3.client('cloudformation')
     aligo_configuration = configuration.get_aligo_configuration()
-
-    # General Variables
-    instance_type = None
-    queues = None
-    custom_ami = None
-    asg_name = None
-    spot_price = None
-    subnet_id = 'false'
-    placement_group = 'true' # use str, not bool
-    efa_support = 'false' # use str, not bool
-    base_os = aligo_configuration['BaseOS']
-    fair_share_running_job_malus = -60
-    fair_share_start_score = 100
-
-    # Generate PBS configuration mapping
+    job_parameter_values = {}
+    queues = False
+    # Retrieve Default Queue parameters
     stream_resource_mapping = open('/apps/soca/cluster_manager/settings/queue_mapping.yml', "r")
     docs = yaml.load_all(stream_resource_mapping)
     for doc in docs:
         for items in doc.values():
             for type, info in items.items():
                 if type == queue_type:
-                    instance_type = info['default_instance']
                     queues = info['queues']
-                    custom_ami = info['default_ami']
-                    if 'scratch_size' in info.keys():
-                        scratch_size = info['scratch_size']
-                    else:
-                        scratch_size = False
-
+                    for parameter_key, parameter_value in info.items():
+                        job_parameter_values[parameter_key] = parameter_value
         stream_resource_mapping.close()
-
-    if instance_type is None or queues is None or custom_ami is None:
-        print('Error, instance_type, queues or custom ami is None')
-        print(instance_type)
-        print(queue_type)
-        print(custom_ami)
-        exit(0)
-
-    default_instance_type = instance_type
 
     # Generate FlexLM mapping
     stream_flexlm_mapping = open('/apps/soca/cluster_manager/settings/licenses_mapping.yml', "r")
@@ -379,7 +350,14 @@ if __name__ == "__main__":
                 custom_flexlm_resources[license_name] = license_output
     stream_flexlm_mapping.close()
 
+    # General Variables
+    asg_name = None
+    fair_share_running_job_malus = -60
+    fair_share_start_score = 100
     # End Pre-requisite
+    if queues is False:
+        print('No queues  detected either on the queue_mapping.yml. Exiting ...')
+        exit(1)
 
     for queue_name in queues:
         log_file = logging.FileHandler('/apps/soca/cluster_manager/logs/' + queue_name + '.log','a')
@@ -392,10 +370,7 @@ if __name__ == "__main__":
         logger.addHandler(log_file)  # set the new handler
         logger.setLevel(logging.DEBUG)
         skip_queue = False
-
         get_jobs = get_jobs_infos(queue_name)
-        logpush('================================================================')
-
         # Check if there is any queued job with valid compute unit but has not started within 1 hour
         for job_id, job_data in get_jobs.items():
             if job_data['get_job_state'] == 'Q':
@@ -414,14 +389,9 @@ if __name__ == "__main__":
                 else:
                     get_jobs[job_id]['get_job_resource_list']['compute_node'] = 'tbd'
 
-
-
-
         queued_jobs = [get_jobs[k] for k, v in get_jobs.items() if v['get_job_state'] == 'Q']
         running_jobs = [get_jobs[k] for k, v in get_jobs.items() if v['get_job_state'] == 'R']
         user_fair_share = fair_share_score(queued_jobs, running_jobs, queue_name)
-        logpush('Detected Default Instance Type: ' + instance_type)
-        #logpush('Queued Jobs: ' + str(queued_jobs))
 
         if check_if_queue_started(queue_name) is False:
             logpush('Queue does not seems to be enabled')
@@ -431,7 +401,7 @@ if __name__ == "__main__":
             skip_queue = True
 
         if skip_queue is False:
-            # Find all Licenses required by the jobs. licenses must use  *_lic_* format
+            logpush('================================================================')
             licenses_required = []
             for job_data in queued_jobs:
                 resource_name = job_data['get_job_resource_list'].keys()
@@ -439,19 +409,13 @@ if __name__ == "__main__":
                     if license_name not in licenses_required:
                         licenses_required.append(license_name)
 
-            # on les list de required_pbs_reosurce, trouver tout ce qu'il ya "_lic_"
             license_available = check_available_licenses(custom_flexlm_resources, licenses_required)
             logpush('License Available: ' + str(license_available))
-            #logpush('Queued Jobs: ' +str(queued_jobs))
+
             logpush('User Fair Share: ' + str(user_fair_share))
             job_id_order_based_on_fairshare = fair_share_job_id_order(sorted(queued_jobs, key=lambda k: k['get_job_order_in_queue']), user_fair_share)
-
             logpush('Job_id_order_based_on_fairshare: ' + str(job_id_order_based_on_fairshare))
-
-
-
             queue_mode = 'fairshare'
-
             if queue_mode == 'fairshare':
                 job_list = job_id_order_based_on_fairshare
             elif queue_mode == 'fifo':
@@ -461,148 +425,126 @@ if __name__ == "__main__":
                 exit(1)
 
             for job_id in job_list:
+
                 if queue_mode == 'fifo':
                     job = job_id
                 else:
                     job = get_jobs[job_id]
 
-
                 job_owner = str(job['get_job_owner'])
                 job_id = str(job['get_job_id'])
 
-                if job ['get_job_resource_list']['compute_node'] != 'tbd':
+                if job['get_job_resource_list']['compute_node'] != 'tbd':
                     skip_job = True
                 else:
                     skip_job = False
 
                 if skip_job is False:
-                        instance_type = default_instance_type
-                        job_required_resource = job['get_job_resource_list']
-                        tmp = {}
-                        logpush('Checking if we have enough resources available to run job_' + job_id)
-                        can_run = True
+                    job_required_resource = job['get_job_resource_list']
+                    license_requirement = {}
+                    logpush('Checking if we have enough resources available to run job_' + job_id)
+                    can_run = True
+                    for res in job_required_resource:
+                        if res in job_parameter_values.keys():
+                            logpush('Override default: ' + res + ' value.  Job will use new value: ' + str(job_required_resource[res]))
+                            if res == 'spot_price':
+                                if isinstance(job_required_resource[res], float) is not True:
+                                    logpush("spot price must be a float. Ignoring " + str(job_required_resource[res]) + " and capacity will run as OnDemand")
+                                    job_required_resource[res] = 0
 
-                        for res in job_required_resource:
-                            if 'instance_type' in res:
-                                logpush('instancetype resource is specified, will use new ec2 instance type: ' + job_required_resource['instance_type'])
-                                instance_type = job_required_resource['instance_type']
+                            if res == "scratch_size":
+                                if isinstance(job_required_resource[res], int) is not True:
+                                    logpush("scratch_size must be an integer. Ignoring " + str(job_required_resource[res]))
+                                    job_required_resource[res] = 0
 
-                            if 'instance_ami' in res:
-                                logpush('image resource is specified, will use new ec2 AMI: ' + job_required_resource['instance_ami'])
-                                custom_ami = job_required_resource['instance_ami']
-
-                            if 'scratch_size' in res:
-                                logpush('scratch_size resource is specified, will use custom scratch of (GB): ' + str(job_required_resource['scratch_size']))
-                                scratch_size = str(job_required_resource['scratch_size'])
-
-                            if 'spot_price' in res:
-                                spot_price = job_required_resource['spot_price']
-                                logpush('spot_price resource is specified, will use SPOT instances with BID: ' + str(spot_price))
-                                if isinstance(spot_price, float) is True:
-                                    spot_price = str(job_required_resource['spot_price'])
-                                else:
-                                    logpush("spot price must be a float. Ignoring " + str(spot_price) + " and capacity will run as OnDemand")
-
-                            if 'placement_group' in res:
-                                if job_required_resource['placement_group'] in ['true', 'false']:
-                                    logpush('placement_group resource is specified, will use custom scratch of (GB): ' + job_required_resource['placement_group'])
-                                    placement_group = job_required_resource['placement_group']
-
-
-                            if 'efa_support' in res:
-                                logpush('efa_support resource is specified, will attach one EFA adapter')
-                                efa_support = 'true'
-
-                            if 'base_os' in res:
-                                logpush('base_os resource is specified, will use the following OS' + job_required_resource['base_os'])
-                                base_os = job_required_resource['base_os']
-
-                            if 'subnet_id' in res:
-                                logpush('subnet_id resource is specified, will use the specific subnet' + job_required_resource['subnet_id'])
-                                subnet_id = job_required_resource['subnet_id']
-
-
-
-
-                            try:
-                                if fnmatch.filter([res], '*_lic*'):
-                                    if int(job_required_resource[res]) <= license_available[res]:
-                                        # job can run
-                                        tmp[res] = int(job_required_resource[res])
-                                    else:
-                                        logpush('Ignoring job_' + job_id + ' as we we dont have enough: ' + str(res))
-                                        can_run = False
-                            except:
-                                logpush('One required PBS resource has not been specified on the JSON input for ' + job_id + ': ' + str(res) +' . Please update custom_flexlm_resources on ' +str(arg.config))
-                                exit(1)
-
-                        ec2_instances_to_add = int(job_required_resource['nodect'])
-                        cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
-                        if cpus_count_pattern:
-                            cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+                            job_parameter_values[res] = job_required_resource[res]
                         else:
-                            cpu_per_system = '2'
+                            logpush("No default value for " + res + ". Creating new entry with value: " +  str(job_required_resource[res]))
+                            job_parameter_values[res] = job_required_resource[res]
 
-                        # Checking Pre-requisite
-                        if 'ppn' in job_required_resource.keys():
-                            if job_required_resource['ppn'] > cpu_per_system:
-                                logpush('Ignoring Job ' + job_id + ' as the PPN specified (' + str(job_required_resource['ppn']) + ') is higher than the number of cpu per system : ' + str(cpu_per_system), 'error')
-                                error_msg = '''
-                                    Your Job ''' + job_id + ''' has been removed from the queue.<hr> 
-                                    <h2>Error #002</h2> Detected ''' + str(job_required_resource['ppn']) + ''' PPN (process-per-node) which is higher than the PPN for the EC2 instance configured.<br>
-                                    <ul><li> Instance Type: ''' + instance_type + '''</li> <li> Max PPN: ''' + str(cpu_per_system) + ''' </li></ul>
-                                    <h2>How to fix </h2> https://confluence.amazon.com/display/DTHPC/Job+Submission+Errors#JobSubmissionsError-002:PPNisIncorrect
+                        try:
+                            if fnmatch.filter([res], '*_lic*'):
+                                if int(job_required_resource[res]) <= license_available[res]:
+                                    # job can run
+                                    license_requirement[res] = int(job_required_resource[res])
+                                else:
+                                    logpush('Ignoring job_' + job_id + ' as we we dont have enough: ' + str(res))
+                                    can_run = False
+                        except:
+                            logpush('One required PBS resource has not been specified on the JSON input for ' + job_id + ': ' + str(res) +' . Please update custom_flexlm_resources on ' +str(arg.config))
+                            exit(1)
+
+                    # Checking for required parameters
+                    if 'instance_type' not in job_parameter_values.keys():
+                        logpush('No instance type detected either on the queue_mapping.yml or at job submission. Exiting ...')
+                        exit(1)
+
+                    if 'instance_ami' not in job_parameter_values.keys():
+                        logpush('No instance_ami type detected either on the queue_mapping.yml .. defaulting to base os')
+                        job_parameter_values['instance_ami'] = aligo_configuration['CustomAMI']
+
+
+                    desired_capacity = int(job_required_resource['nodect'])
+                    cpus_count_pattern = re.search(r'[.](\d+)', job_parameter_values['instance_type'])
+                    if cpus_count_pattern:
+                        cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+                    else:
+                        cpu_per_system = '2'
+
+                    # Prevent job to start if PPN requested > CPUs per system
+                    if 'ppn' in job_required_resource.keys():
+                        if job_required_resource['ppn'] > cpu_per_system:
+                            logpush('Ignoring Job ' + job_id + ' as the PPN specified (' + str(job_required_resource['ppn']) + ') is higher than the number of cpu per system : ' + str(cpu_per_system), 'error')
+                            can_run = False
+
+                    if can_run is True:
+                        logpush('job_' + job_id + ' can run, doing dry run test ...')
+                        if can_launch_capacity(job_parameter_values['instance_type'], desired_capacity, job_parameter_values['instance_ami'], job_id) is True:
+                            try:
+                                keep_forever = 'false'
+                                create_new_asg = add_nodes.main(job_parameter_values['instance_type'],
+                                                                desired_capacity,
+                                                                queue_name,
+                                                                job_parameter_values['instance_ami'],
+                                                                job_id,
+                                                                job['get_job_name'],
+                                                                job['get_job_owner'],
+                                                                job['get_job_project'],
+                                                                keep_forever,
+                                                                job_parameter_values['scratch_size'] if 'scratch_size' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['root_size'] if 'root_size' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['placement_group'] if 'placement_group' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['spot_price'] if 'spot_price' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['efa_support'] if 'efa_support' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['base_os'] if 'base_os' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['subnet_id'] if 'subnet_id' in job_parameter_values.keys() else False,
+                                                                # Additional tags below
+                                                                {}
+                                                                )
+
+                                if create_new_asg['success'] is True:
+                                    compute_unit = create_new_asg['compute_node']
+                                    stack_id = create_new_asg['stack_name']
+                                    logpush(str(job_id) + " : compute_node=" + str(compute_unit) + " | stack_id=" +str(stack_id))
+
+                                    # Add new PBS resource to the job
+                                    # stack_id=xxx -> CloudFormation Stack Name
+                                    # compute_node=xxx -> Unique ID that will be assigned to all EC2 hosts for this job
+
+                                    select = job_required_resource['select'].split(':compute_node')[0] + ':compute_node=' + str(compute_unit)
+                                    logpush('select variable: ' + str(select))
+
+                                    run_command([system_cmds['qalter'], "-l", "select="+select, str(job_id)], "call")
+                                    run_command([system_cmds['qalter'], "-l", "stack_id=" + stack_id, str(job_id)], "call")
+
+                                    for resource, count_to_substract in license_requirement.items():
+                                        license_available[resource] = (license_available[resource] - count_to_substract)
+                                        logpush('License available: ' + str(license_available[resource]))
+
+                                else:
+                                    logpush('Error while trying to create ASG: ' + str(create_new_asg['error']))
+                                    send_notification('Error creating ASG', 'Create ASG failed for job_' + job_id + ' with error: ' +  str(create_new_asg['error']),'mcrozes')
                                     '''
-                                print(error_msg)
-                                run_command([system_cmds['qdel'], job_id], 'check_output')
-                                can_run = False
-
-                        if can_run is True:
-                            logpush('job_' + job_id + ' can run, doing dry run test ...')
-                            if can_launch_capacity(instance_type, ec2_instances_to_add, custom_ami, job_id) is True:
-                                try:
-                                    keep_forever = 'false'
-                                    create_new_asg = add_nodes.main(instance_type,
-                                                                    ec2_instances_to_add,
-                                                                    queue_name,
-                                                                    custom_ami,
-                                                                    job_id,
-                                                                    job['get_job_name'],
-                                                                    job['get_job_owner'],
-                                                                    job['get_job_project'],
-                                                                    keep_forever,
-                                                                    int(scratch_size) if scratch_size is not False else 0,
-                                                                    placement_group,
-                                                                    spot_price if spot_price is not None else 'false',
-                                                                    efa_support,
-                                                                    base_os,
-                                                                    subnet_id,
-                                                                    # Additional tags below
-                                                                    {})
-
-                                    if create_new_asg['success'] is True:
-                                        compute_unit = create_new_asg['compute_node']
-                                        stack_id = create_new_asg['stack_name']
-                                        logpush(str(job_id) + " : compute_node=" + str(compute_unit) + " | stack_id=" +str(stack_id))
-
-                                        # Add new PBS resource to the job
-                                        # stack_id=xxx -> CloudFormation Stack Name
-                                        # compute_node=xxx -> Unique ID that will be assigned to all EC2 hosts for this job
-
-                                        select = job_required_resource['select'].split(':compute_node')[0] + ':compute_node=' + str(compute_unit)
-                                        logpush('select variable: ' +str(select))
-
-                                        run_command([system_cmds['qalter'], "-l", "select="+select, str(job_id)], "call")
-                                        run_command([system_cmds['qalter'], "-l", "stack_id=" + stack_id, str(job_id)], "call")
-
-                                        for resource, count_to_substract in tmp.items():
-                                            license_available[resource] = (license_available[resource] - count_to_substract)
-                                            logpush('License available: ' + str(license_available[resource]))
-
-                                    else:
-                                        logpush('Error while trying to create ASG: ' + str(create_new_asg['error']))
-                                        send_notification('Error creating ASG', 'Create ASG failed for job_' + job_id + ' with error: ' +  str(create_new_asg['error']),'mcrozes')
-                                        '''
                                         # Most likely, problem is that stack exist but not recognized correctly, as a failover we force the compute_node value
                                         try:
                                             select = job_required_resource['select'].split(':compute_node')[0] + ':compute_node=job' + str(job_id)
@@ -612,10 +554,10 @@ if __name__ == "__main__":
 
                                         except Exception as e:
                                             logpush('Error, can not force back select parameters to default value')
-                                        '''
+                                    '''
 
-                                except Exception as e:
-                                    logpush('Create ASG failed for job_'+job_id + ' with error: ' + str(e) + ' This may be due to an CloudFormation having the same name already exist.', 'error')
-                                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                                    logpush(str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))
+                            except Exception as e:
+                                logpush('Create ASG failed for job_'+job_id + ' with error: ' + str(e) + ' This may be due to an CloudFormation having the same name already exist.', 'error')
+                                exc_type, exc_obj, exc_tb = sys.exc_info()
+                                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                                logpush(str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))

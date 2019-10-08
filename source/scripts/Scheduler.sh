@@ -77,6 +77,7 @@ availability_zone type=string
 subnet_id type=string
 instance_ami type=string
 scratch_size type=string
+root_size type=string
 placement_group type=string
 spot_price type=string
 efa_support type=string

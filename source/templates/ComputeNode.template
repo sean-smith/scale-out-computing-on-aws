@@ -37,6 +37,9 @@ Parameters:
     Type: Number
     Default: 0
 
+  RootSize:
+    Type: Number
+
   ImageId:
     Type: String
 
@@ -92,6 +95,7 @@ Conditions:
   UseEFA: !Equals [ !Ref Efa, true]
   UseSpotInstance: !Not [!Equals [ !Ref SpotPrice, false]]
   UseScratchDisk: !Not [!Equals [ !Ref ScratchSize, 0]]
+  UseAmazonLinux: !Equals [ !Ref BaseOS, 'amazonlinux2']
 
 Resources:
   ComputeNodePlacementGroup:
@@ -106,9 +110,9 @@ Resources:
       LaunchTemplateName: !Sub ${ClusterId}-${JobId}
       LaunchTemplateData:
         BlockDeviceMappings:
-          - DeviceName: "/dev/sda1" # root
+          - DeviceName: !If [UseAmazonLinux, "/dev/xvda", "/dev/sda1"]
             Ebs:
-                VolumeSize: 10
+                VolumeSize: !Ref RootSize
                 VolumeType: gp2
                 DeleteOnTermination: true
 

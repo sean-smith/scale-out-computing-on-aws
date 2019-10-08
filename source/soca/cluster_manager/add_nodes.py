@@ -39,6 +39,7 @@ def main(instance_type,
          job_project,
          keep_forever,
          scratch_size,
+         root_size,
          placement_group,
          spot_price,
          efa_support,
@@ -56,7 +57,7 @@ def main(instance_type,
     stack_template = create_stack_location.get()['Body'].read().decode('utf-8')
     soca_private_subnets = [aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']]
 
-    if subnet == 'false':
+    if subnet is False:
         subnet_id = random.choice(soca_private_subnets)
     else:
        if subnet in soca_private_subnets:
@@ -107,7 +108,8 @@ def main(instance_type,
         'ComputeNodeInstanceProfile': aligo_configuration['ComputeNodeInstanceProfile'],
         'Efa': efa_support,
         'JobId': job_id,
-        'ScratchSize': scratch_size,
+        'ScratchSize': 0 if scratch_size is False else scratch_size,
+        'RootSize': 10 if root_size is False else root_size,
         'ImageId': custom_ami if custom_ami is not None else aligo_configuration['CustomAMI'],
         'JobName': job_name,
         'JobQueue': queue,
@@ -120,7 +122,7 @@ def main(instance_type,
         'InstanceType': instance_type,
         'SchedulerHostname': aligo_configuration['SchedulerPrivateDnsName'],
         'DesiredCapacity': desired_capacity,
-        'BaseOS': aligo_configuration['BaseOS'] if base_os is None else base_os,
+        'BaseOS': aligo_configuration['BaseOS'] if base_os is False else base_os,
         'SpotPrice': spot_price if spot_price is not None else 'false',
     }
 
@@ -170,11 +172,12 @@ if __name__ == "__main__":
     parser.add_argument('--job_name', nargs='?', required=True, help="Job Name for which the capacity is being provisioned")
     parser.add_argument('--job_owner', nargs='?', required=True, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
-    parser.add_argument('--scratch_size', default=0, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--scratch_size', default=False, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--root_size', default=False, nargs='?', help="Size of Root partition in GB")
     parser.add_argument('--placement_group', help="Enable or disable placement group")
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
     parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
-    parser.add_argument('--base_os', help="Specify custom Base OK")
+    parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
     parser.add_argument('--efa', action='store_const', const='true', help="Support for EFA")
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
 
@@ -217,11 +220,12 @@ if __name__ == "__main__":
                arg.job_project,
                arg.keep_forever,
                arg.scratch_size,
+               arg.root_size,
                arg.placement_group,
                arg.spot_price,
-               'false' if arg.efa is None else arg.efa,
+               False if arg.efa is None else arg.efa,
                arg.base_os,
-               'false' if arg.subnet_id is None else arg.subnet_id,
+               False if arg.subnet_id is None else arg.subnet_id,
                arg.tags))
 
     if launch['success'] is True:

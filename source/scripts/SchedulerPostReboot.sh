@@ -19,16 +19,17 @@ mkdir -p /apps/soca/cluster_manager/logs
 # Generate default queue_mapping file based on default AMI choosen by customer
 cat <<EOT >> /apps/soca/cluster_manager/settings/queue_mapping.yml
 # This manage automatic provisioning for your queues
+# These are default values. Users can override them at job submission
 queue_type:
   compute:
     queues: ["high", "normal", "low"]
-    default_ami: "$SOCA_INSTALL_AMI"
-    default_instance: "c5.large"
+    instance_ami: "$SOCA_INSTALL_AMI"
+    instance_type: "c5.large"
     scratch_size: "100"
   desktop:
     queues: ["desktop"]
-    default_ami: "$SOCA_INSTALL_AMI"
-    default_instance: "c5.large"
+    instance_ami: "$SOCA_INSTALL_AMI"
+    instance_type: "c5.large"
 EOT
 
 # Generate 10 years internal SSL certificate for Soca Web Ui
