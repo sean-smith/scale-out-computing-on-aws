@@ -1,9 +1,9 @@
-# Solution for Scale Out Computing on AWS (SOCA)
+# Scale Out Computing on AWS (SOCA)
 
 ## :wrench: How to install SOCA
 ### 1) 1-Click installer
 
-Visit https://aws.amazon.com/solutions/solution-for-scale-out-computing-on-aws/
+Visit https://aws.amazon.com/solutions/scale-out-computing-on-aws/
 
 :rotating_light: 1-Click installer is only great for PoC or demos. For production workload, it's recommended you go with option 2 instead.
 
@@ -11,7 +11,7 @@ Visit https://aws.amazon.com/solutions/solution-for-scale-out-computing-on-aws/
 
 + 1\) Clone this git repository
 ```bash
-git clone https://github.com/awslabs/solution-for-scale-out-computing-on-aws
+git clone https://github.com/awslabs/scale-out-computing-on-aws
 ```
 + 2\) Run the following command to create your build (support Python2 and Python3):
 ```bash
@@ -21,7 +21,7 @@ python source/manual_build.py
 
 + 4\) Upload `source/dist/<build_id>` folder to your own S3 bucket
 
-+ 5\) Launch CloudFormation and use `solution-for-scale-out-computing-on-aws.template` as base template
++ 5\) Launch CloudFormation and use `for-scale-out-computing-on-aws.template` as base template
 
 ## :book: Documentation
 

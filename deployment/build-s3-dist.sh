@@ -49,17 +49,17 @@ echo "[Packing] Copy all templates for CfnNagScan and force .template extension"
 echo "------------------------------------------------------------------------------"
 echo "mkdir -p $template_dist_dir"
 mkdir -p $template_dist_dir
-echo "cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/"
-cp ../source/solution-for-scale-out-computing-on-aws.template $template_dist_dir/
+echo "cp ../source/scale-out-computing-on-aws.template $template_dist_dir/"
+cp ../source/scale-out-computing-on-aws.template $template_dist_dir/
 echo "Updating code source bucket in template with $1-reference"
 replace="s/%%BUCKET_NAME%%/$1-reference/g"
-echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
+echo "sed -i '' -e $replace $template_dist_dir/scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 replace="s/%%SOLUTION_NAME%%/$2/g"
-echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
+echo "sed -i '' -e $replace $template_dist_dir/scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 replace="s/%%VERSION%%/$3/g"
-echo "sed -i '' -e $replace $template_dist_dir/solution-for-scale-out-computing-on-aws.template"
+echo "sed -i '' -e $replace $template_dist_dir/scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 
 echo "------------------------------------------------------------------------------"
