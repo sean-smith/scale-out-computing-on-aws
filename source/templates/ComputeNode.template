@@ -90,6 +90,14 @@ Parameters:
     Type: String
     Default: false
 
+  CoreCount:
+    Type: Number
+
+  ThreadsPerCore:
+    Type: Number
+    Default: 1
+
+
 Conditions:
   UsePlacementGroup: !Equals [ !Ref PlacementGroup, true]
   UseEFA: !Equals [ !Ref Efa, true]
@@ -125,7 +133,12 @@ Resources:
                 DeleteOnTermination: true
             - !Ref AWS::NoValue
 
+
         EbsOptimized: true
+        CpuOptions:
+          CoreCount: !Ref CoreCount
+          ThreadsPerCore: !Ref ThreadsPerCore # Disable HT = 1
+
         IamInstanceProfile:
           Name: !Ref ComputeNodeInstanceProfile
         KeyName: !Ref SSHKeyPair

@@ -14,7 +14,7 @@ def run_command(cmd, type):
             return literal_eval(command.decode('utf-8'))
         elif type == "call":
             command = subprocess.call(cmd)
-            return literal_eval(command)
+            return command
         else:
             print("Command not Defined")
             exit(1)
@@ -105,23 +105,7 @@ def get_scheduler_jobs_in_queue():
 def get_scheduler_all_nodes():
     pbsnodes_args = ' -a -F json'
     pbs_hosts = []
-    try:
-        pbsnodes_output = (run_command((sbins['pbsnodes'] + pbsnodes_args).split(), "check_output"))
-        if 'nodes' in pbsnodes_output.keys():
-            for hostname, data in pbsnodes_output['nodes'].items():
-                pbs_hosts.append(hostname)
-    except Exception as e:
-        print(e)
-
-
-
-
-    return pbs_hosts
-
-
-def get_scheduler_nodes_down():
-    pbsnodes_args = ' -a -F json'
-    hosts_down = []
+    pbs_hosts_down = []
     try:
         pbsnodes_output = (run_command((sbins['pbsnodes'] + pbsnodes_args).split(), "check_output"))
         if 'nodes' in pbsnodes_output.keys():
@@ -129,12 +113,16 @@ def get_scheduler_nodes_down():
                 if not 'jobs' in data.keys():
                     if not 'job-exclusive' in str(data['state']):
                         if 'down' in str(data['state']):
-                            hosts_down.append(hostname)
+                            pbs_hosts_down.append(hostname)
+                pbs_hosts.append(hostname)
+    except AttributeError as e:
+        # Case when scheduler does not have any valid host
+        pass
     except Exception as e:
         print(e)
 
-
-    return hosts_down
+    return {'pbs_hosts': pbs_hosts,
+            'pbs_hosts_down': pbs_hosts_down}
 
 
 def delete_stack(stack_to_delete):
@@ -148,7 +136,7 @@ def delete_hosts(hosts):
         cmd = [sbins['qmgr'], "-c", "delete node " + host]
         try:
             print('Running ' + str(cmd))
-            subprocess.check_output(run_command(cmd, "call"))
+            run_command(cmd, "call")
         except Exception as e:
             print('Error trying to run ' + str(cmd) + ' Error: ' + str(e))
 
@@ -165,7 +153,7 @@ def add_hosts(hosts, compute_instances):
         for cmd in cmds:
             try:
                 print('Running ' + str(cmd))
-                subprocess.check_output(run_command(cmd, "call"))
+                run_command(cmd, "call")
             except Exception as e:
                 print('Error trying to run ' + str(cmd) + ' Error: ' +str(e))
 
@@ -189,10 +177,12 @@ if __name__ == "__main__":
     scheduler_jobs_in_queue = get_scheduler_jobs_in_queue()
 
     # 3 - Get all pbsnodes
-    pbs_nodes = get_scheduler_all_nodes()
-    pbs_nodes_down = get_scheduler_nodes_down()
 
+    all_nodes = get_scheduler_all_nodes()
+    pbs_nodes = all_nodes['pbs_hosts']
+    pbs_nodes_down = all_nodes['pbs_hosts_down']
     cloudformation_stack_to_delete = []
+
     compute_nodes_to_delete = []
     for job_id, stack_data in compute_instances.items():
         if stack_data['keep_forever'] == 'false':

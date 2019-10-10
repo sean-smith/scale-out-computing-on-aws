@@ -6,6 +6,7 @@ import uuid
 import sys
 import os
 import ast
+import re
 sys.path.append(os.path.dirname(__file__))
 import configuration
 
@@ -45,6 +46,7 @@ def main(instance_type,
          efa_support,
          base_os,
          subnet,
+         ht_support,
          tags
          ):
 
@@ -74,6 +76,13 @@ def main(instance_type,
             placement_group = 'true'
     else:
         placement_group = 'false'
+
+    cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
+    if cpus_count_pattern:
+        cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+    else:
+        cpu_per_system = '1'
+
 
         # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
     if keep_forever is True:
@@ -124,6 +133,8 @@ def main(instance_type,
         'DesiredCapacity': desired_capacity,
         'BaseOS': aligo_configuration['BaseOS'] if base_os is False else base_os,
         'SpotPrice': spot_price if spot_price is not None else 'false',
+        'CoreCount': cpu_per_system,
+        'ThreadsPerCore': 2 if ht_support == 'true' else 1,
     }
 
     stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
@@ -180,6 +191,9 @@ if __name__ == "__main__":
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
     parser.add_argument('--efa', action='store_const', const='true', help="Support for EFA")
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
+    parser.add_argument('--ht_support', action='store_const', const='true', help="Enable Hyper Threading")
+
+
 
     arg = parser.parse_args()
 
@@ -226,6 +240,7 @@ if __name__ == "__main__":
                False if arg.efa is None else arg.efa,
                arg.base_os,
                False if arg.subnet_id is None else arg.subnet_id,
+               False if arg.ht_support is None else arg.ht_support,
                arg.tags))
 
     if launch['success'] is True:

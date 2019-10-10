@@ -365,7 +365,6 @@ if __name__ == "__main__":
         formatter = logging.Formatter('[%(asctime)s] [%(lineno)d] [%(levelname)s] [%(message)s]')
         log_file.setFormatter(formatter)
         logger = logging.getLogger('tcpserver')
-        logpush("Detected Default Parameters for this queue: " + str(job_parameter_values))
         for hdlr in logger.handlers[:]:  # remove all old handlers
             logger.removeHandler(hdlr)
 
@@ -404,6 +403,7 @@ if __name__ == "__main__":
 
         if skip_queue is False:
             logpush('================================================================')
+            logpush("Detected Default Parameters for this queue: " + str(job_parameter_values))
             licenses_required = []
             for job_data in queued_jobs:
                 resource_name = job_data['get_job_resource_list'].keys()
@@ -504,6 +504,7 @@ if __name__ == "__main__":
                         if can_launch_capacity(job_parameter_values['instance_type'], desired_capacity, job_parameter_values['instance_ami'], job_id) is True:
                             try:
                                 keep_forever = 'false'
+
                                 create_new_asg = add_nodes.main(job_parameter_values['instance_type'],
                                                                 desired_capacity,
                                                                 queue_name,
@@ -520,6 +521,7 @@ if __name__ == "__main__":
                                                                 job_parameter_values['efa_support'] if 'efa_support' in job_parameter_values.keys() else False,
                                                                 job_parameter_values['base_os'] if 'base_os' in job_parameter_values.keys() else False,
                                                                 job_parameter_values['subnet_id'] if 'subnet_id' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['ht_support'] if job_parameter_values['ht_support'] in ['true', 'false'] else 'false',
                                                                 # Additional tags below
                                                                 {}
                                                                 )
@@ -559,7 +561,7 @@ if __name__ == "__main__":
                                     '''
 
                             except Exception as e:
-                                logpush('Create ASG failed for job_'+job_id + ' with error: ' + str(e) + ' This may be due to an CloudFormation having the same name already exist.', 'error')
+                                logpush('Create ASG failed for job_'+job_id + ' with error: ' + str(e), 'error')
                                 exc_type, exc_obj, exc_tb = sys.exc_info()
                                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                                 logpush(str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))

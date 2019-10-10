@@ -25,6 +25,7 @@ queue_type:
     queues: ["high", "normal", "low"]
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
+    ht_support: "false"
     #scratch_size: "100"
     #root_size: "30"
     #efa_support: "false"
@@ -33,6 +34,7 @@ queue_type:
     queues: ["desktop"]
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
+    ht_support: "false"
 EOT
 
 # Generate 10 years internal SSL certificate for Soca Web Ui

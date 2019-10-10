@@ -81,6 +81,7 @@ root_size type=string
 placement_group type=string
 spot_price type=string
 efa_support type=string
+ht_support type=string
 base_os type=string
 EOF
 
