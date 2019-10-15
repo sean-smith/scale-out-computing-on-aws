@@ -16,7 +16,7 @@ if __name__ == "__main__":
     print(" > Generated unique ID for build: " + unique_id)
     print(" > Creating temporary build folder ... ")
     print(" > Copying required files ... ")
-    targets = ['soca', 'scripts', 'templates', 'solution-for-scale-out-computing-on-aws.template']
+    targets = ['soca', 'scripts', 'templates', 'scale-out-computing-on-aws.template']
 
     for target in targets:
         if os.path.isdir(target):
@@ -25,7 +25,7 @@ if __name__ == "__main__":
             copy(target, build_folder + '/' + target)
 
     # Replace Placeholder
-    for line in fileinput.input([build_folder + '/solution-for-scale-out-computing-on-aws.template'], inplace=True):
+    for line in fileinput.input([build_folder + '/scale-out-computing-on-aws.template'], inplace=True):
         print(line.replace('%%BUCKET_NAME%%', 'your-s3-bucket-name-here').replace('%%SOLUTION_NAME%%/%%VERSION%%', 'your-s3-folder-name-here').replace('\n', ''))
 
     print(" > Creating archive for build id: " + unique_id)
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     print("\n====== Installation Instructions ======")
     print("1: Create or use an existing S3 bucket on your AWS account (eg: 'mysocacluster')")
     print("2: Drag & Drop " + build_path + "/" + build_folder + " to your S3 bucket (eg: 'mysocacluster/" + build_folder + ")")
-    print("3: Launch CloudFormation and use solution-for-scale-out-computing-on-aws.template as base template")
+    print("3: Launch CloudFormation and use scale-out-computing-on-aws.template as base template")
     print("4: Enter your cluster information.")
     print("")
     print("")

@@ -193,6 +193,11 @@ Resources:
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket , "/*" ] ]
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket] ]
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::dcv-license.", !Ref "AWS::Region", "/*"] ]
 
 
   ComputeNodeInstanceProfile:

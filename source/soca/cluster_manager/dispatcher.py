@@ -119,15 +119,15 @@ def fair_share_score(queued_jobs, running_jobs, queue):
             required_resource = int(q_job_data['get_job_nodect']) + license
             logpush('Job Required Resource Bonus ' + str(required_resource))
 
-            if queue in ['normal', 'burst', 'low', 'normalplus', 'datacheck']:
-                # Abaqus jobs have different coefficient
-                c1 = 0.5
-                c2 = 1.7
-                job_bonus_score = required_resource * (c1 * ((int(now) - int(timestamp_submission))/3600/24) ** c2)
-            else:
-                c1 = 1
-                c2 = 0
-                job_bonus_score = 1
+            # Example dynamic bonus score
+            # c1 = 0.5
+            # c2 = 1.7
+            # job_bonus_score = required_resource * (c1 * ((int(now) - int(timestamp_submission))/3600/24) ** c2)
+
+            # Linear
+            c1 = 1
+            c2 = 0
+            job_bonus_score = 1
 
             logpush('Job ' + str(q_job_data['get_job_id']) + ' queued for ' + str((int(now) - int(timestamp_submission)) / 60) + ' minutes: bonus %.2f' % job_bonus_score)
 
@@ -137,15 +137,6 @@ def fair_share_score(queued_jobs, running_jobs, queue):
         else:
             user_score[q_job_data['get_job_owner']] = user_score[q_job_data['get_job_owner']] + job_bonus_score
 
-        '''
-        # Old 
-        if q_job_data['get_job_owner'] not in user_score.keys():
-            user_score[q_job_data['get_job_owner']] = fair_share_start_score + ranking[queue_time]
-        else:
-            user_score[q_job_data['get_job_owner']] = user_score[q_job_data['get_job_owner']] + ranking[queue_time]
-        '''
-
-
     # Remove user with no queued job
     for user, score in user_score.items():
         if [i['get_job_owner'] for i in queued_jobs if i['get_job_owner'] == user]:
@@ -154,33 +145,6 @@ def fair_share_score(queued_jobs, running_jobs, queue):
             del user_score[user]
 
     return user_score
-
-
-def send_notification(subject, email_message, job_owner):
-    '''
-    Todo/ Email Addresses should be retrieved as part of LDAP attribute
-    But just in case here is an example of how to use SES
-    try:
-        ses_client = boto3.client('ses', region_name='us-west-2')
-        ses_client.send_email(
-            Source='<your_email>',
-            Destination={
-                'ToAddresses': [
-                    job_owner + '@<your_tld>',
-                ]},
-            Message={
-                'Subject': {
-                    'Data': subject,
-                },
-                'Body': {
-                    'Html': {
-                        'Data': email_message,
-                    }
-                }}, )
-    except Exception as err:
-        logpush(err)
-    '''
-    pass
 
 
 def logpush(message, status='info'):
@@ -226,12 +190,12 @@ def check_available_licenses(commands, license_to_check):
 
 
 # BEGIN EC2 FUNCTIONS
-def can_launch_capacity(instance_type, count, image_id, job_id):
+def can_launch_capacity(instance_type, count, image_id):
     try:
         ec2.run_instances(
             ImageId=image_id,
             InstanceType=instance_type,
-            SubnetId=aligo_configuration['PrivateSubnet1'], #in case of very old AWS account which used to have Classic EC2
+            SubnetId=aligo_configuration['PrivateSubnet1'],
             MaxCount=count,
             MinCount=count,
             DryRun=True)
@@ -241,15 +205,10 @@ def can_launch_capacity(instance_type, count, image_id, job_id):
             logpush('Dry Run Succeed, capacity can be added')
             return True
         else:
-            logpush('Dry Run Failed, capacity can not be added: ' +str(e), 'error')
-            if 'InstanceType' in str(e):
-                print('''
-                Your Job ''' + str(job_id) + ''' has been removed from the queue.<hr> 
-                <h2>Error #003</h2> Your EC2 instance type (''' + str(instance_type) + ''') is not valid.
-                <h2>How to fix</h2> https://confluence.amazon.com/display/DTHPC/Job+Submission+Errors#JobSubmissionsError-003:InstanceTypeisIncorrect
-                ''')
-                run_command([system_cmds['qdel'], str(job_id)], "check_output")
+            logpush('Dry Run Failed, capacity can not be added: ' + str(e), 'error')
             return False
+
+    ## need to check ServiceQuota
 
 def clean_cloudformation_stack():
     pass
@@ -296,7 +255,7 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
     except:
         # Stack does not exist (job could not start for whatever reason but compute has been provisioned
         logpush(job_id + ' is queued with a valid compute Unit. However we did not detect any cloudformation stack. To ensure job can start, we rollback compute_node to default value in order for hosts to be re-provisioned')
-        # Rollback compute_node value to default 'tobereplaced' to retry job
+        # Rollback compute_node value to default 'TBD' to retry job
         new_job_select = job_select_resource.split(':compute_node')[0] + ':compute_node=tbd'
         qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "select=" + new_job_select, str(job_id)]
         run_command(qalter_cmd, "call")
@@ -500,11 +459,10 @@ if __name__ == "__main__":
                             can_run = False
 
                     if can_run is True:
-                        logpush('job_' + job_id + ' can run, doing dry run test ...')
-                        if can_launch_capacity(job_parameter_values['instance_type'], desired_capacity, job_parameter_values['instance_ami'], job_id) is True:
+                        logpush('job_' + job_id + ' can run, doing dry run test with following parameters: ' + job_parameter_values['instance_type'] + ' *  ' +str(desired_capacity))
+                        if can_launch_capacity(job_parameter_values['instance_type'], desired_capacity, job_parameter_values['instance_ami']) is True:
                             try:
                                 keep_forever = 'false'
-
                                 create_new_asg = add_nodes.main(job_parameter_values['instance_type'],
                                                                 desired_capacity,
                                                                 queue_name,
@@ -521,7 +479,7 @@ if __name__ == "__main__":
                                                                 job_parameter_values['efa_support'] if 'efa_support' in job_parameter_values.keys() else False,
                                                                 job_parameter_values['base_os'] if 'base_os' in job_parameter_values.keys() else False,
                                                                 job_parameter_values['subnet_id'] if 'subnet_id' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['ht_support'] if job_parameter_values['ht_support'] in ['true', 'false'] else 'false',
+                                                                'false' if 'ht_support' not in job_parameter_values.keys() else job_parameter_values['ht_support'] if job_parameter_values['ht_support'] in ['true', 'false'] else 'false',
                                                                 # Additional tags below
                                                                 {}
                                                                 )
@@ -547,18 +505,7 @@ if __name__ == "__main__":
 
                                 else:
                                     logpush('Error while trying to create ASG: ' + str(create_new_asg['error']))
-                                    send_notification('Error creating ASG', 'Create ASG failed for job_' + job_id + ' with error: ' +  str(create_new_asg['error']),'mcrozes')
-                                    '''
-                                        # Most likely, problem is that stack exist but not recognized correctly, as a failover we force the compute_node value
-                                        try:
-                                            select = job_required_resource['select'].split(':compute_node')[0] + ':compute_node=job' + str(job_id)
-                                            logpush('forcing re-creation of select variable: ' + str(select))
-                                            subprocess.check_output(system_cmds['qalter'] + " -l select=" + select + " " + str(job_id),shell=True)
-                                            subprocess.check_output(system_cmds['qalter'] + " -l stack_id=soca-job-" + str(job_id) ,shell=True)
 
-                                        except Exception as e:
-                                            logpush('Error, can not force back select parameters to default value')
-                                    '''
 
                             except Exception as e:
                                 logpush('Create ASG failed for job_'+job_id + ' with error: ' + str(e), 'error')

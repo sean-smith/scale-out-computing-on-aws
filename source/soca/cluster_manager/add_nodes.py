@@ -170,7 +170,8 @@ def main(instance_type,
             return {'success': False,
                     'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e) + ' : ' + str(launch)}
     else:
-        return {'success': False }
+        return {'success': False,
+                'error': 'Dry Run failed: ' + can_launch}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
