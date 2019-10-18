@@ -7,6 +7,10 @@ Parameters:
   S3Bucket:
     Type: String
 
+  SolutionMetricLambda:
+    Type: String
+    Default: false
+
   PlacementGroup:
     Type: String
     AllowedValues:
@@ -17,6 +21,10 @@ Parameters:
     Type: List<AWS::EC2::SecurityGroup::Id>
 
   KeepForever:
+    Default: false
+    Type: String
+
+  StackUUID:
     Default: false
     Type: String
 
@@ -97,13 +105,19 @@ Parameters:
     Type: Number
     Default: 1
 
+Mappings:
+  Send:
+    AnonymousUsage:
+      Data: Yes
 
 Conditions:
   UsePlacementGroup: !Equals [ !Ref PlacementGroup, true]
+  SendMetrics: !Equals [!FindInMap [ Send, AnonymousUsage, Data  ], Yes]
   UseEFA: !Equals [ !Ref Efa, true]
   UseSpotInstance: !Not [!Equals [ !Ref SpotPrice, false]]
   UseScratchDisk: !Not [!Equals [ !Ref ScratchSize, 0]]
   UseAmazonLinux: !Equals [ !Ref BaseOS, 'amazonlinux2']
+
 
 Resources:
   ComputeNodePlacementGroup:
@@ -249,4 +263,17 @@ Resources:
           Value: soca-compute-node
           PropagateAtLaunch: true
 
-
+  SendAnonymousMetrics:
+    Condition: SendMetrics
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SolutionMetricLambda
+      DesiredCapacity: !Ref DesiredCapacity
+      InstanceType: !Ref InstanceType
+      Efa: !Ref Efa
+      ScratchSize: !Ref ScratchSize
+      RootSize: !Ref RootSize
+      SpotPrice: !Ref SpotPrice
+      BaseOS: !Ref BaseOS
+      StackUUID: !Ref StackUUID
+      KeepForever: !Ref KeepForever

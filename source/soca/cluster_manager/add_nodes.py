@@ -107,6 +107,7 @@ def main(instance_type,
         tags['Name'] = stack_name.replace('_', '-')
 
     job_parameters = {
+        'StackUUID': str(uuid.uuid4()),
         'Version': aligo_configuration['Version'],
         'S3InstallFolder': aligo_configuration['S3InstallFolder'],
         'S3Bucket': aligo_configuration['S3Bucket'],
@@ -135,6 +136,7 @@ def main(instance_type,
         'SpotPrice': spot_price if spot_price is not None else 'false',
         'CoreCount': cpu_per_system,
         'ThreadsPerCore': 2 if ht_support == 'true' else 1,
+        'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false'
     }
 
     stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]

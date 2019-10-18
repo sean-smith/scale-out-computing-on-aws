@@ -25,51 +25,10 @@ Parameters:
   SchedulerIAMRole:
     Type: String
 
+  LambdaACMIAMRoleArn:
+    Type: String
+
 Resources:
-  LambdaIAMRole:
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W11
-            reason: "* is reduced to minimal pattern"
-          - id: W28
-            reason: "Name is required to easily identify resource deployed by SOCA"
-
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - !Sub lambda.${AWS::URLSuffix}
-            Action:
-              - sts:AssumeRole
-
-      RoleName: !Sub ${ClusterId}-LambdaIAMRole
-      Policies:
-        - PolicyName: !Sub ${ClusterId}-LambdaIAMRole-Policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ClusterId}*"
-
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ClusterId}*:log-stream:*"
-
-              - Effect: Allow
-                Action:
-                  - acm:ImportCertificate
-                  - acm:ListCertificates
-                  - acm:AddTagsToCertificate
-                Resource: "*"
 
   SchedulerELBPolicy:
     Metadata:
@@ -77,6 +36,7 @@ Resources:
         rules_to_suppress:
           - id: W12
             reason: "* is reduced to minimal pattern"
+
     DependsOn: LoadBalancer
     Type: AWS::IAM::Policy
     Properties:
@@ -164,7 +124,7 @@ Resources:
       FunctionName: !Sub ${ClusterId}-CreateACMCertificate
       Handler: index.generate_cert
       MemorySize: 128
-      Role: !GetAtt LambdaIAMRole.Arn
+      Role: !Ref LambdaACMIAMRoleArn
       Runtime: python3.6
       Timeout: 60
       Tags:

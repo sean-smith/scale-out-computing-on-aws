@@ -3,7 +3,7 @@
 ## :wrench: How to install SOCA
 ### 1) 1-Click installer
 
-Visit https://aws.amazon.com/solutions/scale-out-computing-on-aws/
+Visit [https://aws.amazon.com/solutions/scale-out-computing-on-aws](https://aws.amazon.com/solutions/scale-out-computing-on-aws)
 
 :rotating_light: 1-Click installer is only great for PoC or demos. For production workload, it's recommended you go with option 2 instead.
 
@@ -28,8 +28,8 @@ python source/manual_build.py
 ### New User Guide
 link TBD
 
-### Administrator Guide
-link tbd
+### Implementation Guide
+[https://aws.amazon.com/solutions/scale-out-computing-on-aws](https://aws.amazon.com/solutions/scale-out-computing-on-aws)
 
 ## File Structure
 The AWS SOCA project consists in a collection of CloudFormation template, EC2 User-Data and Python scripts

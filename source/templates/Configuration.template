@@ -91,8 +91,96 @@ Parameters:
   SchedulerPublicIP:
     Type: String
 
+  SolutionMetricsRoleArn:
+    Type: String
+
 Resources:
+  SolutionMetricLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Send SOCA anonymous Metrics to AWS
+      FunctionName: !Sub ${ClusterId}-Metrics
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Role: !Ref SolutionMetricsRoleArn
+      Runtime: python3.7
+      Timeout: 180
+      Tags:
+        - Key: soca:ClusterId
+          Value: !Ref ClusterId
+      Code:
+        ZipFile: !Sub |
+          import json
+          import sys
+          import datetime
+          import cfnresponse
+          from urllib.request import Request
+          from urllib.request import urlopen
+          import os
+
+          '''
+          To improve performance and usability, SOCA sends anonymous metrics to AWS.
+          You can disable this by switching "Send AnonymousData" to "No" on ComputeNode.template
+          Data tracked:
+            - SOCA Instance information
+            - SOCA Instance Count
+            - SOCA Launch/Delete time
+          '''
+
+          def metrics(solution_id, uuid, data, url, request_timestamp):
+              try:
+                  time_stamp = {'TimeStamp': request_timestamp}
+                  params = {'Solution': solution_id,
+                    'UUID': uuid,
+                    'Data': data}
+
+                  metrics = dict(time_stamp, **params)
+                  json_data = json.dumps(metrics, indent=4)
+                  print(params)
+                  headers = {'content-type': 'application/json'}
+                  req = Request(url, json_data.encode('utf-8'), headers)
+                  rsp = urlopen(req)
+                  content = rsp.read()
+                  rsp_code = rsp.getcode()
+                  print('Response Code: {}'.format(rsp_code))
+              except Exception as e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
+
+
+          def lambda_handler(event, context):
+            try:
+              request_timestamp = str(datetime.datetime.utcnow().isoformat())
+              solution_id =  'SO0072'
+              uuid = event['RequestId']
+              data = {
+                      'RequestType': event['RequestType'],
+                      'RequestTimeStamp': request_timestamp,
+                      'StackUUID': event['ResourceProperties']['StackUUID'],
+                      'DesiredCapacity': event['ResourceProperties']['DesiredCapacity'],
+                      'BaseOS': event['ResourceProperties']['BaseOS'],
+                      'InstanceType': event['ResourceProperties']['InstanceType'],
+                      'Efa': event['ResourceProperties']['Efa'],
+                      'ScratchSize': event['ResourceProperties']['ScratchSize'],
+                      'RootSize': event['ResourceProperties']['RootSize'],
+                      'SpotPrice': event['ResourceProperties']['SpotPrice'],
+                      'KeepForever': event['ResourceProperties']['KeepForever']
+              }
+              # Metrics Account (Production)
+              #metrics_url = 'https://metrics.awssolutionsbuilder.com/generic'
+              metrics_url = 'https://oszclq8tyh.execute-api.us-east-1.amazonaws.com/prod/generic'
+              # Send Anonymous Metrics
+              metrics(solution_id, uuid, data, metrics_url, request_timestamp)
+            except Exception as e:
+              exc_type, exc_obj, exc_tb = sys.exc_info()
+              fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+              print(exc_type, fname, exc_tb.tb_lineno)
+
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, '')
+
   ConfigParameters:
+    DependsOn: SolutionMetricLambda
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub ${ClusterId}
@@ -126,7 +214,8 @@ Resources:
       "LoadBalancerArn": "${LoadBalancerArn}",
       "BaseOS": "${BaseOS}",
       "S3InstallFolder": "${S3InstallFolder}",
-      "SchedulerPublicIP": "${SchedulerPublicIP}"
+      "SchedulerPublicIP": "${SchedulerPublicIP}",
+      "SolutionMetricLambda": "${SolutionMetricLambda.Arn}"
       }'
 
       Tags:
@@ -150,3 +239,5 @@ Resources:
       Roles:
         - !Ref ComputeNodeIAMRole
         - !Ref SchedulerIAMRole
+
+

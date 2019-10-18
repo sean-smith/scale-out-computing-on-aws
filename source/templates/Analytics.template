@@ -16,7 +16,6 @@ Parameters:
   ClientIp:
     Type: String
 
-
 Resources:
   ElasticsearchDomain:
     Metadata:

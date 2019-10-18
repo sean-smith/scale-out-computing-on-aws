@@ -113,9 +113,6 @@ Parameters:
     AllowedPattern: '^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:]*$'
     Description: "5 characters minimum. Special chars authorized: (!@#$%^&*..)"
 
-Conditions:
-  UseCustomAMI: !Not [!Equals [!Ref CustomAMI, ""]]
-
 Mappings:
   Info:
     Data:
@@ -125,7 +122,6 @@ Mappings:
       centos7: centos
       amazonlinux2: ec2-user
       rhel7: ec2-user
-
 
   RegionMap:
     ap-east-1: # Hong Kong
@@ -200,6 +196,9 @@ Mappings:
       rhel7: ami-05c1c16cac05a7c0b
       centos7: ami-0b8d86d4bf91850af
       amazonlinux2: ami-058943e7d9b9cabfb
+
+Conditions:
+  UseCustomAMI: !Not [!Equals [!Ref CustomAMI, ""]]
 
 Resources:
   Network:
@@ -288,6 +287,7 @@ Resources:
         VpcId: !GetAtt Network.Outputs.VpcId
         SchedulerInstanceId: !GetAtt Scheduler.Outputs.SchedulerInstanceId
         SchedulerIAMRole: !GetAtt Security.Outputs.SchedulerIAMRole
+        LambdaACMIAMRoleArn: !GetAtt Security.Outputs.LambdaACMIAMRoleArn
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Viewer.template"] ]
       TimeoutInMinutes: 30
 
@@ -327,7 +327,7 @@ Resources:
         LoadBalancerDNSName: !GetAtt Viewer.Outputs.LoadBalancerDNSName
         LoadBalancerArn: !GetAtt Viewer.Outputs.LoadBalancerArn
         BaseOS: !Ref BaseOS
-
+        SolutionMetricsRoleArn: !GetAtt Security.Outputs.SolutionMetricsRoleArn
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Configuration.template"] ]
       TimeoutInMinutes: 60
 

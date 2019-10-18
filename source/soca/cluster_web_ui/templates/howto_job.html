@@ -276,104 +276,127 @@ ip-90-0-188-37
 
                                  <hr>
                                   <h4>Examples</h4>
-                                  <h5>Run a simple script on 1 node using default settings on 'cpus' queue</h5>
+   For the rest of the examples below, I will run a simple script named "script.sh" with the following content: <br>
+<pre><code class="language-bash">
+#!/bin/bash
+# Will output the hostname of the host where the script is executed
+# If using MPI (more than 1 node), you will get the hostname of all the hosts allocated for your job
+echo `hostname`</code></pre>
+                                  <hr>
+                                  <h5>Run a simple script on 1 node using default settings on 'normal' queue</h5>
 <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
+#PBS -q normal
 #PBS -l nodes=1
 ## END PBS SETTINGS
 cd $HOME
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
-                                  <h5>Run a simple script on 5 nodes using custom EC2 instance type</h5>
-This job will use a 5 c5.18xlarge instances.<br>
-                                   <section style="background-color: #eaecf4;">
+./script.sh >> my_output.log 2>&1</code></pre>
+
+
+                                  <h5>Run a simple MPI script on 3 nodes using custom EC2 instance type</h5>
+This job will use a 3 c5.18xlarge instances <br>
 <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
-#PBS -l nodes=5,instance_type=c5.18xlarge
+#PBS -q normal
+#PBS -l nodes=3,instance_type=c5.18xlarge
 ## END PBS SETTINGS
-cd $HOME
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre></section>
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5.18xlarge is 36 cores so -np is 36 * 3 hosts
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 108 script.sh > my_output.log
+</code></pre>
 
-                                  <h5>Run a simple script on 5 nodes using custom License Restriction</h5>
+                                  <h5>Run a simple script on 3 nodes using custom License Restriction</h5>
 This job will only start if we have at least 4 Comsol Acoustic licenses available<br>
 <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
-#PBS -l nodes=5,instance_type=c5.18xlarge,comsol_lic_acoustic=4
+#PBS -q normal
+#PBS -l nodes=3,instance_type=c5.18xlarge,comsol_lic_acoustic=4
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5.18xlarge is 36 cores so -np is 36 * 3 hosts
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 108 script.sh > my_output.log
+</code></pre>
+
+
                                   <h5>Run a simple script on 5 nodes using custom AMI</h5>
 This job will use a user-specified AMI ID<br>
 <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
-#PBS -l nodes=5,ami_id=ami-1234abcde
+#PBS -q normal
+#PBS -l nodes=5,instance_type=c5.18xlarge,instance_ami=ami-123abcde
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
-   <h5>Run a MPI (OpenMPI script on 10 nodes</h5>
- <pre><code class="language-bash">#!/bin/bash
-#PBS -N my_job_name
-#PBS -V -j oe -o my_job_name.qlog
-#PBS -P project_a
-#PBS -q cpus
-#PBS -l nodes=10,instance_type=m5.24xlarge
-## END PBS SETTINGS
-cd $PBS_O_WORKDIR
-## Find list of host that will be used for your simulation. This is required if your software supports MPI
 cat $PBS_NODEFILE | sort | uniq > mpi_nodes
-## Optional - You may want to export some libraries, if needed, here is an example below
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
 export PATH=$PATH:/apps/openmpi/4.0.1/bin/
-mpiexec -f mpi_nodes -n 10 -ppn 48 ./myscript > my_output.log</code></pre>
+# c5.18xlarge is 36 cores so -np is 36 * 5 hosts
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
+</code></pre>
+
                                   <h5>Run a simple script on 5 m5.24xlarge SPOT instances as long as bid price is lower than $2.5 per hour</h5>
 This job will use SPOT instances. Instances will be automatically terminated if BID price is higher than $2.5 / per hour per instance<br>
 <pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
+#PBS -q normal
 #PBS -l nodes=5,instance_type=m5.24xlarge,spot_price=2.5
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code></pre>
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# m5.24xlarge is 48 cores so -np is 48 * 5 hosts
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 240 script.sh > my_output.log
+</code></pre>
+
 <h5>Submit a job with EFA</h5>
  Make sure to use an instance type supported by EFA <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html#efa-instance-types">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html#efa-instance-types</a>
-<pre><code class="language-bash">
-#!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
-#PBS -l nodes=5,instance_type=c5n.18xlarge,efa_support=yes
+#PBS -q normal
+#PBS -l nodes=5,instance_type=c5n.18xlarge,efa_support=true
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1</code> </pre>
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5n.18xlarge is 36 cores so -np is 36 * 5
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
+</code></pre>
 <h5>Combine everything</h5>
 Custom AMI running on a different distribution than the scheduler, with EFA enable, without placement group and within a specific subnet_id
-<pre><code class="language-bash">
-#!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 #PBS -N my_job_name
 #PBS -V -j oe -o my_job_name.qlog
 #PBS -P project_a
-#PBS -q cpus
+#PBS -q normal
 ## Resources can be specified on multiple lines
 #PBS -l nodes=5,instance_type=c5n.18xlarge,efa_support=yes
 #PBS -l placement_group=false,base_os=rhel7,ami_id=ami-12345,subnet_id=sub-abcde
 ## END PBS SETTINGS
 cd $PBS_O_WORKDIR
-echo "Hello from `hostname`" >> my_application_logs.log 2>&1 </code> </pre>
-
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5n.18xlarge is 36 cores so -np is 36 * 5
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log</code> </pre>
 
 
 

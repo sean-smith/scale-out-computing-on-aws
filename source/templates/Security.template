@@ -303,6 +303,12 @@ Resources:
 
               - Effect: Allow
                 Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":lambda:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":function:", !Ref ClusterId, "-Metrics"] ]
+
+              - Effect: Allow
+                Action:
                   - ec2:CreatePlacementGroup
                   - ec2:DeletePlacementGroup
                 Resource: "*"
@@ -332,12 +338,92 @@ Resources:
       #InstanceProfileName: !Sub ${ClusterId}-SchedulerIAMInstanceProfile
 
 
+  SolutionMetricsRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "* is reduced to minimal pattern"
+
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub "lambda.${AWS::URLSuffix}"
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: SolutionMetric
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DeleteLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":logs:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":log-group:/aws/lambda/soca*"] ]
+
+  LambdaACMIAMRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "* is reduced to minimal pattern"
+          - id: W28
+            reason: "Name is required to easily identify resource deployed by SOCA"
+
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub lambda.${AWS::URLSuffix}
+            Action:
+              - sts:AssumeRole
+
+      RoleName: !Sub ${ClusterId}-LambdaACMIamRole
+      Policies:
+        - PolicyName: !Sub ${ClusterId}-LambdaACMIamRole-Policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ClusterId}*"
+
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ClusterId}*:log-stream:*"
+
+              - Effect: Allow
+                Action:
+                  - acm:ImportCertificate
+                  - acm:ListCertificates
+                  - acm:AddTagsToCertificate
+                Resource: "*"
 
 Outputs:
   SchedulerIAMRole:
     Value: !Ref SchedulerIAMRole
   SchedulerIAMRoleArn:
     Value: !GetAtt SchedulerIAMRole.Arn
+  SolutionMetricsRole:
+    Value: !Ref SolutionMetricsRole
+  SolutionMetricsRoleArn:
+    Value: !GetAtt SolutionMetricsRole.Arn
   SchedulerIAMInstanceProfile:
     Value: !Ref SchedulerIAMInstanceProfile
   SchedulerIAMInstanceProfileArn:
@@ -354,3 +440,6 @@ Outputs:
     Value: !GetAtt SchedulerSecurityGroup.GroupId
   ComputeNodeSecurityGroup:
     Value: !GetAtt ComputeNodeSecurityGroup.GroupId
+  LambdaACMIAMRoleArn:
+    Value: !GetAtt LambdaACMIAMRole.Arn
+

@@ -6,7 +6,7 @@
 
 source /etc/environment
 DATA_RETENTION=10 # number of days logs stay in the server 
-S3_BUCKET="s3://$SOCA_INSTALL_BUCKET/$SOCA_VERSION/cluster_logs/"
+S3_BUCKET="s3://$SOCA_INSTALL_BUCKET/$SOCA_CONFIGURATION/cluster_logs/"
 SCHEDULER_DIRECTORY='/var/spool/pbs'
 SCHEDULER_SERVER_LOGS=$SCHEDULER_DIRECTORY'/server_logs/'
 SCHEDULER_SCHED_LOGS=$SCHEDULER_DIRECTORY'/sched_logs/'
