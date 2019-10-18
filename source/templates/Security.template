@@ -338,7 +338,7 @@ Resources:
       #InstanceProfileName: !Sub ${ClusterId}-SchedulerIAMInstanceProfile
 
 
-  SolutionMetricsRole:
+  LambdaSolutionMetricRole:
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -364,11 +364,14 @@ Resources:
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ClusterId}*"
+
+              - Effect: Allow
+                Action:
                   - logs:CreateLogStream
-                  - logs:DeleteLogStream
                   - logs:PutLogEvents
-                Resource:
-                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":logs:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":log-group:/aws/lambda/soca*"] ]
+                  - logs:DeleteLogStream
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ClusterId}*:log-stream:*"
 
   LambdaACMIAMRole:
     Metadata:
@@ -421,9 +424,9 @@ Outputs:
   SchedulerIAMRoleArn:
     Value: !GetAtt SchedulerIAMRole.Arn
   SolutionMetricsRole:
-    Value: !Ref SolutionMetricsRole
+    Value: !Ref LambdaSolutionMetricRole
   SolutionMetricsRoleArn:
-    Value: !GetAtt SolutionMetricsRole.Arn
+    Value: !GetAtt LambdaSolutionMetricRole.Arn
   SchedulerIAMInstanceProfile:
     Value: !Ref SchedulerIAMInstanceProfile
   SchedulerIAMInstanceProfileArn:

@@ -124,6 +124,23 @@
                                        <img height="auto" width="100%" src="{{ url_for('static', filename='img/kibana-7.png') }}">
                                       </div>
                                   </div>
+                                   <hr>
+                                  <h3> Troubleshoot  access permission</h3>
+                                  Access to ElasticSearch is restricted to the IP you have specified during the installation. If your IP change for any reason, you won't be able to access the analytics dashboard and will get the following error message:
+                                  <br><code class="language-json">
+                                  {
+                                    "Message": "User: anonymous is not authorized to perform: es:ESHttpGet"
+                                  }
+                                 </code><br>
+                                  To solve this issue, log in to AWS Console  and go to ElasticSearch Service dashboard. Select  your ElasticSearch cluster and click "Modify Access Policy"
+
+                                 <img height="auto" width="100%" src="{{ url_for('static', filename='img/kibana-8.png') }}">
+
+                                Finally, simply add your new IP under the "Condition" block, then click Submit
+
+                                 <img height="auto" width="100%" src="{{ url_for('static', filename='img/kibana-9.png') }}">
+
+                                Please note it may take up to 5 minutes for your IP to be whitelisted
 
 
 
