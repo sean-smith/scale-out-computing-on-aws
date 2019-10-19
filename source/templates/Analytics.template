@@ -25,7 +25,7 @@ Resources:
             reason: "Domain Name is required if we want to restrict AccessPolicies to this resource only"
     Type: AWS::Elasticsearch::Domain
     Properties:
-      ElasticsearchVersion: 6.5
+      ElasticsearchVersion: 7.1
       DomainName: !Sub ${ClusterId}
       EBSOptions:
         VolumeSize: 20

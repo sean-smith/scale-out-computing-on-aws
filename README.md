@@ -26,17 +26,17 @@ python source/manual_build.py
 ## :book: Documentation
 
 ### New User Guide
-link TBD
+[https://soca.dev](https://soca.dev)
 
 ### Implementation Guide
 [https://aws.amazon.com/solutions/scale-out-computing-on-aws](https://aws.amazon.com/solutions/scale-out-computing-on-aws)
 
-## File Structure
-The AWS SOCA project consists in a collection of CloudFormation template, EC2 User-Data and Python scripts
+## :pencil2: File Structure
+The AWS SOCA project consists in a collection of CloudFormation templates, Shell scripts and Python code.
 
 ```bash
 .
-├── solution-for-scale-out-computing-on-aws.template    [ Soca Install Template ]
+├── scale-out-computing-on-aws.template                 [ Soca Install Template ]
 ├── soca                           
 │   ├── cluster_analytics                               [ Scripts to ingest cluster/job data into ELK ]
 │   ├── cluster_hooks                                   [ Scheduler Hooks ]

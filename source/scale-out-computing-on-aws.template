@@ -265,8 +265,8 @@ Resources:
               cfnresponse.send(event, context, cfnresponse.FAILED, {'error': error_message}, error_message)
               return error_message
 
-            if stack_name.__len__() > 16:
-              error_message = 'Please use a stack name with less than 16 characters'
+            if stack_name.__len__() > 20:
+              error_message = 'Please use a stack name smaller than 20 characters'
               cfnresponse.send(event, context, cfnresponse.FAILED, {'error': error_message}, error_message)
               return error_message
 
