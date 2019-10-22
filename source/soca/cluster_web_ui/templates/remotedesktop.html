@@ -22,7 +22,7 @@
 
                  <div class="alert alert-primary" role="alert">
                      <strong>2D Session: </strong>
-                     2D session does not support GPU acceleration. This type of session if good for non-intensive compute activities.
+                     2D session does not support GPU acceleration. This type of session is good for non-intensive compute activities.
                      <hr><strong>3D Session: </strong>
                      3D session provides full GPU support. This is recommended for graphic intensive operations such as 3D model rendering or post-processing.
 
@@ -109,9 +109,9 @@
                                               <option value="m5.24xlarge">2D - Extra Large (16 CPUs - 64 GB ram)</option>
                                               <option value="" disabled="disabled">-- Quick Launch 3D --</option>
                                               <option value="g3.4xlarge">3D - Small (16 CPUs - 122 GB ram - 1 M60 GPU)</option>
-                                              <option value="g3.8xlarge">3D - Medium (32 CPUs - 244 GB ram - 2 M60 GPUs )</option>
+                                              <option value="g3.8xlarge">3D - Medium (32 CPUs - 244 GB ram - 2 M60 GPUs)</option>
                                               <option value="g3.16xlarge">3D - Large (64 CPUs - 488 GB ram - 4 M60 GPUs)</option>
-                                              <option value="" disabled="disabled">-- Advanced Users --</option>
+                                              <option value="" disabled="disabled">-- Specific type --</option>
                                               {%  for instance in all_instances %}
                                                   <option value="{{ instance }}">{{ instance }}</option>
                                               {% endfor %}

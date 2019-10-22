@@ -137,6 +137,7 @@ Resources:
                 VolumeSize: !Ref RootSize
                 VolumeType: gp2
                 DeleteOnTermination: true
+                Encrypted: True
 
           - !If
             - UseScratchDisk
@@ -145,13 +146,14 @@ Resources:
                 VolumeSize: !Ref ScratchSize
                 VolumeType: gp2
                 DeleteOnTermination: true
+                Encrypted: True
             - !Ref AWS::NoValue
 
 
         EbsOptimized: true
         CpuOptions:
           CoreCount: !Ref CoreCount
-          ThreadsPerCore: !Ref ThreadsPerCore # Disable HT = 1
+          ThreadsPerCore: !Ref ThreadsPerCore
 
         IamInstanceProfile:
           Name: !Ref ComputeNodeInstanceProfile

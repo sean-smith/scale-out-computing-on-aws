@@ -12,6 +12,11 @@ GUNICORN_BIND='0.0.0.0:8443'
 GUNICORN_WORKERS=3
 GUNICORN_APP='app:app'
 
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root"
+   exit 1
+fi
+
 cd `dirname "$0"`
 status ()
     {

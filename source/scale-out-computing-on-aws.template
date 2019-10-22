@@ -31,7 +31,7 @@ Metadata:
 
     ParameterLabels:
       VpcCidr:
-        default: Choose your VPC Cidr
+        default: Create your new VPC
       ClientIp:
         default: What's your IP?
       CustomAMI:

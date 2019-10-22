@@ -21,7 +21,7 @@ app.register_blueprint(dcv_management)
 client = boto3.client('ec2')
 
 def session_info():
-    return {'username': session['username'],
+    return {'username': session['username'].lower(),
             'sudoers': session['sudoers']
             }
 
@@ -51,7 +51,7 @@ def authenticate():
     username = request.form.get('username')
     password = request.form.get('password')
     if username is not None and password is not None:
-        check_auth = openldap.validate_ldap(username, password)
+        check_auth = openldap.validate_ldap(username.lower(), password)
         print(check_auth)
         if check_auth['success'] is False:
             flash(check_auth['message'])
