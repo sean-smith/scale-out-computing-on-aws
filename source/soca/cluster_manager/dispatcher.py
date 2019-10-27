@@ -1,5 +1,5 @@
 """
-SOCAC DYNAMIC CLUSTER MANAGER
+SOCA DYNAMIC CLUSTER MANAGER
 This script retrieve all queued jobs, calculate PBS resources required to launch each job
 and provision EC2 capacity if all resources conditions are met.
 """
@@ -418,6 +418,11 @@ if __name__ == "__main__":
                                     logpush("scratch_size must be an integer. Ignoring " + str(job_required_resource[res]))
                                     job_required_resource[res] = 0
 
+                            if res == "scratch_iops":
+                                if isinstance(job_required_resource[res], int) is not True:
+                                    logpush("scratch_iops must be an integer. Ignoring " + str(job_required_resource[res]))
+                                    job_required_resource[res] = 0
+
                             job_parameter_values[res] = job_required_resource[res]
                         else:
                             logpush("No default value for " + res + ". Creating new entry with value: " +  str(job_required_resource[res]))
@@ -473,6 +478,7 @@ if __name__ == "__main__":
                                                                 job['get_job_project'],
                                                                 keep_forever,
                                                                 job_parameter_values['scratch_size'] if 'scratch_size' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['scratch_iops'] if 'scratch_iops' in job_parameter_values.keys() else 0,
                                                                 job_parameter_values['root_size'] if 'root_size' in job_parameter_values.keys() else False,
                                                                 job_parameter_values['placement_group'] if 'placement_group' in job_parameter_values.keys() else False,
                                                                 job_parameter_values['spot_price'] if 'spot_price' in job_parameter_values.keys() else False,
@@ -512,3 +518,6 @@ if __name__ == "__main__":
                                 exc_type, exc_obj, exc_tb = sys.exc_info()
                                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                                 logpush(str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))
+
+                        else:
+                            pass

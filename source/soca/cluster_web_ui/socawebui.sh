@@ -24,7 +24,7 @@ status ()
     }
 
 if [[ $# -eq 0 ]] ; then
-    echo 'Usage: aligo.sh start|stop|status'
+    echo 'Usage: socawebui.sh start|stop|status'
     exit 0
 fi
 
@@ -38,14 +38,18 @@ case "$1" in
 
     status
         if [[ -z $status_check_process ]]; then
-            echo 'Starting Aligo'
+            echo 'Starting SOCA'
+            if [[ ! -f flask_secret_key.txt ]]; then
+                echo 'No Flask Key detected, creating new one ...'
+                cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 > flask_secret_key.txt
+                chmod 600 flask_secret_key.txt
+            fi
+            export FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
             $GUNICORN_BIN $GUNICORN_APP -b $GUNICORN_BIND --workers $GUNICORN_WORKERS --log-level warning --certfile cert.crt --keyfile cert.key --log-file application_output.log --daemon
-            exit 0
 
         else
-           echo 'Aligo is already running with PIDs: ' $status_check_process
-           echo 'Run "aligo stop" first.'
-
+           echo 'SOCA is already running with PIDs: ' $status_check_process
+           echo 'Run "socawebui.sh stop" first.'
         fi
 
     ;;
@@ -53,7 +57,7 @@ case "$1" in
     stop)
     status
     if [[ -z $status_check_process ]]; then
-           echo 'Aligo is not running'
+           echo 'SOCA is not running'
        else
           kill -9 $status_check_process
 
@@ -64,13 +68,13 @@ case "$1" in
     status)
         status
         if [[ -z $status_check_process ]]; then
-            echo 'Aligo is not running'
+            echo 'SOCA is not running'
         else
-           echo 'Aligo is running with PIDs: ' $status_check_process
+           echo 'SOCA is running with PIDs: ' $status_check_process
 
         fi
 
 
      ;;
-    *) echo 'Usage: aligo.sh start|stop|status' ;;
+    *) echo 'Usage: socawebui.sh start|stop|status' ;;
 esac

@@ -3,11 +3,11 @@ import generic.parameters as parameters
 import subprocess
 from flask import session, redirect, request
 
-def create_new_user(username, password, sudoers):
+def create_new_user(username, password, sudoers, email):
     if sudoers is None:
-        create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password]
+        create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '-e', email]
     else:
-        create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '--admin']
+        create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '-e', email, '--admin']
     create_new_user_exit_code = subprocess.call(create_user_cmd)
     return {'cmd': ' '.join(create_user_cmd), 'exit_code': create_new_user_exit_code}
 
@@ -51,6 +51,7 @@ def validate_ldap(username, password):
             session['sudoers'] = True
         else:
             session['sudoers'] = False
+
         return {'success': True,
                 'message': ''}
 

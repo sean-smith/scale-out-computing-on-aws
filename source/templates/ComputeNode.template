@@ -105,6 +105,10 @@ Parameters:
     Type: Number
     Default: 1
 
+  VolumeTypeIops:
+    Type: Number
+    Default: 0
+
 Mappings:
   Send:
     AnonymousUsage:
@@ -117,7 +121,7 @@ Conditions:
   UseSpotInstance: !Not [!Equals [ !Ref SpotPrice, false]]
   UseScratchDisk: !Not [!Equals [ !Ref ScratchSize, 0]]
   UseAmazonLinux: !Equals [ !Ref BaseOS, 'amazonlinux2']
-
+  UseProvisionedIo: !Not [!Equals [ !Ref VolumeTypeIops, 0]]
 
 Resources:
   ComputeNodePlacementGroup:
@@ -144,7 +148,8 @@ Resources:
             - DeviceName: '/dev/xvdbx' # /scratch
               Ebs:
                 VolumeSize: !Ref ScratchSize
-                VolumeType: gp2
+                VolumeType: !If [UseProvisionedIo, io1, gp2]
+                Iops: !If [UseProvisionedIo, !Ref VolumeTypeIops, !Ref "AWS::NoValue"]
                 DeleteOnTermination: true
                 Encrypted: True
             - !Ref AWS::NoValue

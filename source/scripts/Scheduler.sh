@@ -77,6 +77,7 @@ availability_zone type=string
 subnet_id type=string
 instance_ami type=string
 scratch_size type=string
+scratch_iops type=string
 root_size type=string
 placement_group type=string
 spot_price type=string
@@ -313,7 +314,8 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
       requests==2.6.0 \
       flask==1.0.3 \
       gunicorn==19.9.0 \
-      pyopenssl==19.0.0
+      pyopenssl==19.0.0 \
+      flask_wtf==0.14.2
 
 # Install SSM
 yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm

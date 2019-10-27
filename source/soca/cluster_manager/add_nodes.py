@@ -40,6 +40,7 @@ def main(instance_type,
          job_project,
          keep_forever,
          scratch_size,
+         scratch_iops,
          root_size,
          placement_group,
          spot_price,
@@ -81,7 +82,10 @@ def main(instance_type,
     if cpus_count_pattern:
         cpu_per_system = int(cpus_count_pattern.group(1)) * 2
     else:
-        cpu_per_system = '1'
+        if 'xlarge' in instance_type:
+            cpu_per_system = '2'
+        else:
+            cpu_per_system = '1'
 
 
         # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
@@ -136,8 +140,10 @@ def main(instance_type,
         'SpotPrice': spot_price if spot_price is not None else 'false',
         'CoreCount': cpu_per_system,
         'ThreadsPerCore': 2 if ht_support == 'true' else 1,
-        'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false'
+        'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false',
+        'VolumeTypeIops': scratch_iops
     }
+
 
     stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
     stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v)} for k, v in job_parameters.items() if v]
@@ -187,6 +193,7 @@ if __name__ == "__main__":
     parser.add_argument('--job_owner', nargs='?', required=True, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--scratch_size', default=False, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--root_size', default=False, nargs='?', help="Size of Root partition in GB")
     parser.add_argument('--placement_group', help="Enable or disable placement group")
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
@@ -244,6 +251,7 @@ if __name__ == "__main__":
                arg.base_os,
                False if arg.subnet_id is None else arg.subnet_id,
                False if arg.ht_support is None else arg.ht_support,
+               arg.scratch_iops,
                arg.tags))
 
     if launch['success'] is True:

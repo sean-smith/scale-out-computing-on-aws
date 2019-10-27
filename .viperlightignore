@@ -16,6 +16,7 @@ source/soca/cluster_analytics/job_tracking.py:141
 source/soca/cluster_web_ui/app.py:108
 source/solution-for-scale-out-computing-on-aws.yml:166
 source/soca/cluster_web_ui/templates/common/horizontal_menu_bar.html:5
+source/soca/cluster_hooks/job_notifications.py:54
 
 
 # Python Bandit

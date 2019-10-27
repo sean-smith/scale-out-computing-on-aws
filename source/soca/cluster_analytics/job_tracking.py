@@ -81,7 +81,7 @@ def es_entry_exist(job_id):
         return False
 
     sid = response['_scroll_id']
-    scroll_size = response['hits']['total']
+    scroll_size = response['hits']['total']['value']
     existing_entries = []
 
     while scroll_size > 0:

@@ -1,4 +1,5 @@
 from flask import Flask, render_template, session, redirect, request, flash
+from flask_wtf.csrf import CSRFProtect
 import datetime
 import logging
 import collections
@@ -13,8 +14,11 @@ import boto3
 import os
 
 app = Flask(__name__)
-app.secret_key = '9q50NGgFlwgacIPpB8r-fmFcfVpvQRIIKFS9I-OC8hg'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=90)
+csrf = CSRFProtect(app)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+# Flask_secret_key is created by socawebui.sh
+app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+app.config['SESSION_COOKIE_SECURE'] = True
 app.register_blueprint(get_ppk_key)
 app.register_blueprint(get_pem_key)
 app.register_blueprint(dcv_management)
@@ -40,10 +44,7 @@ def login():
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    if 'username' in session.keys():
-        del session['username']
-        del session['sudoers']
-
+    session.pop('username', None)
     return redirect('/')
 
 @app.route('/auth', methods=['POST'])
@@ -52,7 +53,6 @@ def authenticate():
     password = request.form.get('password')
     if username is not None and password is not None:
         check_auth = openldap.validate_ldap(username.lower(), password)
-        print(check_auth)
         if check_auth['success'] is False:
             flash(check_auth['message'])
             return redirect('/login')
@@ -70,7 +70,7 @@ def remotedesktop():
     user_sessions = dcv.check_user_session(username)
     max_number_of_sessions = parameters.authorized_dcv_session_count()
     # List of instances not available for DCV. Adjust as needed
-    blacklist = ['t1', 't2', 'm1', 'm4', 'c3', 'p2', 'p3', 'r3', 'r4', 'metal', 'nano', 'micro']
+    blacklist = ['t1', 't2', 'm1','m4', 'm5.large', 'c3', 'p2', 'p3', 'r3', 'r4', 'metal', 'nano', 'micro']
     all_instances_available = client._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
     return render_template('remotedesktop.html', user_sessions=user_sessions, username=username, view='remotedesktop',
@@ -146,8 +146,9 @@ def create_new_account():
     if session_info()['sudoers'] is True:
         username = str(request.form.get('username'))
         password = str(request.form.get('password'))
+        email = str(request.form.get('email'))
         sudoers = request.form.get('sudo')
-        create_new_user = openldap.create_new_user(username, password, sudoers)
+        create_new_user = openldap.create_new_user(username, password, sudoers, email)
         if int(create_new_user['exit_code']) == 0:
             msg = {'success': True,
                    'message': 'User: ' + username + ' has been created correctly'}
