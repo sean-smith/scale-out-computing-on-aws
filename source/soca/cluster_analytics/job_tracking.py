@@ -26,6 +26,7 @@ def get_aligo_configuration():
 
 
 def get_aws_pricing(ec2_instance_type):
+
     pricing = {}
     response = client.get_products(
         ServiceCode='AmazonEC2',
@@ -33,7 +34,7 @@ def get_aws_pricing(ec2_instance_type):
             {
                 'Type': 'TERM_MATCH',
                 'Field': 'usageType',
-                'Value': 'USW2-BoxUsage:' + ec2_instance_type
+                'Value': 'BoxUsage:' + ec2_instance_type
             },
         ],
 
@@ -246,6 +247,12 @@ if __name__ == "__main__":
                                 tmp['ctime_iso'] = (datetime.datetime.fromtimestamp(tmp['ctime'], tz).isoformat())
                                 tmp['start_iso'] = (datetime.datetime.fromtimestamp(tmp['start'], tz).isoformat())
                                 tmp['end_iso'] = (datetime.datetime.fromtimestamp(tmp['end'], tz).isoformat())
+
+                                # Next Release: Add Price support for EBS disks
+                                # ec2_price_ondemand (io vs gp2)
+                                # ebs_scratch_price
+                                # ebs_root_price
+                                # price_ondemand = ec2_price_ondemand + ebs_scratch_price  + ebs_root_price
 
                                 if tmp['instance_type_used'] not in pricing_table.keys():
                                     pricing_table[tmp['instance_type_used']] = get_aws_pricing(tmp['instance_type_used'])

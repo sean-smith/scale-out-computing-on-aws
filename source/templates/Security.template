@@ -205,6 +205,19 @@ Resources:
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":ses:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":identity*"] ]
 
+              - Effect: Allow
+                Action:
+                  - ec2:CreateTags
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeVolumes
+                Resource: "*"
+
+
+
   ComputeNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

@@ -285,7 +285,7 @@ if __name__ == "__main__":
     ec2 = boto3.client('ec2')
     cloudformation = boto3.client('cloudformation')
     aligo_configuration = configuration.get_aligo_configuration()
-    job_parameter_values = {}
+    queue_parameter_values = {}
     queues = False
     # Retrieve Default Queue parameters
     stream_resource_mapping = open('/apps/soca/cluster_manager/settings/queue_mapping.yml', "r")
@@ -296,7 +296,7 @@ if __name__ == "__main__":
                 if type == queue_type:
                     queues = info['queues']
                     for parameter_key, parameter_value in info.items():
-                        job_parameter_values[parameter_key] = parameter_value
+                        queue_parameter_values[parameter_key] = parameter_value
         stream_resource_mapping.close()
 
     # Generate FlexLM mapping
@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
         if skip_queue is False:
             logpush('================================================================')
-            logpush("Detected Default Parameters for this queue: " + str(job_parameter_values))
+            logpush("Detected Default Parameters for this queue: " + str(queue_parameter_values))
             licenses_required = []
             for job_data in queued_jobs:
                 resource_name = job_data['get_job_resource_list'].keys()
@@ -386,6 +386,7 @@ if __name__ == "__main__":
                 exit(1)
 
             for job_id in job_list:
+                job_parameter_values = {}
 
                 if queue_mode == 'fifo':
                     job = job_id
@@ -424,6 +425,7 @@ if __name__ == "__main__":
                                     job_required_resource[res] = 0
 
                             job_parameter_values[res] = job_required_resource[res]
+
                         else:
                             logpush("No default value for " + res + ". Creating new entry with value: " +  str(job_required_resource[res]))
                             job_parameter_values[res] = job_required_resource[res]
@@ -439,6 +441,10 @@ if __name__ == "__main__":
                         except:
                             logpush('One required PBS resource has not been specified on the JSON input for ' + job_id + ': ' + str(res) +' . Please update custom_flexlm_resources on ' +str(arg.config))
                             exit(1)
+
+                    for queue_param in queue_parameter_values.keys():
+                        if queue_param not in job_parameter_values.keys():
+                            job_parameter_values[queue_param] = queue_parameter_values[queue_param]
 
                     # Checking for required parameters
                     if 'instance_type' not in job_parameter_values.keys():

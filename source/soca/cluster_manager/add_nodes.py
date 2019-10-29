@@ -244,6 +244,7 @@ if __name__ == "__main__":
                arg.job_project,
                arg.keep_forever,
                arg.scratch_size,
+               arg.scratch_iops,
                arg.root_size,
                arg.placement_group,
                arg.spot_price,
@@ -251,7 +252,6 @@ if __name__ == "__main__":
                arg.base_os,
                False if arg.subnet_id is None else arg.subnet_id,
                False if arg.ht_support is None else arg.ht_support,
-               arg.scratch_iops,
                arg.tags))
 
     if launch['success'] is True:

@@ -197,8 +197,10 @@ Resources:
             echo export "SOCA_JOB_QUEUE=${JobQueue}" >> /etc/environment
             echo export "SOCA_JOB_OWNER=${JobOwner}" >> /etc/environment
             echo export "SOCA_JOB_NAME=${JobName}" >> /etc/environment
+            echo export "SOCA_JOB_PROJECT=${JobProject}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment
             echo export "SOCA_JOB_EFA=${Efa}" >> /etc/environment
+            echo export "SOCA_JOB_ID=${JobId}" >> /etc/environment
             echo export "SOCA_SCRATCH_SIZE=${ScratchSize}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
@@ -206,13 +208,21 @@ Resources:
             echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
 
             source /etc/environment
+            AWS=$(which aws)
+
+            # Tag EBS disks manually as CFN does not support it
+            AWS_AVAIL_ZONE=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
+            AWS_REGION="`echo \"$AWS_AVAIL_ZONE\" | sed 's/[a-z]$//'`"
+            AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+            EBS_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query 'Volumes[*].[VolumeId]' --out text | tr "\n" " ")
+            $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value=$SOCA_JOB_OWNER Key=soca:JobProject,Value=$SOCA_JOB_PROJECT  Key=soca:JobId,Value=$SOCA_JOB_ID Key=soca:JobQueue,Value=$SOCA_JOB_QUEUE
 
             # Give some sudo permission to the user on this specific machine
             echo "${JobOwner} ALL=(ALL) /bin/yum" >> /etc/sudoers
 
             echo "@reboot /bin/aws s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodePostReboot.sh /root && /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
             # Feel free to add new scripts based on your own requirement.
-            AWS=$(which aws)
+
             $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
             $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
             /bin/bash /root/ComputeNode.sh ${S3Bucket} ${EFSDataDns} ${EFSAppsDns} ${SchedulerHostname}
