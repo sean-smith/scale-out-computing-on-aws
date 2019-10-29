@@ -198,6 +198,7 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::dcv-license.", !Ref "AWS::Region", "/*"] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::ec2-linux-nvidia-drivers", "/*"] ]
 
               - Effect: Allow
                 Action:

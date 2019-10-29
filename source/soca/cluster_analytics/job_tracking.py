@@ -207,8 +207,6 @@ if __name__ == "__main__":
                             ignore = True
                         else:
                             queue = re.search(r'queue=(\w+)', data['job_data']).group(1)
-                            if queue in ['desktop2d', 'desktop3d']:
-                                ignore = True
 
                         if ignore is False:
                             used_resources = re.findall('(\w+)=([^\s]+)', data['job_data'])
@@ -259,7 +257,6 @@ if __name__ == "__main__":
 
                                 tmp['price_ondemand'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['ondemand']) * tmp['nodect']
                                 tmp['price_reserved'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['reserved']) * tmp['nodect']
-
 
                             json_output.append(tmp)
                 except Exception as e:

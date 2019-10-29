@@ -455,6 +455,10 @@ if __name__ == "__main__":
                         logpush('No instance_ami type detected either on the queue_mapping.yml .. defaulting to base os')
                         job_parameter_values['instance_ami'] = aligo_configuration['CustomAMI']
 
+                    # Append new resource to job resource for better tracking
+                    alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['queues', 'compute_node'])
+                    run_command([system_cmds['qalter']] + alter_job_res.split() + [str(job_id)], "call")
+
 
                     desired_capacity = int(job_required_resource['nodect'])
                     cpus_count_pattern = re.search(r'[.](\d+)', job_parameter_values['instance_type'])
