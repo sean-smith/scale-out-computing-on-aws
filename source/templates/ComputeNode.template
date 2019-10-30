@@ -145,7 +145,7 @@ Resources:
 
           - !If
             - UseScratchDisk
-            - DeviceName: '/dev/xvdbx' # /scratch
+            - DeviceName: '/dev/sdj' # /scratch - using an uncommon name just in case customers use AMI with existing EBS disks
               Ebs:
                 VolumeSize: !Ref ScratchSize
                 VolumeType: !If [UseProvisionedIo, io1, gp2]

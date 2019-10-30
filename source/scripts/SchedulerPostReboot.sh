@@ -26,15 +26,17 @@ queue_type:
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
+    root_size: "10"
     #scratch_size: "100"
-    #root_size: "30"
+    #scratch_iops: "3600"
     #efa_support: "false"
-    # .. Refer to the doc for more supported parameters
+    # .. Refer to the doc for more supported parameters https://soca.dev/tutorials/integration-ec2-job-parameters/
   desktop:
     queues: ["desktop"]
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
+    root_size: "10"
 EOT
 
 # Generate 10 years internal SSL certificate for Soca Web Ui

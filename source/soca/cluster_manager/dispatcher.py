@@ -456,7 +456,7 @@ if __name__ == "__main__":
                         job_parameter_values['instance_ami'] = aligo_configuration['CustomAMI']
 
                     # Append new resource to job resource for better tracking
-                    alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['queues', 'compute_node'])
+                    alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['select', 'ncpus', 'ngpus', 'place','nodect', 'queues', 'compute_node', 'stack_id'])
                     run_command([system_cmds['qalter']] + alter_job_res.split() + [str(job_id)], "call")
 
 

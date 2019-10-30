@@ -216,6 +216,7 @@ if __name__ == "__main__":
                                 for res in used_resources:
                                     resource_name = res[0]
                                     resource_value = res[1]
+
                                     if resource_name == 'instance_type_used':
                                         resource_value = resource_value.replace('_', '.')
 
@@ -230,6 +231,7 @@ if __name__ == "__main__":
                                             tmp['ppn'] = int(re.search(r'ppn=(\d+)', resource_value).group(1))
 
                                     tmp[resource_name] = int(resource_value) if resource_value.isdigit() is True else resource_value
+
 
                                 # Adding custom field to index
                                 tmp['simulation_time_seconds'] = tmp['end'] - tmp['start']
@@ -246,17 +248,41 @@ if __name__ == "__main__":
                                 tmp['start_iso'] = (datetime.datetime.fromtimestamp(tmp['start'], tz).isoformat())
                                 tmp['end_iso'] = (datetime.datetime.fromtimestamp(tmp['end'], tz).isoformat())
 
-                                # Next Release: Add Price support for EBS disks
-                                # ec2_price_ondemand (io vs gp2)
-                                # ebs_scratch_price
-                                # ebs_root_price
-                                # price_ondemand = ec2_price_ondemand + ebs_scratch_price  + ebs_root_price
+                                # Calculate price of the simulation
+                                # ESTIMATE ONLY. Refer to AWS Cost Explorer for exact data
+                                
+                                # Update EBS rate for your region
+                                # EBS Formulas: https://aws.amazon.com/ebs/pricing/
+                                ebs_gp2_storage = 0.1  # $ per gb per month
+                                ebs_io1_storage = 0.125  # $ per gb per month
+                                provisionied_io = 0.065  # IOPS per month
+                                # Note 1: This calculate the price of the simulation based on run time only.
+                                # It does not include the time for EC2 to be launched and configured, so I artificially added a 5 minutes penalty (average time for an EC2 instance to be provisioned)
+                                EC2_BOOT_DELAY = 300
+                                simulation_time_seconds_with_penalty = tmp['simulation_time_seconds'] + EC2_BOOT_DELAY
+                                tmp['estimated_price_storage_scratch_iops'] = 0
+                                tmp['estimated_price_storage_root_size'] = 0  # alwayson
+                                tmp['estimated_price_storage_scratch_size'] = 0
+
+                                if 'root_size' in tmp.keys():
+                                    tmp['estimated_price_storage_root_size'] = ((int(tmp['root_size']) * ebs_gp2_storage * simulation_time_seconds_with_penalty) / (86400 * 30)) * tmp['nodect']
+
+                                if 'scratch_size' in tmp.keys():
+                                    if 'scratch_iops' in tmp.keys():
+                                        tmp['estimated_price_storage_scratch_size'] = ((int(tmp['scratch_size']) * ebs_io1_storage * simulation_time_seconds_with_penalty) / (86400 * 30)) * tmp['nodect']
+                                        tmp['estimated_price_storage_scratch_iops'] = ((int(tmp['scratch_iops']) * provisionied_io * simulation_time_seconds_with_penalty) / (86400 * 30)) * tmp['nodect']
+                                    else:
+                                        tmp['estimated_price_storage_scratch_size'] = ((int(tmp['scratch_size']) * ebs_gp2_storage * simulation_time_seconds_with_penalty) / (86400 * 30)) * tmp['nodect']
+
+
 
                                 if tmp['instance_type_used'] not in pricing_table.keys():
                                     pricing_table[tmp['instance_type_used']] = get_aws_pricing(tmp['instance_type_used'])
 
-                                tmp['price_ondemand'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['ondemand']) * tmp['nodect']
-                                tmp['price_reserved'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['reserved']) * tmp['nodect']
+                                tmp['estimated_price_ec2_ondemand'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['ondemand']) * tmp['nodect']
+                                tmp['estimated_price_ec2_reserved'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['reserved']) * tmp['nodect']
+                                tmp['estimated_price_ondemand'] = tmp['estimated_price_ec2_ondemand'] + tmp['estimated_price_storage_root_size'] + tmp['estimated_price_storage_scratch_size'] + tmp['estimated_price_storage_scratch_iops']
+                                tmp['estimated_price_reserved'] = tmp['estimated_price_ec2_reserved'] + tmp['estimated_price_storage_root_size'] + tmp['estimated_price_storage_scratch_size'] + tmp['estimated_price_storage_scratch_iops']
 
                             json_output.append(tmp)
                 except Exception as e:

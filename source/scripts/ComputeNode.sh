@@ -25,25 +25,17 @@ mount -a
 if [ $SOCA_SCRATCH_SIZE -ne 0 ];
 then
     mkdir /scratch/
-    check_storage=`lsblk | grep disk | tail -n 1 | awk '{print $1'}`
-    if [$check_storage == 'xvda'];
-    then
-        echo "Non NVME driver, device mapping is xvdbx"
-        DEVICE_NAME="/dev/xvdbx"
+    SCRATCH_DEVICE_NAME="sdj" # map value to the one on ComputeNode.template
 
-    else
-        echo "NVME driver, device mapping is nvme1n1"
-        DEVICE_NAME="/dev/nvme1n1"
-    fi
+    # Find the real disk id (nvmeXn1) or xvdX based on instance type/OS
+    DEVICE_NAME=$(realpath $SCRATCH_DEVICE_NAME)
 
-    echo "$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
+    # mfks and mount
     mkfs -t ext4 $DEVICE_NAME
     mount -t ext4 $DEVICE_NAME /scratch
+    echo "$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
     chmod 777 /scratch/
 fi
-
-
-
 
 # Prepare PBS/System
 cd ~
