@@ -21,21 +21,61 @@ echo "$EFS_DATA:/ /data/ nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo
 echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 mount -a
 
-# Configure Scratch Directory if needed
+mkdir /scratch/
+chmod 777 /scratch/
+# Configure Scratch Directory if specified by the user
 if [ $SOCA_SCRATCH_SIZE -ne 0 ];
 then
-    mkdir /scratch/
-    SCRATCH_DEVICE_NAME="sdj" # map value to the one on ComputeNode.template
+    LIST_ALL_DISKS=$(lsblk --list | grep disk | awk '{print $1}')
+    for disk in $LIST_ALL_DISKS;
+	    do
+	    CHECK_IF_PARTITION_EXIST=$(lsblk -b /dev/$disk | grep part | wc -l)
+	    CHECK_PARTITION_SIZE=$(lsblk -lnb /dev/$disk-o SIZE)
+	    let SOCA_SCRATCH_SIZE_IN_BYTES = $SOCA_SCRATCH_SIZE*1024*1024*1024
+	    if [ $CHECK_IF_PARTITION_EXIST -eq 0 ] && [ $CHECK_PARTITION_SIZE -eq $SOCA_SCRATCH_SIZE_IN_BYTES ];
+	    then
+	        echo "Detected /dev/$disk with no partition as scratch device"
+		    mkfs -t ext4 /dev/$disk
+            echo "/dev/$disk /scratch ext4 defaults 0 0" >> /etc/fstab
+	    fi
+    done
+else
+    # In case Instance has instance store available as NVME disks, raid + mount them as /scratch even if scratch is not specified
+	VOLUME_LIST=()
+    DEVICES=$(ls /dev/nvme[1-9]n1)
+	if [ $? -eq 0 ];
+	then
+        echo "Detected Instance Store:" $DEVICES
+        # Clear Devices which are already mounted (eg: when customer import their own AMI)
+        for device in $DEVICES;
+        do
+            check_mountpoint=$(lsblk $device -o MOUNTPOINT | tail -n 1)
+            if [ -z "$check_mountpoint" ];
+             then
+             echo "$device is free and can be used"
+             VOLUME_LIST+=($device)
+            fi
+        done
 
-    # Find the real disk id (nvmeXn1) or xvdX based on instance type/OS
-    DEVICE_NAME=$(realpath $SCRATCH_DEVICE_NAME)
-
-    # mfks and mount
-    mkfs -t ext4 $DEVICE_NAME
-    mount -t ext4 $DEVICE_NAME /scratch
-    echo "$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
-    chmod 777 /scratch/
+	    VOLUME_COUNT=${#VOLUME_LIST[@]}
+	    if [ $VOLUME_COUNT -eq 1 ];
+	    then
+	        # If only 1 instance store, mfks as ext4
+	        echo "Detected  1 NVMe device available, formatting as ext4 .."
+	        mkfs -t ext4 $DEVICES
+	        echo "$DEVICES /scratch ext4 defaults 0 0" >> /etc/fstab
+	    else
+	        # if more than 1 instance store disks, raid them !
+	        echo "Detected more than 1 NVMe device available, creating XFS fs ..."
+	        DEVICE_NAME="md0"
+            for dev in ${VOLUME_LIST[@]} ; do dd if=/dev/zero of=$dev bs=1M count=1 ; done
+            echo yes | mdadm --create -f --verbose --level=0 --raid-devices=$VOLUME_COUNT /dev/$DEVICE_NAME ${VOLUME_LIST[@]}
+            mkfs -t ext4 /dev/$DEVICE_NAME
+            echo "/dev/md/0_0 /scratch ext4 defaults 0 0" >> /etc/fstab
+	    fi
+    fi
 fi
+
 
 # Prepare PBS/System
 cd ~

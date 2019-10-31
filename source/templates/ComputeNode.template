@@ -215,7 +215,7 @@ Resources:
             AWS_REGION="`echo \"$AWS_AVAIL_ZONE\" | sed 's/[a-z]$//'`"
             AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
             EBS_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query 'Volumes[*].[VolumeId]' --out text | tr "\n" " ")
-            $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value=$SOCA_JOB_OWNER Key=soca:JobProject,Value=$SOCA_JOB_PROJECT  Key=soca:JobId,Value=$SOCA_JOB_ID Key=soca:JobQueue,Value=$SOCA_JOB_QUEUE
+            $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value=$SOCA_JOB_OWNER Key=soca:JobProject,Value=$SOCA_JOB_PROJECT Key=Name,Value=soca-job-$SOCA_JOB_ID  Key=soca:JobId,Value=$SOCA_JOB_ID Key=soca:JobQueue,Value=$SOCA_JOB_QUEUE
 
             # Give some sudo permission to the user on this specific machine
             echo "${JobOwner} ALL=(ALL) /bin/yum" >> /etc/sudoers
@@ -225,7 +225,7 @@ Resources:
 
             $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
             $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
-            /bin/bash /root/ComputeNode.sh ${S3Bucket} ${EFSDataDns} ${EFSAppsDns} ${SchedulerHostname}
+            /bin/bash /root/ComputeNode.sh ${S3Bucket} ${EFSDataDns} ${EFSAppsDns} ${SchedulerHostname} >> /root/ComputeNode.sh.log 2>&1
 
 
   AutoScalingComputeGroup:

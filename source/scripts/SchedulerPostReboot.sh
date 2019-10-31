@@ -79,6 +79,17 @@ echo "
 " | crontab -
 
 
+# Re-enable access
+if [ "$SOCA_BASE_OS" == "amazonlinux2" ] || [ "$SOCA_BASE_OS" == "rhel7" ];
+     then
+     usermod --shell /bin/bash ec2-user
+fi
+
+if [ "$SOCA_BASE_OS" == "centos7" ];
+     then
+     usermod --shell /bin/bash centos
+fi
+
 # Check if the Cluster is fully operational
 
 # Verify PBS
@@ -139,16 +150,6 @@ echo -e "
 Cluster: $SOCA_CONFIGURATION
 > source /etc/environment to load SOCA paths
 " > /etc/motd
-
-if [ "$SOCA_BASE_OS" == "amazonlinux2" ] || [ "$SOCA_BASE_OS" == "rhel7" ];
-     then
-     usermod --shell /bin/bash ec2-user
-fi
-
-if [ "$SOCA_BASE_OS" == "centos7" ];
-     then
-     usermod --shell /bin/bash centos
-fi
 
 # Create default LDAP user
 /apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin
