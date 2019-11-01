@@ -14,24 +14,40 @@ EFS_APPS=$3
 SCHEDULER_HOSTNAME=$4
 
 # Mount EFS
-mkdir /data
-mkdir /apps
+mkdir -p /data
+mkdir -p /apps
 
-echo "$EFS_DATA:/ /data/ nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+echo "$EFS_DATA:/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-mount -a
 
+# Prepare PBS/System
+cd ~
+
+# Install System required libraries
+
+if [[ $SOCA_BASE_OS = "rhel7" ]]
+then
+    yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
+    yum install -y $(echo ${SCHEDULER_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
+else
+    yum install -y $(echo ${SYSTEM_PKGS[*]})
+    yum install -y $(echo ${SCHEDULER_PKGS[*]})
+fi
+
+yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})
+yum install -y $(echo ${SSSD_PKGS[*]})
+
+# Configure Scratch Directory if specified by the user
 mkdir /scratch/
 chmod 777 /scratch/
-# Configure Scratch Directory if specified by the user
 if [ $SOCA_SCRATCH_SIZE -ne 0 ];
 then
     LIST_ALL_DISKS=$(lsblk --list | grep disk | awk '{print $1}')
     for disk in $LIST_ALL_DISKS;
 	    do
 	    CHECK_IF_PARTITION_EXIST=$(lsblk -b /dev/$disk | grep part | wc -l)
-	    CHECK_PARTITION_SIZE=$(lsblk -lnb /dev/$disk-o SIZE)
-	    let SOCA_SCRATCH_SIZE_IN_BYTES = $SOCA_SCRATCH_SIZE*1024*1024*1024
+	    CHECK_PARTITION_SIZE=$(lsblk -lnb /dev/$disk -o SIZE)
+	    let SOCA_SCRATCH_SIZE_IN_BYTES=$SOCA_SCRATCH_SIZE*1024*1024*1024
 	    if [ $CHECK_IF_PARTITION_EXIST -eq 0 ] && [ $CHECK_PARTITION_SIZE -eq $SOCA_SCRATCH_SIZE_IN_BYTES ];
 	    then
 	        echo "Detected /dev/$disk with no partition as scratch device"
@@ -75,24 +91,6 @@ else
 	    fi
     fi
 fi
-
-
-# Prepare PBS/System
-cd ~
-
-# Install System required libraries
-
-if [[ $SOCA_BASE_OS = "rhel7" ]]
-then
-    yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
-    yum install -y $(echo ${SCHEDULER_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
-else
-    yum install -y $(echo ${SYSTEM_PKGS[*]})
-    yum install -y $(echo ${SCHEDULER_PKGS[*]})
-fi
-
-yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})
-yum install -y $(echo ${SSSD_PKGS[*]})
 
 # Install PBSPro
 cd ~
