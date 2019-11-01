@@ -109,6 +109,14 @@ Parameters:
     Type: Number
     Default: 0
 
+  FSxLustreBucket:
+    Type: String
+    Default: false
+
+  FSxLustreCapacity:
+    Type: Number
+    Default: 1200
+
 Mappings:
   Send:
     AnonymousUsage:
@@ -122,6 +130,7 @@ Conditions:
   UseScratchDisk: !Not [!Equals [ !Ref ScratchSize, 0]]
   UseAmazonLinux: !Equals [ !Ref BaseOS, 'amazonlinux2']
   UseProvisionedIo: !Not [!Equals [ !Ref VolumeTypeIops, 0]]
+  UseFsxLustre: !Not [!Equals [ !Ref FSxLustreBucket, false]]
 
 Resources:
   ComputeNodePlacementGroup:
@@ -129,6 +138,41 @@ Resources:
     Condition: UsePlacementGroup
     Properties:
       Strategy: cluster
+
+  FSxLustreFileSystem:
+    Condition: UseFsxLustre
+    Type: AWS::FSx::FileSystem
+    Properties:
+      FileSystemType: LUSTRE
+      LustreConfiguration:
+        ImportPath: !Ref FSxLustreBucket
+        ExportPath: !Sub ${FSxLustreBucket}/${ClusterId}-fsxoutput/job-${JobId}/
+
+      SecurityGroupIds: !Ref SecurityGroupId
+      StorageCapacity: !Ref FSxLustreCapacity
+      SubnetIds: !Ref SubnetId
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterId}-compute-job-${JobId}
+        - Key: soca:JobId
+          Value: !Ref JobId
+        - Key: soca:JobName
+          Value: !Ref JobName
+        - Key: soca:JobQueue
+          Value: !Ref JobQueue
+        - Key: soca:StackId
+          Value: !Sub ${AWS::StackName}
+        - Key: soca:JobOwner
+          Value: !Ref JobOwner
+        - Key: soca:JobProject
+          Value: !Ref JobProject
+        - Key: soca:KeepForever
+          Value: !Ref KeepForever
+        - Key: soca:ClusterId
+          Value: !Ref ClusterId
+        - Key: soca:FSx
+          Value: True
+
 
   NodeLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -205,6 +249,8 @@ Resources:
             echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment
+            echo export "SOCA_FSX_LUSTRE_BUCKET=${FSxLustreBucket}" >> /etc/environment
+            echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
             echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
 
             source /etc/environment
@@ -243,39 +289,30 @@ Resources:
         - Key: Name
           Value: !Sub ${ClusterId}-compute-job-${JobId}
           PropagateAtLaunch: true
-
         - Key: soca:JobId
           Value: !Ref JobId
           PropagateAtLaunch: true
-
         - Key: soca:JobName
           Value: !Ref JobName
           PropagateAtLaunch: true
-
         - Key: soca:JobQueue
           Value: !Ref JobQueue
           PropagateAtLaunch: true
-
         - Key: soca:StackId
           Value: !Sub ${AWS::StackName}
           PropagateAtLaunch: true
-
         - Key: soca:JobOwner
           Value: !Ref JobOwner
           PropagateAtLaunch: true
-
         - Key: soca:JobProject
           Value: !Ref JobProject
           PropagateAtLaunch: true
-
         - Key: soca:KeepForever
           Value: !Ref KeepForever
           PropagateAtLaunch: true
-
         - Key: soca:ClusterId
           Value: !Ref ClusterId
           PropagateAtLaunch: true
-
         - Key: soca:NodeType
           Value: soca-compute-node
           PropagateAtLaunch: true

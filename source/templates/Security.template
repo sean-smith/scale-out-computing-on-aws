@@ -215,6 +215,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - ec2:DescribeVolumes
+                  - fsx:DescribeFileSystems # For FSX
+                  - tag:GetResources # For FSX detection
+                  - tag:GetTagValues # For FSX detection
+                  - tag:GetTagKeys # For FSX detection
                 Resource: "*"
 
 
@@ -266,6 +270,7 @@ Resources:
                   - ec2:DescribeKeyPairs
                   - ec2:DescribeLaunchTemplates
                   - ec2:DescribeLaunchTemplateVersions
+                  - fsx:DescribeFileSystems
                   - autoscaling:DescribeAutoScalingGroups
                   - autoscaling:DescribeScalingActivities
                   - autoscaling:DescribeLaunchConfigurations
@@ -326,6 +331,29 @@ Resources:
                   - lambda:InvokeFunction
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":lambda:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":function:", !Ref ClusterId, "-Metrics"] ]
+
+              - Effect: Allow
+                Action:
+                  - fsx:CreateFileSystem
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":fsx:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":file-system/*"] ]
+
+              - Effect: Allow
+                Action:
+                  - fsx:DeleteFileSystem
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":fsx:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":file-system/*"] ]
+                Condition:
+                  StringLike:
+                    aws:ResourceTag/soca:ClusterId: !Sub "${ClusterId}*"
+
+              - Effect: Allow
+                Action:
+                  - iam:CreateServiceLinkedRole
+                  - iam:AttachRolePolicy
+                  - iam:PutRolePolicy
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":iam:", !Ref "AWS::AccountId", ":", "role/aws-service-role/s3.data-source.lustre.fsx.amazonaws.com/*"] ]
 
               - Effect: Allow
                 Action:

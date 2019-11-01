@@ -48,6 +48,8 @@ def main(instance_type,
          base_os,
          subnet,
          ht_support,
+         fsx_lustre_bucket,
+         fsx_lustre_capacity,
          tags
          ):
 
@@ -59,6 +61,27 @@ def main(instance_type,
     create_stack_location = s3.Object(aligo_configuration['S3Bucket'], aligo_configuration['S3InstallFolder'] +'/templates/ComputeNode.template')
     stack_template = create_stack_location.get()['Body'].read().decode('utf-8')
     soca_private_subnets = [aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']]
+
+
+    if fsx_lustre_bucket is False:
+        if fsx_lustre_capacity is not False:
+            return {'success': False,
+                'error': 'You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity'}
+    else:
+        if fsx_lustre_bucket.startswith("s3://"):
+            fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
+            if fsx_lustre_capacity is False:
+                fsx_lustre_capacity = 1200  # default value
+            else:
+                if fsx_lustre_capacity not in fsx_lustre_capacity_allowed:
+                    return {'success': False,
+                            'error': 'fsx_lustre_capacity must be: 1200, 2400, 3600, 7200, 10800'}
+
+        else:
+            return {'success': False,
+                'error': 'fsx_lustre_bucket must start with s3://'}
+
+
 
     if subnet is False:
         subnet_id = random.choice(soca_private_subnets)
@@ -141,7 +164,9 @@ def main(instance_type,
         'CoreCount': cpu_per_system,
         'ThreadsPerCore': 2 if ht_support == 'true' else 1,
         'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false',
-        'VolumeTypeIops': scratch_iops
+        'VolumeTypeIops': scratch_iops,
+        'FSxLustreBucket': 'false' if fsx_lustre_bucket is False else fsx_lustre_bucket,
+        'FSxLustreCapacity': fsx_lustre_capacity
     }
 
 
@@ -176,7 +201,7 @@ def main(instance_type,
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             return {'success': False,
-                    'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e) + ' : ' + str(launch)}
+                    'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e) + ' : ' + str(e)}
     else:
         return {'success': False,
                 'error': 'Dry Run failed: ' + can_launch}
@@ -202,8 +227,8 @@ if __name__ == "__main__":
     parser.add_argument('--efa', action='store_const', const='true', help="Support for EFA")
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
     parser.add_argument('--ht_support', action='store_const', const='true', help="Enable Hyper Threading")
-
-
+    parser.add_argument('--fsx_lustre_bucket', default=False, help="Specify s3 bucket to mount for FSx")
+    parser.add_argument('--fsx_lustre_capacity', default=False, help="Specify size of your FSx")
 
     arg = parser.parse_args()
 
@@ -252,6 +277,8 @@ if __name__ == "__main__":
                arg.base_os,
                False if arg.subnet_id is None else arg.subnet_id,
                False if arg.ht_support is None else arg.ht_support,
+               arg.fsx_lustre_bucket,
+               arg.fsx_lustre_capacity,
                arg.tags))
 
     if launch['success'] is True:
