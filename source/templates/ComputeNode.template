@@ -113,9 +113,13 @@ Parameters:
     Type: String
     Default: false
 
-  FSxLustreCapacity:
+  FSxLustreSize:
     Type: Number
     Default: 1200
+
+  FSxLustreDns:
+    Type: String
+    Default: false
 
 Mappings:
   Send:
@@ -149,7 +153,7 @@ Resources:
         ExportPath: !Sub ${FSxLustreBucket}/${ClusterId}-fsxoutput/job-${JobId}/
 
       SecurityGroupIds: !Ref SecurityGroupId
-      StorageCapacity: !Ref FSxLustreCapacity
+      StorageCapacity: !Ref FSxLustreSize
       SubnetIds: !Ref SubnetId
       Tags:
         - Key: Name
@@ -250,8 +254,10 @@ Resources:
             echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment
             echo export "SOCA_FSX_LUSTRE_BUCKET=${FSxLustreBucket}" >> /etc/environment
+            echo export "SOCA_FSX_LUSTRE_DNS=${FSxLustreDns}" >> /etc/environment
             echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
             echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
+
 
             source /etc/environment
             AWS=$(which aws)

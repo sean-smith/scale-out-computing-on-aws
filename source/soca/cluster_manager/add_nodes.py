@@ -49,7 +49,8 @@ def main(instance_type,
          subnet,
          ht_support,
          fsx_lustre_bucket,
-         fsx_lustre_capacity,
+         fsx_lustre_size,
+         fsx_lustre_dns,
          tags
          ):
 
@@ -63,23 +64,21 @@ def main(instance_type,
     soca_private_subnets = [aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']]
 
 
-    if fsx_lustre_bucket is False:
-        if fsx_lustre_capacity is not False:
-            return {'success': False,
-                'error': 'You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity'}
-    else:
-        if fsx_lustre_bucket.startswith("s3://"):
-            fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
-            if fsx_lustre_capacity is False:
-                fsx_lustre_capacity = 1200  # default value
-            else:
-                if fsx_lustre_capacity not in fsx_lustre_capacity_allowed:
-                    return {'success': False,
-                            'error': 'fsx_lustre_capacity must be: 1200, 2400, 3600, 7200, 10800'}
-
+    if fsx_lustre_dns is False:
+        if fsx_lustre_bucket is False:
+            if fsx_lustre_size is not False:
+                return {'success': False,
+                    'error': 'You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity'}
         else:
-            return {'success': False,
-                'error': 'fsx_lustre_bucket must start with s3://'}
+            if fsx_lustre_bucket.startswith("s3://"):
+                fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
+                if fsx_lustre_size not in fsx_lustre_capacity_allowed:
+                    return {'success': False,
+                            'error': 'fsx_lustre_size must be: 1200, 2400, 3600, 7200, 10800'}
+
+            else:
+                return {'success': False,
+                    'error': 'fsx_lustre_bucket must start with s3://'}
 
 
 
@@ -166,7 +165,8 @@ def main(instance_type,
         'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false',
         'VolumeTypeIops': scratch_iops,
         'FSxLustreBucket': 'false' if fsx_lustre_bucket is False else fsx_lustre_bucket,
-        'FSxLustreCapacity': fsx_lustre_capacity
+        'FSxLustreSize': 1200 if fsx_lustre_size is False else fsx_lustre_size,
+        'FSxLustreDns': 'false' if fsx_lustre_dns is False else fsx_lustre_dns,
     }
 
 
@@ -228,7 +228,9 @@ if __name__ == "__main__":
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
     parser.add_argument('--ht_support', action='store_const', const='true', help="Enable Hyper Threading")
     parser.add_argument('--fsx_lustre_bucket', default=False, help="Specify s3 bucket to mount for FSx")
-    parser.add_argument('--fsx_lustre_capacity', default=False, help="Specify size of your FSx")
+    parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
+    parser.add_argument('--fsx_lustre_dns', default=False, help="Mount existing FSx by providing the DNS")
+
 
     arg = parser.parse_args()
 
@@ -278,7 +280,8 @@ if __name__ == "__main__":
                False if arg.subnet_id is None else arg.subnet_id,
                False if arg.ht_support is None else arg.ht_support,
                arg.fsx_lustre_bucket,
-               arg.fsx_lustre_capacity,
+               arg.fsx_lustre_size,
+               arg.fsx_lustre_dns,
                arg.tags))
 
     if launch['success'] is True:

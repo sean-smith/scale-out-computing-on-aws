@@ -497,7 +497,9 @@ if __name__ == "__main__":
                                                                 job_parameter_values['subnet_id'] if 'subnet_id' in job_parameter_values.keys() else False,
                                                                 'false' if 'ht_support' not in job_parameter_values.keys() else job_parameter_values['ht_support'] if job_parameter_values['ht_support'] in ['true', 'false'] else 'false',
                                                                 job_parameter_values['fsx_lustre_bucket'] if 'fsx_lustre_bucket' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['fsx_lustre_capacity'] if 'fsx_lustre_capacity' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['fsx_lustre_size'] if 'fsx_lustre_size' in job_parameter_values.keys() else False,
+                                                                job_parameter_values['fsx_lustre_dns'] if 'fsx_lustre_dns' in job_parameter_values.keys() else False,
+
                                                                 # Additional tags below
                                                                 {}
                                                                 )

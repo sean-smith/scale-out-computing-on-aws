@@ -40,7 +40,7 @@ yum install -y $(echo ${SSSD_PKGS[*]})
 # Configure Scratch Directory if specified by the user
 mkdir /scratch/
 chmod 777 /scratch/
-if [ $SOCA_SCRATCH_SIZE -ne 0 ];
+if [[ $SOCA_SCRATCH_SIZE -ne 0 ]];
 then
     LIST_ALL_DISKS=$(lsblk --list | grep disk | awk '{print $1}')
     for disk in $LIST_ALL_DISKS;
@@ -48,7 +48,7 @@ then
 	    CHECK_IF_PARTITION_EXIST=$(lsblk -b /dev/$disk | grep part | wc -l)
 	    CHECK_PARTITION_SIZE=$(lsblk -lnb /dev/$disk -o SIZE)
 	    let SOCA_SCRATCH_SIZE_IN_BYTES=$SOCA_SCRATCH_SIZE*1024*1024*1024
-	    if [ $CHECK_IF_PARTITION_EXIST -eq 0 ] && [ $CHECK_PARTITION_SIZE -eq $SOCA_SCRATCH_SIZE_IN_BYTES ];
+	    if [[ $CHECK_IF_PARTITION_EXIST -eq 0 ]] && [[ $CHECK_PARTITION_SIZE -eq $SOCA_SCRATCH_SIZE_IN_BYTES ]];
 	    then
 	        echo "Detected /dev/$disk with no partition as scratch device"
 		    mkfs -t ext4 /dev/$disk
@@ -59,14 +59,14 @@ else
     # In case Instance has instance store available as NVME disks, raid + mount them as /scratch even if scratch is not specified
 	VOLUME_LIST=()
     DEVICES=$(ls /dev/nvme[1-9]n1)
-	if [ $? -eq 0 ];
+	if [[ $? -eq 0 ]];
 	then
         echo "Detected Instance Store:" $DEVICES
         # Clear Devices which are already mounted (eg: when customer import their own AMI)
         for device in $DEVICES;
         do
             check_mountpoint=$(lsblk $device -o MOUNTPOINT | tail -n 1)
-            if [ -z "$check_mountpoint" ];
+            if [[ -z "$check_mountpoint" ]];
              then
              echo "$device is free and can be used"
              VOLUME_LIST+=($device)
@@ -74,7 +74,7 @@ else
         done
 
 	    VOLUME_COUNT=${#VOLUME_LIST[@]}
-	    if [ $VOLUME_COUNT -eq 1 ];
+	    if [[ $VOLUME_COUNT -eq 1 ]];
 	    then
 	        # If only 1 instance store, mfks as ext4
 	        echo "Detected  1 NVMe device available, formatting as ext4 .."
@@ -95,6 +95,8 @@ fi
 # Configure FSx if specified by the user
 if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
     echo "FSx request detected, installing FSX Lustre client ... "
+    FSX_MOUNTPOINT="/fsx"
+    mkdir -p $FSX_MOUNTPOINT
 
     if [[ $SOCA_BASE_OS == "amazonlinux2" ]]; then
         sudo amazon-linux-extras install -y lustre2.10
@@ -102,34 +104,39 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
         sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/kmod-lustre-client-2.10.6-1.el7.x86_64.rpm
         sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/lustre-client-2.10.6-1.el7.x86_64.rpm
     fi
-    # Retrieve FSX DNS assigned to this job
-    FSX_ARN=$(aws resourcegroupstaggingapi get-resources --tag-filters  "Key=soca:FSx,Values=true" "Key=soca:StackId,Values=$AWS_STACK_ID" --query ResourceTagMappingList[].ResourceARN --output text)
-    echo "GET_FSX_ARN: " $FSX_ARN
-    FSX_ID=$(echo $FSX_ARN | cut -d/ -f2)
-    echo "GET_FSX_ID: " $FSX_ID
 
-    ## UPDATE FSX_DNS VALUE MANUALLY IF YOU ARE USING A PERMANENT FSX
-    FSX_DNS=$FSX_ID".fsx."$AWS_DEFAULT_REGION".amazonaws.com"
-    FSX_MOUNTPOINT="/fsx"
-    mkdir -p $FSX_MOUNTPOINT
-    # Verify if DNS is ready
-    CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
-    LOOP_COUNT=1
-    echo "FSX_DNS: " $FSX_DNS
-    while [[ $CHECK_FSX_STATUS != "AVAILABLE" ]] || [[ $LOOP_COUNT -lt 10 ]]
-        do
-            echo "FSX does not seems to be on AVAILABLE status yet ... waiting 60 secs"
-            sleep 60
-            CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
-            ((LOOP_COUNT++))
-    done
+    if [[ $SOCA_FSX_LUSTRE_DNS != 'false' ]]; then
+        # Retrieve FSX DNS assigned to this job
+        FSX_ARN=$(aws resourcegroupstaggingapi get-resources --tag-filters  "Key=soca:FSx,Values=true" "Key=soca:StackId,Values=$AWS_STACK_ID" --query ResourceTagMappingList[].ResourceARN --output text)
+        echo "GET_FSX_ARN: " $FSX_ARN
+        FSX_ID=$(echo $FSX_ARN | cut -d/ -f2)
+        echo "GET_FSX_ID: " $FSX_ID
 
-    if [[ $CHECK_FSX_STATUS == "AVAILABLE" ]]; then
-        echo "FSx is AVAILABLE"
-        echo "$FSX_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+        ## UPDATE FSX_DNS VALUE MANUALLY IF YOU ARE USING A PERMANENT FSX
+        FSX_DNS=$FSX_ID".fsx."$AWS_DEFAULT_REGION".amazonaws.com"
+
+        # Verify if DNS is ready
+        CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
+        LOOP_COUNT=1
+        echo "FSX_DNS: " $FSX_DNS
+        while [[ $CHECK_FSX_STATUS != "AVAILABLE" ]] || [[ $LOOP_COUNT -lt 10 ]]
+            do
+                echo "FSX does not seems to be on AVAILABLE status yet ... waiting 60 secs"
+                sleep 60
+                CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
+                ((LOOP_COUNT++))
+        done
+
+        if [[ $CHECK_FSX_STATUS == "AVAILABLE" ]]; then
+            echo "FSx is AVAILABLE"
+            echo "$FSX_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+        else
+            echo "FSx is not available even after 10 minutes timeout, ignoring FSx mount ..."
+        fi
     else
-        echo "FSx is not available even after 10 minutes timeout, ignoring FSx mount ..."
-    fi
+        # Using persistent FSX provided by customer
+        echo "Detected existing FSx provided by customers " $SOCA_FSX_LUSTRE_DNS
+        echo "$SOCA_FSX_LUSTRE_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
 fi
 
 # Install PBSPro

@@ -85,7 +85,8 @@ efa_support type=string
 ht_support type=string
 base_os type=string
 fsx_lustre_bucket type=string
-fsx_lustre_capacity type=string
+fsx_lustre_size type=string
+fsx_lustre_dns type=string
 EOF
 
 systemctl enable pbs
