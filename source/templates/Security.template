@@ -344,8 +344,8 @@ Resources:
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":fsx:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":file-system/*"] ]
                 Condition:
-                  StringLike:
-                    aws:ResourceTag/soca:ClusterId: !Sub "${ClusterId}*"
+                  "StringLike":
+                    "aws:ResourceTag/soca:ClusterId": !Sub "${ClusterId}*"
 
               - Effect: Allow
                 Action:
@@ -353,7 +353,8 @@ Resources:
                   - iam:AttachRolePolicy
                   - iam:PutRolePolicy
                 Resource:
-                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":iam:", !Ref "AWS::AccountId", ":", "role/aws-service-role/s3.data-source.lustre.fsx.amazonaws.com/*"] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":iam::", !Ref "AWS::AccountId", ":", "role/aws-service-role/s3.data-source.lustre.fsx.amazonaws.com/*"] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":iam::", !Ref "AWS::AccountId", ":", "role/aws-service-role/autoscaling.amazonaws.com/*"] ]
 
               - Effect: Allow
                 Action:
@@ -375,6 +376,7 @@ Resources:
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket , "/*" ] ]
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::", !Ref S3InstallBucket] ]
+
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -389,8 +391,6 @@ Resources:
       Path: /
       Roles:
         - !Ref SchedulerIAMRole
-      #InstanceProfileName: !Sub ${ClusterId}-SchedulerIAMInstanceProfile
-
 
   LambdaSolutionMetricRole:
     Metadata:

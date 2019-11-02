@@ -92,55 +92,6 @@ else
     fi
 fi
 
-# Configure FSx if specified by the user
-if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
-    echo "FSx request detected, installing FSX Lustre client ... "
-    FSX_MOUNTPOINT="/fsx"
-    mkdir -p $FSX_MOUNTPOINT
-
-    if [[ $SOCA_BASE_OS == "amazonlinux2" ]]; then
-        sudo amazon-linux-extras install -y lustre2.10
-    else
-        sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/kmod-lustre-client-2.10.6-1.el7.x86_64.rpm
-        sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/lustre-client-2.10.6-1.el7.x86_64.rpm
-    fi
-
-    if [[ $SOCA_FSX_LUSTRE_DNS != 'false' ]]; then
-        # Retrieve FSX DNS assigned to this job
-        FSX_ARN=$(aws resourcegroupstaggingapi get-resources --tag-filters  "Key=soca:FSx,Values=true" "Key=soca:StackId,Values=$AWS_STACK_ID" --query ResourceTagMappingList[].ResourceARN --output text)
-        echo "GET_FSX_ARN: " $FSX_ARN
-        FSX_ID=$(echo $FSX_ARN | cut -d/ -f2)
-        echo "GET_FSX_ID: " $FSX_ID
-
-        ## UPDATE FSX_DNS VALUE MANUALLY IF YOU ARE USING A PERMANENT FSX
-        FSX_DNS=$FSX_ID".fsx."$AWS_DEFAULT_REGION".amazonaws.com"
-
-        # Verify if DNS is ready
-        CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
-        LOOP_COUNT=1
-        echo "FSX_DNS: " $FSX_DNS
-        while [[ $CHECK_FSX_STATUS != "AVAILABLE" ]] || [[ $LOOP_COUNT -lt 10 ]]
-            do
-                echo "FSX does not seems to be on AVAILABLE status yet ... waiting 60 secs"
-                sleep 60
-                CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
-                echo $CHECK_FSX_STATUS
-                ((LOOP_COUNT++))
-        done
-
-        if [[ $CHECK_FSX_STATUS == "AVAILABLE" ]]; then
-            echo "FSx is AVAILABLE"
-            echo "$FSX_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
-        else
-            echo "FSx is not available even after 10 minutes timeout, ignoring FSx mount ..."
-        fi
-    else
-        # Using persistent FSX provided by customer
-        echo "Detected existing FSx provided by customers " $SOCA_FSX_LUSTRE_DNS
-        echo "$SOCA_FSX_LUSTRE_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
-    fi
-fi
-
 # Install PBSPro
 cd ~
 wget $PBSPRO_URL
@@ -282,6 +233,56 @@ blacklist rivatv
 EOF
     echo GRUB_CMDLINE_LINUX="rdblacklist=nouveau" >> /etc/default/grub
     sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+fi
+
+# Configure FSx if specified by the user.
+# Right before the reboot to minimize the time to wait for FSx to be AVAILABLE
+if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
+    echo "FSx request detected, installing FSX Lustre client ... "
+    FSX_MOUNTPOINT="/fsx"
+    mkdir -p $FSX_MOUNTPOINT
+
+    if [[ $SOCA_BASE_OS == "amazonlinux2" ]]; then
+        sudo amazon-linux-extras install -y lustre2.10
+    else
+        sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/kmod-lustre-client-2.10.6-1.el7.x86_64.rpm
+        sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/lustre-client-2.10.6-1.el7.x86_64.rpm
+    fi
+
+    if [[ $SOCA_FSX_LUSTRE_DNS == 'false' ]]; then
+        # Retrieve FSX DNS assigned to this job
+        FSX_ARN=$($AWS resourcegroupstaggingapi get-resources --tag-filters  "Key=soca:FSx,Values=true" "Key=soca:StackId,Values=$AWS_STACK_ID" --query ResourceTagMappingList[].ResourceARN --output text)
+        echo "GET_FSX_ARN: " $FSX_ARN
+        FSX_ID=$(echo $FSX_ARN | cut -d/ -f2)
+        echo "GET_FSX_ID: " $FSX_ID
+
+        ## UPDATE FSX_DNS VALUE MANUALLY IF YOU ARE USING A PERMANENT FSX
+        FSX_DNS=$FSX_ID".fsx."$AWS_DEFAULT_REGION".amazonaws.com"
+
+        # Verify if DNS is ready
+        CHECK_FSX_STATUS=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
+        LOOP_COUNT=1
+        echo "FSX_DNS: " $FSX_DNS
+        while [[ $CHECK_FSX_STATUS != "AVAILABLE" ]] && [[ $LOOP_COUNT -lt 10 ]]
+            do
+                echo "FSX does not seems to be on AVAILABLE status yet ... waiting 60 secs"
+                sleep 60
+                CHECK_FSX_STATUS=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
+                echo $CHECK_FSX_STATUS
+                ((LOOP_COUNT++))
+        done
+
+        if [[ $CHECK_FSX_STATUS == "AVAILABLE" ]]; then
+            echo "FSx is AVAILABLE"
+            echo "$FSX_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+        else
+            echo "FSx is not available even after 10 minutes timeout, ignoring FSx mount ..."
+        fi
+    else
+        # Using persistent FSX provided by customer
+        echo "Detected existing FSx provided by customers " $SOCA_FSX_LUSTRE_DNS
+        echo "$SOCA_FSX_LUSTRE_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+    fi
 fi
 
 # Reboot to disable SELINUX
