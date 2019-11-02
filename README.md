@@ -21,7 +21,7 @@ python source/manual_build.py
 
 + 4\) Upload `source/dist/<build_id>` folder to your own S3 bucket
 
-+ 5\) Launch CloudFormation and use `for-scale-out-computing-on-aws.template` as base template
++ 5\) Launch CloudFormation and use `scale-out-computing-on-aws.template` as base template
 
 ## :book: Documentation
 

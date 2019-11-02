@@ -71,6 +71,8 @@ def main(instance_type,
                     'error': 'You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity'}
         else:
             if fsx_lustre_bucket.startswith("s3://"):
+                # remove trailing / if exist
+                fsx_lustre_bucket = fsx_lustre_bucket if fsx_lustre_bucket[-1] != '/' else fsx_lustre_bucket[:-1]
                 fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
                 if fsx_lustre_size not in fsx_lustre_capacity_allowed:
                     return {'success': False,

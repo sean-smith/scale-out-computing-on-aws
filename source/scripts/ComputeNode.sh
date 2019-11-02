@@ -124,6 +124,7 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
                 echo "FSX does not seems to be on AVAILABLE status yet ... waiting 60 secs"
                 sleep 60
                 CHECK_FSX_STATUS=$(aws fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
+                echo $CHECK_FSX_STATUS
                 ((LOOP_COUNT++))
         done
 
@@ -137,6 +138,7 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
         # Using persistent FSX provided by customer
         echo "Detected existing FSx provided by customers " $SOCA_FSX_LUSTRE_DNS
         echo "$SOCA_FSX_LUSTRE_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+    fi
 fi
 
 # Install PBSPro

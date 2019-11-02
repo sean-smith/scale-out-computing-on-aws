@@ -256,6 +256,7 @@ if __name__ == "__main__":
                                 ebs_gp2_storage = 0.1  # $ per gb per month
                                 ebs_io1_storage = 0.125  # $ per gb per month
                                 provisionied_io = 0.065  # IOPS per month
+                                fsx_lustre = 0.000194 # GB per hour
                                 # Note 1: This calculate the price of the simulation based on run time only.
                                 # It does not include the time for EC2 to be launched and configured, so I artificially added a 5 minutes penalty (average time for an EC2 instance to be provisioned)
                                 EC2_BOOT_DELAY = 300
@@ -263,6 +264,7 @@ if __name__ == "__main__":
                                 tmp['estimated_price_storage_scratch_iops'] = 0
                                 tmp['estimated_price_storage_root_size'] = 0  # alwayson
                                 tmp['estimated_price_storage_scratch_size'] = 0
+                                tmp['estimated_price_fsx_lustre'] = 0
 
                                 if 'root_size' in tmp.keys():
                                     tmp['estimated_price_storage_root_size'] = ((int(tmp['root_size']) * ebs_gp2_storage * simulation_time_seconds_with_penalty) / (86400 * 30)) * tmp['nodect']
@@ -274,15 +276,21 @@ if __name__ == "__main__":
                                     else:
                                         tmp['estimated_price_storage_scratch_size'] = ((int(tmp['scratch_size']) * ebs_gp2_storage * simulation_time_seconds_with_penalty) / (86400 * 30)) * tmp['nodect']
 
-
+                                if 'fsx_lustre_bucket' in tmp.keys():
+                                    if tmp['fsx_lustre_bucket'] != 'false':
+                                        if 'fsx_lustre_size' in tmp.keys():
+                                            tmp['estimated_price_fsx_lustre'] = tmp['fsx_lustre_size'] * fsx_lustre * (simulation_time_seconds_with_penalty / 3600)
+                                        else:
+                                            # default lustre size
+                                            tmp['estimated_price_fsx_lustre'] = 1200 * fsx_lustre * (simulation_time_seconds_with_penalty / 3600)
 
                                 if tmp['instance_type_used'] not in pricing_table.keys():
                                     pricing_table[tmp['instance_type_used']] = get_aws_pricing(tmp['instance_type_used'])
 
                                 tmp['estimated_price_ec2_ondemand'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['ondemand']) * tmp['nodect']
                                 tmp['estimated_price_ec2_reserved'] = (tmp['simulation_time_hours'] * pricing_table[tmp['instance_type_used']]['reserved']) * tmp['nodect']
-                                tmp['estimated_price_ondemand'] = tmp['estimated_price_ec2_ondemand'] + tmp['estimated_price_storage_root_size'] + tmp['estimated_price_storage_scratch_size'] + tmp['estimated_price_storage_scratch_iops']
-                                tmp['estimated_price_reserved'] = tmp['estimated_price_ec2_reserved'] + tmp['estimated_price_storage_root_size'] + tmp['estimated_price_storage_scratch_size'] + tmp['estimated_price_storage_scratch_iops']
+                                tmp['estimated_price_ondemand'] = tmp['estimated_price_ec2_ondemand'] + tmp['estimated_price_storage_root_size'] + tmp['estimated_price_storage_scratch_size'] + tmp['estimated_price_storage_scratch_iops'] + tmp['estimated_price_fsx_lustre']
+                                tmp['estimated_price_reserved'] = tmp['estimated_price_ec2_reserved'] + tmp['estimated_price_storage_root_size'] + tmp['estimated_price_storage_scratch_size'] + tmp['estimated_price_storage_scratch_iops'] + tmp['estimated_price_fsx_lustre']
 
                             json_output.append(tmp)
                 except Exception as e:
