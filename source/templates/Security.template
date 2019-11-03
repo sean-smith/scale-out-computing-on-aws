@@ -204,7 +204,7 @@ Resources:
                 Action:
                   -  ses:SendEmail
                 Resource:
-                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":ses:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":identity*"] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":ses:*:", !Ref  "AWS::AccountId", ":identity*"] ]
 
               - Effect: Allow
                 Action:

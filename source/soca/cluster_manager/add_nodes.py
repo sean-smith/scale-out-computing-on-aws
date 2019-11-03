@@ -304,4 +304,4 @@ if __name__ == "__main__":
             You specified --keep-forever flag. This instance will be running 24/7 until you MANUALLY terminate the Cloudformation Stack  
             """)
     else:
-        print('Error: ' +str(launch))
+        print('Error: ' + str(launch))

@@ -102,6 +102,7 @@
                                           <label class="form-check-label" for="verif">I am sure I want to delete this user</label>
                                       </div>
                                       <div align="center">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                           <button type="submit" class="btn btn-danger btn-lg">Delete User</button>
                                       </div>
                                   </form>
