@@ -196,9 +196,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:GetObject
+                  - s3:ListBucket
                 Resource:
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::dcv-license.", !Ref "AWS::Region", "/*"] ]
                   - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::ec2-linux-nvidia-drivers", "/*"] ]
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":s3:::ec2-linux-nvidia-drivers"] ]
 
               - Effect: Allow
                 Action:
