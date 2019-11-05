@@ -92,7 +92,6 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]] || [[ $SOCA_FSX_LUSTRE_DNS != 'false
     else
         sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/kmod-lustre-client-2.10.6-1.el7.x86_64.rpm
         sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/lustre-client-2.10.6-1.el7.x86_64.rpm
-
         # Lustre Client 2.10 does not support newer Centos7/RHEL7 kernels so we need do downgrade kernel version to 3.10.0-957
         # Lustre Client 2.12 does support newer kernels but can't get to work with FSx
         KERNEL_COUNT=0

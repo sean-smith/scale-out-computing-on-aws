@@ -92,7 +92,7 @@ else
     fi
 fi
 
-# Install PBSPro
+# Install PBSPro (Review possible containerization to reduce instance cold start)
 cd ~
 wget $PBSPRO_URL
 if [[ $(md5sum $PBSPRO_TGZ | awk '{print $1}') != $PBSPRO_HASH ]];  then

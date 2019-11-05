@@ -165,11 +165,11 @@ Resources:
                       'ScratchSize': event['ResourceProperties']['ScratchSize'],
                       'RootSize': event['ResourceProperties']['RootSize'],
                       'SpotPrice': event['ResourceProperties']['SpotPrice'],
-                      'KeepForever': event['ResourceProperties']['KeepForever']
+                      'KeepForever': event['ResourceProperties']['KeepForever'],
+                      'FsxLustre': event['ResourceProperties']['FsxLustre']
               }
               # Metrics Account (Production)
-              #metrics_url = 'https://metrics.awssolutionsbuilder.com/generic'
-              metrics_url = 'https://oszclq8tyh.execute-api.us-east-1.amazonaws.com/prod/generic'
+              metrics_url = 'https://metrics.awssolutionsbuilder.com/generic'
               # Send Anonymous Metrics
               metrics(solution_id, uuid, data, metrics_url, request_timestamp)
             except Exception as e:

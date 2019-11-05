@@ -337,3 +337,4 @@ Resources:
       BaseOS: !Ref BaseOS
       StackUUID: !Ref StackUUID
       KeepForever: !Ref KeepForever
+      FsxLustre: !If [UseFsxLustre, "true", "false"]
