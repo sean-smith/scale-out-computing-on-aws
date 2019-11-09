@@ -56,12 +56,25 @@ then
 	    fi
     done
 else
-    # In case Instance has instance store available as NVME disks, raid + mount them as /scratch even if scratch is not specified
+    # Use Instance Store if possible.
+    # When instance has more than 1 instance store, raid + mount them as /scratch
 	VOLUME_LIST=()
-    DEVICES=$(ls /dev/nvme[1-9]n1)
-	if [[ $? -eq 0 ]];
+	if [[ ! -z $(ls /dev/nvme[1-9]n1) ]];
+        then
+        echo 'Detected Instance Store: NVME'
+        DEVICES=$(ls /dev/nvme[1-9]n1)
+
+    elif [[ ! -z $(ls /dev/xvdc[a-z]) ]];
+        then
+        echo 'Detected Instance Store: SSD'
+        DEVICES=$(ls /dev/xvdc[a-z])
+    else
+        echo 'No instance store detected on this machine.'
+    fi
+
+	if [[ ! -z $DEVICES ]];
 	then
-        echo "Detected Instance Store:" $DEVICES
+        echo "Detected Instance Store with NVME:" $DEVICES
         # Clear Devices which are already mounted (eg: when customer import their own AMI)
         for device in $DEVICES;
         do

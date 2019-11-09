@@ -241,20 +241,20 @@ Resources:
             then
               /usr/sbin/update-motd --disable
             fi
-            echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
-            echo export "SOCA_JOB_QUEUE=${JobQueue}" >> /etc/environment
-            echo export "SOCA_JOB_OWNER=${JobOwner}" >> /etc/environment
-            echo export "SOCA_JOB_NAME=${JobName}" >> /etc/environment
-            echo export "SOCA_JOB_PROJECT=${JobProject}" >> /etc/environment
-            echo export "SOCA_VERSION=${Version}" >> /etc/environment
-            echo export "SOCA_JOB_EFA=${Efa}" >> /etc/environment
-            echo export "SOCA_JOB_ID=${JobId}" >> /etc/environment
+            echo export "SOCA_BASE_OS='${BaseOS}'" >> /etc/environment
+            echo export "SOCA_JOB_QUEUE='${JobQueue}'" >> /etc/environment
+            echo export "SOCA_JOB_OWNER='${JobOwner}'" >> /etc/environment
+            echo export "SOCA_JOB_NAME='${JobName}'" >> /etc/environment
+            echo export "SOCA_JOB_PROJECT='${JobProject}'" >> /etc/environment
+            echo export "SOCA_VERSION='${Version}'" >> /etc/environment
+            echo export "SOCA_JOB_EFA='${Efa}'" >> /etc/environment
+            echo export "SOCA_JOB_ID='${JobId}'" >> /etc/environment
             echo export "SOCA_SCRATCH_SIZE=${ScratchSize}" >> /etc/environment
-            echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
-            echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
-            echo export "SOCA_VERSION=${Version}" >> /etc/environment
-            echo export "SOCA_FSX_LUSTRE_BUCKET=${FSxLustreBucket}" >> /etc/environment
-            echo export "SOCA_FSX_LUSTRE_DNS=${FSxLustreDns}" >> /etc/environment
+            echo export "SOCA_INSTALL_BUCKET='${S3Bucket}'" >> /etc/environment
+            echo export "SOCA_INSTALL_BUCKET_FOLDER='${S3InstallFolder}'" >> /etc/environment
+            echo export "SOCA_VERSION='${Version}'" >> /etc/environment
+            echo export "SOCA_FSX_LUSTRE_BUCKET='${FSxLustreBucket}'" >> /etc/environment
+            echo export "SOCA_FSX_LUSTRE_DNS='${FSxLustreDns}'" >> /etc/environment
             echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
             echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
 
@@ -267,7 +267,7 @@ Resources:
             AWS_REGION="`echo \"$AWS_AVAIL_ZONE\" | sed 's/[a-z]$//'`"
             AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
             EBS_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query 'Volumes[*].[VolumeId]' --out text | tr "\n" " ")
-            $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value=$SOCA_JOB_OWNER Key=soca:JobProject,Value=$SOCA_JOB_PROJECT Key=Name,Value=soca-job-$SOCA_JOB_ID  Key=soca:JobId,Value=$SOCA_JOB_ID Key=soca:JobQueue,Value=$SOCA_JOB_QUEUE
+            $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value="$SOCA_JOB_OWNER" Key=soca:JobProject,Value="$SOCA_JOB_PROJECT" Key=Name,Value="soca-job-$SOCA_JOB_ID"  Key=soca:JobId,Value="$SOCA_JOB_ID" Key=soca:JobQueue,Value="$SOCA_JOB_QUEUE"
 
             # Give some sudo permission to the user on this specific machine
             echo "${JobOwner} ALL=(ALL) /bin/yum" >> /etc/sudoers
