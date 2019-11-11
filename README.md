@@ -23,7 +23,15 @@ python source/manual_build.py
 
 + 5\) Launch CloudFormation and use `scale-out-computing-on-aws.template` as base template
 
+[Visit Soca.dev](https://doc.soca.dev/) for more detailed information.
+
 ## :book: Documentation
+
+Documentation is written in markdown and accessible under `docs` folder. To enable the local HTML version:
++ Install mkdocs: `pip install mkdocs pygments pymdown-extensions`
++ Run mkdocs command in this directory: `mkdocs serve`
+
+This will launch a local web server and documentation will be available at `https://127.0.0.1:8000`
 
 ### New User Guide
 [https://soca.dev](https://soca.dev)
@@ -32,7 +40,7 @@ python source/manual_build.py
 [https://aws.amazon.com/solutions/scale-out-computing-on-aws](https://aws.amazon.com/solutions/scale-out-computing-on-aws)
 
 ## :pencil2: File Structure
-The AWS SOCA project consists in a collection of CloudFormation templates, Shell scripts and Python code.
+Scale-Out Computing on AWS (SOCA) project consists in a collection of CloudFormation templates, Shell scripts and Python code.
 
 ```bash
 .
