@@ -27,7 +27,7 @@ python source/manual_build.py
 
 ## :book: Documentation
 
-Documentation is written in markdown and accessible under `docs` folder. To enable the local HTML version:
+Documentation is written in markdown and accessible under `source/docs` folder. To enable the local HTML version:
 + Install mkdocs: `pip install mkdocs pygments pymdown-extensions`
 + Run mkdocs command in this directory: `mkdocs serve`
 

@@ -28,7 +28,6 @@ template_dir="$PWD"
 template_dist_dir="$template_dir/global-s3-assets"
 build_dist_dir="$template_dir/regional-s3-assets"
 source_dir="$template_dir/../source"
-docs_dir="$template_dir/../docs"
 
 echo "------------------------------------------------------------------------------"
 echo "[Init] Clean old dist, node_modules and bower_components folders"
@@ -69,9 +68,9 @@ echo "cp -r $source_dir/soca $template_dist_dir"
 cp -r $source_dir/soca $template_dist_dir
 echo "cp -r $source_dir/templates $template_dist_dir"
 cp -r $source_dir/templates $template_dist_dir
+echo "cp -r $source_dir/docs $template_dist_dir"
+cp -r $source_dir/docs $template_dist_dir
 
-echo "cp -r $docs_dir $template_dist_dir"
-cp -r $docs_dir $template_dist_dir
 
 echo "------------------------------------------------------------------------------"
 echo "[Packing] Regional Assets"
@@ -82,5 +81,5 @@ echo "cp -r $source_dir/soca $build_dist_dir"
 cp -r $source_dir/soca $build_dist_dir
 echo "cp -r $source_dir/templates $build_dist_dir"
 cp -r $source_dir/templates $build_dist_dir
-echo "cp -r $docs_dir $template_dist_dir"
-cp -r $docs_dir $build_dist_dir
+echo "cp -r $source_dir/docs $build_dist_dir"
+cp -r $source_dir/docs $build_dist_dir
