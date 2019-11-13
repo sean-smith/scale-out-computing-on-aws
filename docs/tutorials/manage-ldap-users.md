@@ -47,9 +47,9 @@ Users created via CLI are visible to the web-ui and vice versa
 
 ## Other LDAP operations
 
-SOCA uses OpenLDAP and you can interact with your directory using LDIF directly.
+Scale-Out Computing on AWS uses OpenLDAP and you can interact with your directory using LDIF directly.
 
-!!!info "SOCA LDAP Schema"
+!!!info "Scale-Out Computing on AWS LDAP Schema"
     - People: OU=People,DC=soca,DC=local
     - Groups: OU=Group,DC=soca,DC=local
     - Sudoers: OU=Sudoers,DC=soca,DC=local (This OU manages sudo permission on the cluster)

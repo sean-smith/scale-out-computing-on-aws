@@ -3,7 +3,7 @@ title: Create your own queue
 ---
 
 !!!info "Things to know before you start"
-    By default, SOCA creates 4 queues: high, normal (default), low and alwayson.
+    By default, Scale-Out Computing on AWS creates 4 queues: high, normal (default), low and alwayson.
 
 ### Queue with automatic instance provisioning
 
@@ -29,7 +29,7 @@ Qmgr:exit
 ~~~~
 
 !!!info "What is compute_node=tbd"
-    On SOCA, unless you configure queue with AlwaysOn instances, nodes will be provisioned based on queue status. When you submit a job, SOCA will automatically provision capacity for this job and compute_node is the scheduler making sure only one job can run on this instance. compute_node=tbd is the default value, making sure any new jobs won't run on existing (if any) nodes
+    On Scale-Out Computing on AWS, unless you configure queue with AlwaysOn instances, nodes will be provisioned based on queue status. When you submit a job, Scale-Out Computing on AWS will automatically provision capacity for this job and compute_node is the scheduler making sure only one job can run on this instance. compute_node=tbd is the default value, making sure any new jobs won't run on existing (if any) nodes
 
 #### Configure automatic host provisioning
 
@@ -81,7 +81,7 @@ All logs queues are stored under `/apps/soca/cluster_manager/logs/<queue_name>`
 ### Queue with AlwaysOn instances
 
 !!!danger "Important"
-    - SOCA automatically created one AlwaysOn queue for you called "alwayson" during the first installation <br>
+    - Scale-Out Computing on AWS automatically created one AlwaysOn queue for you called "alwayson" during the first installation <br>
     - In this mode, instances will never be stopped programmatically. You are responsible to terminate the capacity manually by deleting the associated CloudFormation stack
 
 #### Create the queue

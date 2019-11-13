@@ -54,7 +54,7 @@ If you don't specify them, your job will use the default values configured for y
 
 ## Specify an EC2 Instance Type (optional)
 
-SOCA supports all type of EC2 instance. If you don't specify it, job will use a default type which may not be optimal (eg: simulation is memory intensive but default EC2 is compute optimized) If you are not familiar with EC2 instances, take some time to review [https://aws.amazon.com/ec2/instance-types/](https://aws.amazon.com/ec2/instance-types/)  
+Scale-Out Computing on AWS supports all type of EC2 instance. If you don't specify it, job will use a default type which may not be optimal (eg: simulation is memory intensive but default EC2 is compute optimized) If you are not familiar with EC2 instances, take some time to review [https://aws.amazon.com/ec2/instance-types/](https://aws.amazon.com/ec2/instance-types/)  
 If you want to force utilization of a specific instance type (and not use the default one), simply change the line and modify instance_type value  
 `#PBS -l [existing_parameters...],instance_type=**instance_type_value**`
 
@@ -80,7 +80,7 @@ If you need more verbose log, we recommend you using STDERR/STDOUT redirection o
 
 ## My job is queued. What next? (AWS orchestration)
 
-First, let's make sure your jobs have been sent to the queue. You can run default `qstat` or use `aligoqstat` which is a custom wrapper developed for SOCA.  
+First, let's make sure your jobs have been sent to the queue. You can run default `qstat` or use `aligoqstat` which is a custom wrapper developed for Scale-Out Computing on AWS.  
 
 
 **Web Based**
@@ -112,7 +112,7 @@ Look at your EC2 console. This is what you will see (syntax is <strong>\*\*clust
 ![](../imgs/howtojob-2.png) 
 
 Instances are being provisioned successfully, now let's make sure they are correctly being added to the scheduler by running `pbsnodes -a`  
-**Note:** PBS is updated as soon as the host are being added to EC2\. You will need to wait a couple of minutes before the state change from "down" to "free" as SOCA has to configure each node (install libraries, scheduler ...)
+**Note:** PBS is updated as soon as the host are being added to EC2\. You will need to wait a couple of minutes before the state change from "down" to "free" as Scale-Out Computing on AWS has to configure each node (install libraries, scheduler ...)
 
 ~~~hl_lines="6 33"
 user@host:~$ pbsnodes -a

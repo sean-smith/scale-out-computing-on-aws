@@ -4,7 +4,7 @@ title: Review your HPC costs
 
 ## AWS Cost Explorer
 
-Any EC2 resource launched by SOCA comes with an extensive list of EC2 tags that can be used to get detailed information about your cluster usage. List includes (but not limited to):
+Any EC2 resource launched by Scale-Out Computing on AWS comes with an extensive list of EC2 tags that can be used to get detailed information about your cluster usage. List includes (but not limited to):
 
 - Project Name
 - Job Owner
@@ -29,7 +29,7 @@ Then click Cost Allocation tag
 
 ![](../imgs/budget-2.png)
 
-Finally, search all "SOCA" tags then click "Activate"  
+Finally, search all "Scale-Out Computing on AWS" tags then click "Activate"  
 
 ![](../imgs/budget-3.png)
 

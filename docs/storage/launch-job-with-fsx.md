@@ -6,8 +6,8 @@ title: Launch a job with FSx for Lustre
 [Amazon FSx](https://aws.amazon.com/fsx/) provides you with the native compatibility of third-party file systems with feature sets for workloads such as high-performance computing (HPC), machine learning and electronic design automation (EDA). You don’t have to worry about managing file servers and storage, as Amazon FSx automates the time-consuming administration tasks such as hardware provisioning, software configuration, patching, and backups.
 Amazon FSx provides FSx for Lustre for compute-intensive workloads. 
 
-!!! info "Please note the following when using FSx on SOCA"
-    - FSx is supported natively (Linux clients, security groups and backend configuration is automatically managed by SOCA)
+!!! info "Please note the following when using FSx on Scale-Out Computing on AWS"
+    - FSx is supported natively (Linux clients, security groups and backend configuration is automatically managed by Scale-Out Computing on AWS)
     - You can launch an ephemeral FSx filesystem for your job
     - You can connect to an existing FSx filesystem
     - You can dynamically adjust the storage capacity of your FSx filesystem
@@ -15,7 +15,7 @@ Amazon FSx provides FSx for Lustre for compute-intensive workloads.
 
 ## Pre-requisite for FSx for Lustre
 
-You need to give SOCA the permission to map the S3 bucket you want to mount on FSx. To do that, add a new inline policy to the **scheduler IAM role**. The Scheduler IAM role can be found on the IAM bash and is named `<SOCA_STACK_NAME>-Security-<UUID>-SchedulerIAMRole-<UUID>`.
+You need to give Scale-Out Computing on AWS the permission to map the S3 bucket you want to mount on FSx. To do that, add a new inline policy to the **scheduler IAM role**. The Scheduler IAM role can be found on the IAM bash and is named `<Scale-Out Computing on AWS_STACK_NAME>-Security-<UUID>-SchedulerIAMRole-<UUID>`.
 To create an inline policy, select your IAM role, click "Add Inline Policy":
 
 ![](../imgs/fsx-4.png)
@@ -94,7 +94,7 @@ Your FSx filesystem will automatically be terminated when your job complete. [Re
 ## Change FSx capacity
 
 Use `-l fsx_lustre_size=<SIZE_IN_GB>` to specify the size of your FSx filesystem. Please note the following informations:
-- If not specified, SOCA deploy the smallest possible capacity (1200GB)
+- If not specified, Scale-Out Computing on AWS deploy the smallest possible capacity (1200GB)
 - Valid sizes (in GB) are 1200, 2400, 3600 and increments of 3600
 
 ~~~bash
@@ -118,38 +118,38 @@ To retrieve your FSx DNS, select your filesystem and select "Network & Security"
 ![](../imgs/fsx-3.png)
 
 !!! warning
-    - Make sure your FSx is running on the same VPC as SOCA</li>
-    - Make sure your FSx security group allow traffic from/to SOCA ComputeNodes SG</li>
+    - Make sure your FSx is running on the same VPC as Scale-Out Computing on AWS</li>
+    - Make sure your FSx security group allow traffic from/to Scale-Out Computing on AWS ComputeNodes SG</li>
     - If you specify both "fsx_lustre_bucket" and "fsx_lustre_dns", only "fsx_lustre_dns" will be mounted.</li>
 
 
 
 ## How to change the mountpoint
 
-By default SOCA mounts fsx on `/fsx`. If you need to change this value, edit `scripts/ComputeNode.sh` update the value of `FSX_MOUNTPOINT`.
+By default Scale-Out Computing on AWS mounts fsx on `/fsx`. If you need to change this value, edit `scripts/ComputeNode.sh` update the value of `FSX_MOUNTPOINT`.
 
 ~~~bash hl_lines="4"
 ...
-if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]]; then
+if [[ $Scale-Out Computing on AWS_FSX_LUSTRE_BUCKET != 'false' ]]; then
     echo "FSx request detected, installing FSX Lustre client ... "
     FSX_MOUNTPOINT="/fsx" ## <-- Update mountpoint here
     mkdir -p $FSX_MOUNTPOINT
     ...
 ~~~
 
-## Learn about the other storage options on SOCA
-[Click here to learn about the other storage options]({{ site.baseurl }}/tutorials/understand-storage-backend-options-scratch/) offered by SOCA.
+## Learn about the other storage options on Scale-Out Computing on AWS
+[Click here to learn about the other storage options]({{ site.baseurl }}/tutorials/understand-storage-backend-options-scratch/) offered by Scale-Out Computing on AWS.
 
 ## Troubleshooting and most common errors
 
 Like any other parameter, FSx options can be debugged using `/apps/soca/cluster_manager/logs/<QUEUE_NAME>.log`
 
 ~~~bash
-[Error while trying to create ASG: SOCA does not have access to this bucket. 
+[Error while trying to create ASG: Scale-Out Computing on AWS does not have access to this bucket. 
 Update IAM policy as described on https://soca.dev/tutorials/job-fsx-lustre-backend/]
 ~~~
 
-**Resolution**: SOCA does not have access to this S3 bucket. Update your IAM role with the policy listed above
+**Resolution**: Scale-Out Computing on AWS does not have access to this S3 bucket. Update your IAM role with the policy listed above
 
 ~~~bash
 [Error while trying to create ASG: fsx_lustre_size must be: 1200, 2400, 3600, 7200, 10800]

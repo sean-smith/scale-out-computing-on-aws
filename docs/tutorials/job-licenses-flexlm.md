@@ -2,7 +2,7 @@
 title: Job with FlexLM licenses requirements
 ---
 
-In this page, we will see how SOCA manages job and capacity provisioning based on license availabilities.
+In this page, we will see how Scale-Out Computing on AWS manages job and capacity provisioning based on license availabilities.
 
 !!!configuration "Example configuration"
     Test settings used for all examples:
@@ -11,7 +11,7 @@ In this page, we will see how SOCA manages job and capacity provisioning based o
     - License Server port: ==`5000`==
     - License Daemon port: ==`5001`==
     - Feature to check: ==`Audio_System_Toolbox`==
-    - SOCA cluster name: ==`rctest`==
+    - Scale-Out Computing on AWS cluster name: ==`rctest`==
 
 
 
@@ -19,26 +19,26 @@ In this page, we will see how SOCA manages job and capacity provisioning based o
 Depending your configuration, you may need to edit the security groups to allow traffic to/from your license servers.
 
 !!!info "FlexLM server installed on Scheduler host"
-    No further actions are required if you have installed your FlexLM server on the scheduler host as SOCA automatically whitelist all traffic between the scheduler and the compute nodes.
+    No further actions are required if you have installed your FlexLM server on the scheduler host as Scale-Out Computing on AWS automatically whitelist all traffic between the scheduler and the compute nodes.
 
 !!!warning FlexLM TCP ports
     FlexLM configure two ports for each application (DAEMON and SERVER ports). You need to whitelist both of them.
 
-**Allow traffic from your license server IP to SOCA**
+**Allow traffic from your license server IP to Scale-Out Computing on AWS**
 
-Assuming my license server IP is ==10.0.15.18==, simply go to the EC2 console, locate your `Scheduler` and `ComputeNode` security groups (filter by your SOCA cluster name) associated to your SOCA cluster and whitelist both SERVER and DAEMON ports:
+Assuming my license server IP is ==10.0.15.18==, simply go to the EC2 console, locate your `Scheduler` and `ComputeNode` security groups (filter by your Scale-Out Computing on AWS cluster name) associated to your Scale-Out Computing on AWS cluster and whitelist both SERVER and DAEMON ports:
 
 ![](../imgs/flexlm-1.png)
 
-**Allow traffic from SOCA to your license server**
+**Allow traffic from Scale-Out Computing on AWS to your license server**
 
-Since FlexLM use client/server protocol, you will need to authorize traffic coming from SOCA to your license servers for both SERVER and DAEMON ports. You will need to whitelist the IP for your scheduler as well as the NAT Gateway used by the compute nodes.
-Your Scheduler Public IP is listed on CloudFormation, to retrieve your NAT Gateway IP, visit VPC console, select NAT Gateway and find the NAT Gateway IP associated to your SOCA cluster.
+Since FlexLM use client/server protocol, you will need to authorize traffic coming from Scale-Out Computing on AWS to your license servers for both SERVER and DAEMON ports. You will need to whitelist the IP for your scheduler as well as the NAT Gateway used by the compute nodes.
+Your Scheduler Public IP is listed on CloudFormation, to retrieve your NAT Gateway IP, visit VPC console, select NAT Gateway and find the NAT Gateway IP associated to your Scale-Out Computing on AWS cluster.
 ![](../imgs/flexlm-2.png)
 
 ## Upload your lmutil
 
-lmutil binary is not included with SOCA. You are required to upload it manually and update `/apps/soca/cluster_manager/license_check.py` with the location of your file.
+lmutil binary is not included with Scale-Out Computing on AWS. You are required to upload it manually and update `/apps/soca/cluster_manager/license_check.py` with the location of your file.
 
 ```python hl_lines="2"
 arg = parser.parse_args()
@@ -49,7 +49,7 @@ if lmstat_path == "PATH_TO_LMUTIL":
 ```
 
 ## How to retrieve number of licenses available
-SOCA includes a script (`/apps/soca/cluster_manager/license_check.py`) which output the number of FlexLM available for a given feature. This script takes the following arguments:
+Scale-Out Computing on AWS includes a script (`/apps/soca/cluster_manager/license_check.py`) which output the number of FlexLM available for a given feature. This script takes the following arguments:
     
 - -s: The license server hostname
 - -p: The port used by your flexlm deamon
@@ -61,7 +61,7 @@ Let say you have 30 Audio_System_Toolbox licenses and 4 are currently in use. Th
 license_check.py -s licenses.soca.dev -p 5000 -f Audio_System_Toolbox
 26
 ```
-Now let's say you want to reserve 15 licenses for non HPC/SOCA usage:
+Now let's say you want to reserve 15 licenses for non HPC/Scale-Out Computing on AWS usage:
 ```bash
 license_check.py -s licenses.soca.dev -p 5000 -f Audio_System_Toolbox -m 15 
 11
@@ -73,7 +73,7 @@ license_check.py -s licenses.soca.dev -p 5000 -f Audio_System_Toolbox -m 15
     lmutil lmstat -a -c 5000@licenses-soca.dev | grep "Users of Audio_System_Toolbox:"
     ```
 
-## Integration with SOCA
+## Integration with Scale-Out Computing on AWS
 
 !!!danger "IMPORTANT"
     The name of the resource **must** be `*_lic_*`. We recommend using `<application>_lic_<feature_name>`
@@ -97,7 +97,7 @@ synopsys:
   synopsys_lic_vipambaaxisvt: "/apps/soca/cluster_manager/license_check.py -s licenses.soca.dev -p 27020 -f VIP-AMBA-AXI-SVT"
 ```
 
-This parameter will let SOCA knows your license mapping and capacity will only be provisioned if enough licenses are available based on job's requirements.
+This parameter will let Scale-Out Computing on AWS knows your license mapping and capacity will only be provisioned if enough licenses are available based on job's requirements.
     
 Since you are about to create a new custom resource, additional configuration is required at the scheduler level.
 On the scheduler host, edit ==`/var/spool/pbs/sched_priv/sched_config`== and add a new `server_dyn_res`
@@ -141,7 +141,7 @@ qsub -l matlab_lic_audiosystemtoolbox=5 -- /bin/sleep 600
 31.ip-20-0-2-69
 ```
 
-Let's check the log files under `/apps/soca/cluster_manager/log/<QUEUE_NAME>`. SOCA will ignore this job due to the lack of licenses available
+Let's check the log files under `/apps/soca/cluster_manager/log/<QUEUE_NAME>`. Scale-Out Computing on AWS will ignore this job due to the lack of licenses available
 
 ```text hl_lines="1 6 7"
  [157] [INFO] [License Available: {'matlab_lic_audiosystemtoolbox': 3}]
@@ -172,15 +172,15 @@ If you have multiple jobs in the queue, the license counter is dynamically updat
  [157] [INFO] [Ignoring job_33 as we we dont have enough: matlab_lic_audiosystemtoolbox]
 ```
 
-!!!danger "SOCA ensures licenses provisioned for given jobs are in use before provisioning capacity for new jobs"
-    Let say you have 10 licenses available and you submit `job1` and `job2` which both have a requirement of 5 licenses. SOCA will determine licenses are available and will start provision the capacity. 
+!!!danger "Scale-Out Computing on AWS ensures licenses provisioned for given jobs are in use before provisioning capacity for new jobs"
+    Let say you have 10 licenses available and you submit `job1` and `job2` which both have a requirement of 5 licenses. Scale-Out Computing on AWS will determine licenses are available and will start provision the capacity. 
     
     Shortly after you submit `job3` which require another 5 licenses. The first 2 jobs may not have started yet, meaning you still have 10 licenses available (even though the 10 licenses will be used by job1 and job2 as soon as they start). 
     In that case we skip `job3` until both `job1` and `job2` and in running state.
     
 
 !!!warning "Invalid Resource"
-    You can not submit if you are using an invalid resource (aka: resource not recognized by the scheduler). If you are getting this error, refer to section ==Integration with SOCA==)
+    You can not submit if you are using an invalid resource (aka: resource not recognized by the scheduler). If you are getting this error, refer to section ==Integration with Scale-Out Computing on AWS==)
     ```bash
     qsub -l matlab_lic_fakeresource=3 -- /bin/sleep 60
     qsub: Unknown resource Resource_List.matlab_lic_fakeresource

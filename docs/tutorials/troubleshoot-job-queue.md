@@ -4,7 +4,7 @@ title: Debug why your jobs are not starting
 
 ## Jobs in dynamic queue
 
-First of all, unless you submit a job on the "alwayson" queue, it will usually take between 5 to 10 minutes before your job can start as SOCA needs to provision your capacity. This can vary based on the type and number of EC2 instances you have requested for your job.
+First of all, unless you submit a job on the "alwayson" queue, it will usually take between 5 to 10 minutes before your job can start as Scale-Out Computing on AWS needs to provision your capacity. This can vary based on the type and number of EC2 instances you have requested for your job.
 
 ### Verify the log
 If your job is not starting, first verify the queue log under `/apps/soca/cluster_manager/logs/<queue_name>.log`
@@ -17,7 +17,7 @@ Run `qstat -f <job_id> | grep -i resource` and try to locate `compute_node` or `
 
 Example of job having all resources configured correctly
 ~~~bash hl_lines="8 9"
-# Job with SOCA resources
+# Job with Scale-Out Computing on AWS resources
 bash-4.2$ qstat -f 2 | grep -i resource
     Resource_List.instance_type = m5.large
     Resource_List.ncpus = 3
@@ -30,7 +30,7 @@ bash-4.2$ qstat -f 2 | grep -i resource
 
 Please note these resources are created by `dispatcher.py` so allow a maximum of 3 minutes between job is submitted and resources are visibles on `qstat` output
 ~~~bash
-# Job without SOCA resources created yet
+# Job without Scale-Out Computing on AWS resources created yet
 bash-4.2$ qstat -f 2 | grep -i resource
     Resource_List.instance_type = m5.large
     Resource_List.ncpus = 3
@@ -41,7 +41,7 @@ bash-4.2$ qstat -f 2 | grep -i resource
 ~~~
 
 
-If you see a `compute_node` different than `tbd` as well as `stack_id`, that means SOCA triggered capacity provisioning by creating a new CloudFormation stack.
+If you see a `compute_node` different than `tbd` as well as `stack_id`, that means Scale-Out Computing on AWS triggered capacity provisioning by creating a new CloudFormation stack.
 If you go to your CloudFormation console, you should see  a new stack being created using the following naming convention: `soca-<cluster_name>-job-<job_id>`
 
 ### If CloudFormation stack is NOT "CREATE_COMPLETE"
@@ -78,7 +78,7 @@ Here is an example of capacity provisioning errors:
 
 
 
-If capacity is being provisioned correctly, go back to SOCA and run `pbsnodes -a`. Verify the capacity assigned to your job ID (refer to `resources_available.compute_node`) is in `state = free`.
+If capacity is being provisioned correctly, go back to Scale-Out Computing on AWS and run `pbsnodes -a`. Verify the capacity assigned to your job ID (refer to `resources_available.compute_node`) is in `state = free`.
 
 ~~~hl_lines="7"
 pbsnodes -a

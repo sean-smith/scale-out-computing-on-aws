@@ -16,7 +16,7 @@
           <div class="container-fluid">
               {% include 'common/horizontal_menu_bar.html' %}
               {% if sudoers == false %}
-               <div class="alert alert-danger role="alert">
+               <div class="alert alert-danger" role="alert">
                      <strong>Access denied </strong>
                    Only users with sudo permissions can access this page
                      <br>
@@ -117,7 +117,7 @@
                             <h6 class="m-0 font-weight-bold text-primary">Technical Details</h6>
                         </div>
                         <div class="card-body">
-                            SOCA uses OpenLDAP and you can interact with your directory using LDIF directly. If you are not familiar with LDIF, you can use our custom wrapper available at <code>/apps/soca/cluster_manager/ldap_manager.py</code>
+                            Scale-Out Computing on AWS uses OpenLDAP and you can interact with your directory using LDIF directly. If you are not familiar with LDIF, you can use our custom wrapper available at <code>/apps/soca/cluster_manager/ldap_manager.py</code>
                             <br><br>
                             <li>People: OU=People,DC=soca,DC=local</li>
                             <li>Groups: OU=Group,DC=soca,DC=local</li>

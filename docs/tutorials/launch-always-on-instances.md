@@ -3,13 +3,13 @@ title: Launch AlwaysOn nodes
 ---
 ## Why AlwaysOn instances?
 
-By default, SOCA provision on-demand capacity when there are jobs in the queue. This mean any job submitted will wait in the queue 5 to 8 minutes until EC2 capacity is ready.
+By default, Scale-Out Computing on AWS provision on-demand capacity when there are jobs in the queue. This mean any job submitted will wait in the queue 5 to 8 minutes until EC2 capacity is ready.
  
 If you want to avoid this penalty, you can provision "AlwaysOn instance". Please note you will be charged until you manually terminate it.
 
 ## How launch an AlwaysOn instance
 
-On your scheduler host, sudo as root and run `source /etc/environment` to load SOCA shell and then execute `/apps/soca/cluster_manager/add_nodes.py`
+On your scheduler host, sudo as root and run `source /etc/environment` to load Scale-Out Computing on AWS shell and then execute `/apps/soca/cluster_manager/add_nodes.py`
 
 ~~~bash
 [root@ip-40-0-22-232 ~]# python3 /apps/soca/cluster_manager/add_nodes.py -h

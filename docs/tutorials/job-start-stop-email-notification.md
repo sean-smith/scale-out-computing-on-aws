@@ -5,7 +5,7 @@ title: Automatic emails when your job start/stop
 In this page, I will show you how to configure email notification when your job start/stop. For this example, I will use [Simple Email Service (SES)](https://docs.aws.amazon.com/ses/latest/DeveloperGuide/getting-started.html), but you can use any SMTP provider.
 
 !!!info 
-    **Note1:** By default, the SOCA admin user you created during the installation does not have any associated email address. If you want to use this account you must edit LDAP and add the "mail" attribute. 
+    **Note1:** By default, the Scale-Out Computing on AWS admin user you created during the installation does not have any associated email address. If you want to use this account you must edit LDAP and add the "mail" attribute. 
     
     **Note2:** All qmgr command must be executed on the scheduler host
 
@@ -32,7 +32,7 @@ If you want to be able to send email to any addresses, [you need to request prod
 ![](../imgs/email-4.png)
 
 ## Notification code
-Create a hook file (note: this file can be found under `/apps/soca/cluster_hooks/job_notification.py` on your SOCA cluster)
+Create a hook file (note: this file can be found under `/apps/soca/cluster_hooks/job_notification.py` on your Scale-Out Computing on AWS cluster)
 
 Edit the following section to match your SES settings
 ~~~

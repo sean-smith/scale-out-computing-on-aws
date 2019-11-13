@@ -23,7 +23,7 @@
                       <div class="col-md-12">
 <div class="alert alert-primary" role="alert">
                      <strong>Things to know before you start</strong><br>
-                      By default, SOCA creates 4 queues: high, normal (default), low and  alwayson.
+                      By default, Scale-Out Computing on AWS creates 4 queues: high, normal (default), low and  alwayson.
                  </div>
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
@@ -55,7 +55,7 @@ Qmgr:set queue **queue_name** started = True
 Qmgr:exit</code></pre>
                                   <div class="alert alert-info">
                                       <strong>What is compute_node=tbd?</strong><br>
-                                      On SOCA, unless you configure queue with AlwaysOn instances, nodes will be provisioned based on queue status. When you submit a job, SOCA will automatically provision capacity for this job and compute_node is the scheduler making sure only one job can run on this instance. compute_node=tbd is the default value, making sure any new jobs won't run on existing (if any) nodes
+                                      On Scale-Out Computing on AWS, unless you configure queue with AlwaysOn instances, nodes will be provisioned based on queue status. When you submit a job, Scale-Out Computing on AWS will automatically provision capacity for this job and compute_node is the scheduler making sure only one job can run on this instance. compute_node=tbd is the default value, making sure any new jobs won't run on existing (if any) nodes
                                   </div>
                                     <hr>
                                   <h4>Configure automatic host provisioning</h4>
@@ -100,7 +100,7 @@ queue_type:
                                    <div class="alert alert-warning">
 
                                       <strong>Important</strong><br>
-                                       - SOCA automatically created one AlwaysOn queue for you called "alwayson" during the first installation<br>
+                                       - Scale-Out Computing on AWS automatically created one AlwaysOn queue for you called "alwayson" during the first installation<br>
                                        - In this mode, instances will never be stopped programmatically. You are responsible to terminate the capacity manually by deleting the associated CloudFormation stack
                                   </div>
                                     <hr>

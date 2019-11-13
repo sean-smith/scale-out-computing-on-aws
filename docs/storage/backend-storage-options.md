@@ -2,11 +2,11 @@
 title: Understand backend storage
 ---
 
-!!! info "SOCA gives you the flexibility to customize your storage backend based on your requirements"
+!!! info "Scale-Out Computing on AWS gives you the flexibility to customize your storage backend based on your requirements"
     - You can customize the root partition size
     - You can provision a local scratch partition
     - You can deploy standard SSD (gp2) or IO Optimized SSD (io1) volumes
-    - SOCA automatically leverages instance store disk(s) as scratch partition when applicable
+    - Scale-Out Computing on AWS automatically leverages instance store disk(s) as scratch partition when applicable
     - In term of performance: Instance Store > EBS SSD IO > EBS SSD Standard > EFS
     
     [Refer to this link](https://aws.amazon.com/ebs/features/) to learn more about EBS volumes.
@@ -24,7 +24,7 @@ title: Understand backend storage
 
 ## FSx
 
-SOCA supports FSx natively. [Click here to learn how to use FSx as backend storage for your jobs](/storage/launch-job-with-fsx/).
+Scale-Out Computing on AWS supports FSx natively. [Click here to learn how to use FSx as backend storage for your jobs](/storage/launch-job-with-fsx/).
 
 ## Instance (local) partitions
 
@@ -32,7 +32,7 @@ Below are the storage options you can configure at an instance level for your jo
 
 ### Root partition
 
-By default SOCA provision a 10GB EBS disk for the root partition. This may be an issue if you are using a custom AMI configured with a bigger root disk size or if you simply want to allocate additional storage for the root partition. 
+By default Scale-Out Computing on AWS provision a 10GB EBS disk for the root partition. This may be an issue if you are using a custom AMI configured with a bigger root disk size or if you simply want to allocate additional storage for the root partition. 
 To expand the size of the volume, submit a simulation using `-l root_size=<SIZE_IN_GB>` parameter.
 
 ~~~bash
@@ -109,7 +109,7 @@ Looking at the EBS bash, the disk type is now "io1" and the number of IOPS match
 [Some instances come with default instance storage](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html).
 An instance store provides temporary block-level storage for your instance. This storage is located on disks that are physically attached to the host computer and is removed as soon as the node is deleted.
 
-SOCA automatically detects instance store disk and will use them as /scratch **unless you specify `-l scratch_size` parameter for your job**. In this case, SOCA honors the user request and ignore the instance store volume(s).
+Scale-Out Computing on AWS automatically detects instance store disk and will use them as /scratch **unless you specify `-l scratch_size` parameter for your job**. In this case, Scale-Out Computing on AWS honors the user request and ignore the instance store volume(s).
 
 #### When node has 1 instance store volume
 

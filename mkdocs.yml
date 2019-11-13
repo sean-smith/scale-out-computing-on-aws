@@ -6,13 +6,11 @@
 # For more information: https://www.mkdocs.org/
 
 
-site_name: Scale-Out Computing on AWS (SOCA) Knowledge Base
-site_url: https://doc.soca.dev
+site_name: Scale-Out Computing on AWS Knowledge Base
 theme:
   name: 'material'
   feature:
     tabs: true
-  #logo: 'imgs/soca_logo_small.png'
 
 # Repository
 repo_name: 'awslabs/scale-out-computing-on-aws'

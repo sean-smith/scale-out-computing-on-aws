@@ -10,7 +10,7 @@ For this example, I will create a budget named "Project 1" and prevent user to s
 
 ## Configure the scheduler hook
 
-To enable this feature, you will first need to verify the project assigned to each job during submission time. The script managing this can be found on your SOCA cluster at `/apps/soca/cluster_hooks/queuejob/check_project_budget.py`
+To enable this feature, you will first need to verify the project assigned to each job during submission time. The script managing this can be found on your Scale-Out Computing on AWS cluster at `/apps/soca/cluster_hooks/queuejob/check_project_budget.py`
 First, edit this file and manually enter your AWS account id:
 
 ~~~python hl_lines="2"
