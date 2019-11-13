@@ -6,7 +6,7 @@ import random
 import string
 import fileinput
 if __name__ == "__main__":
-    build_path = os.path.dirname(sys.argv[0])
+    build_path = os.path.dirname(os.path.realpath(__file__))
     os.chdir(build_path)
     # Make sure build ID is > 3 chars and does not start with a number
     unique_id = ''.join(random.choice(string.ascii_lowercase) + random.choice(string.digits) for i in range(2))
