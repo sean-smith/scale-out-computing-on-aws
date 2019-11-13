@@ -7,8 +7,11 @@ deployment/global-s3-assets/
 ^.idea/
 CODE_OF_CONDUCT.md:4
 CONTRIBUTING.md:50
+
+# Docs
 docs/install-soca-cluster.md:15
 docs/tutorials/job-start-stop-email-notification.md:102
+docs/tutorials/job-licenses-flexlm.md:73
 
 # False Positive
 source/soca/cluster_web_ui/static/vendor/jquery/jquery.js:7476

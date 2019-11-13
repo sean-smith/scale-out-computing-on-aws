@@ -178,9 +178,8 @@ def check_available_licenses(commands, license_to_check):
     for pbs_resource, flexlm_cmd in commands.items():
         if pbs_resource in license_to_check:
             try:
-                available_licenses = run_command([flexlm_cmd.split()], "check_output")
+                available_licenses = run_command(flexlm_cmd.split(), "check_output")
                 output[pbs_resource] = int(available_licenses.rstrip())
-
             except subprocess.CalledProcessError as e:
                 logpush("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output), 'error')
                 exit(1)

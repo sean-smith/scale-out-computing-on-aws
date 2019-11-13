@@ -32,7 +32,7 @@ If you want to be able to send email to any addresses, [you need to request prod
 ![](../imgs/email-4.png)
 
 ## Notification code
-Create a hook file (note: this file can be found under `/apps/soca/cluster_manager/hooks/job_notification.py` on your SOCA cluster)
+Create a hook file (note: this file can be found under `/apps/soca/cluster_hooks/job_notification.py` on your SOCA cluster)
 
 Edit the following section to match your SES settings
 ~~~

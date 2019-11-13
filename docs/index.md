@@ -78,7 +78,7 @@ SOCA includes two unlimited EFS storage (/apps and /data). Customers also have t
 Customers [can create unlimited LDAP users and groups](/tutorials/manage-ldap-users/). By default SOCA includes a default LDAP account provisioned during installation as well as a "Sudoers" LDAP group which manage SUDO permission on the cluster.
 
 ## Support for network licenses
-SOCA includes a FlexLM-enabled script which calculate the number of license for a given features and only start the job/provision the capacity when enough licenses are available. 
+SOCA [includes a FlexLM-enabled script which calculate the number of licenses](/tutorials/job-licenses-flexlm) for a given features and only start the job/provision the capacity when enough licenses are available. 
 
 ## Automatic Errors Handling
 SOCA performs various dry run checks before provisioning the capacity. However, it may happen than AWS can't fullfill all requests (eg: need 5 instances but only 3 can be provisioned due to capacity shortage within a placement group). In this case, SOCA will try to provision the capacity for 30 minutes. After 30 minutes, and if the capacity is still not available, SOCA will automatically reset the request and try to provision capacity in a different availability zone.

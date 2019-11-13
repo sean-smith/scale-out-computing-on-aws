@@ -25,7 +25,7 @@ fi
 if [[ "$INSTANCE_TYPE" == "g2" || "$INSTANCE_TYPE" == "g3"  ]]
 then
     $AWS s3 cp --recursive s3://ec2-linux-nvidia-drivers/latest/ .
-    /bin/sh /root/nvidia-build/NVIDIA-Linux-x86_64*.run -q -a -n -X -s
+    /bin/sh /root/NVIDIA-Linux-x86_64*.run -q -a -n -X -s
     NVIDIAXCONFIG=$(which nvidia-xconfig)
     $NVIDIAXCONFIG --preserve-busid --enable-all-gpus
 fi

@@ -15,10 +15,10 @@ if __name__ == "__main__":
                         help="Prevent HPC to consume all license by keeping a reserved pool for local usage")
 
     arg = parser.parse_args()
-
     lmstat_path = "PATH_TO_LMUTIL"
     if lmstat_path == "PATH_TO_LMUTIL":
         print('Please specify a link to your lmutil binary (edit line 19 of this file')
+        sys.exit(1)
     lmstat_cmd = [lmstat_path,'lmstat', '-a', '-c', str(arg.port)+'@'+str(arg.server)]
     grep_cmd = ['grep', "Users of " + str(arg.feature)]
 
