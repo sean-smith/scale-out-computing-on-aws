@@ -1,11 +1,11 @@
-# Scale Out Computing on AWS (Scale-Out Computing on AWS)
+# Scale-Out Computing on AWS
 
 ## :wrench: How to install Scale-Out Computing on AWS
 ### 1) 1-Click installer
 
 Visit [https://aws.amazon.com/solutions/scale-out-computing-on-aws](https://aws.amazon.com/solutions/scale-out-computing-on-aws)
 
-:rotating_light: 1-Click installer is only great for PoC or demos. For production workload, it's recommended you go with option 2 instead.
+:rotating_light: 1-Click installer is only great for PoC or demos. For production workload, it's recommended to go with option 2 instead.
 
 ### 2) Build and install Scale-Out Computing on AWS on your own AWS account
 
@@ -23,13 +23,11 @@ python source/manual_build.py
 
 + 5\) Launch CloudFormation and use `scale-out-computing-on-aws.template` as base template
 
-[Visit Soca.dev](https://doc.soca.dev/) for more detailed information.
-
 ## :book: Documentation
 
 Documentation is written in markdown and accessible under `source/docs` folder. To enable the local HTML version:
 + Install mkdocs: `pip install mkdocs pygments pymdown-extensions`
-+ Run mkdocs command in this directory: `mkdocs serve`
++ Run mkdocs on `source/` folder: `mkdocs serve`
 
 This will launch a local web server and documentation will be available at `https://127.0.0.1:8000`
 
