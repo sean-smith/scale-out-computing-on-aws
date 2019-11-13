@@ -238,7 +238,7 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
                 logpush(job_id + ' Stack has been created for more less than 1 hour. Let wait a bit before killing the CI and reset the compute_node value')
 
         elif check_stack_status['Stacks'][0]['StackStatus'] == 'CREATE_IN_PROGRESS':
-            logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is not completed yet so we exit the script. See https://issues-pdx.amazon.com/issues/DTSYS-1433 for more details')
+            logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is not completed yet so we exit the script.')
             return False
 
         elif check_stack_status['Stacks'][0]['StackStatus'] in ['CREATE_FAILED', 'ROLLBACK_COMPLETE']:
