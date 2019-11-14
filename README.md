@@ -38,7 +38,7 @@ This will launch a local web server and documentation will be available at `http
 [https://aws.amazon.com/solutions/scale-out-computing-on-aws](https://aws.amazon.com/solutions/scale-out-computing-on-aws)
 
 ## :pencil2: File Structure
-Scale-Out Computing on AWS (Scale-Out Computing on AWS) project consists in a collection of CloudFormation templates, Shell scripts and Python code.
+Scale-Out Computing on AWS project consists in a collection of CloudFormation templates, Shell scripts and Python code.
 
 ```bash
 .
