@@ -10,18 +10,10 @@ crontab -r
 # NOTE: THIS REQUIRE PERMISSION ON THE SOURCE BUCKET
 AWS=$(which aws)
 
-# Deployment done through https://aws.amazon.com/solutions/ require to use s3 GET and not SYNC
-if [[ $SOCA_INSTALL_BUCKET = "solutions-test-reference" ]] || [[ $SOCA_INSTALL_BUCKET = "solutions-reference" ]]
-then
-     $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca.tar.gz /root
-     tar xvf /root/soca.tar.gz --strip-components=1 /apps/
-else
-    $AWS s3 sync s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca/cluster_manager/ /apps/soca/cluster_manager
-    $AWS s3 sync s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca/cluster_analytics/ /apps/soca/cluster_analytics
-    $AWS s3 sync s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca/cluster_logs_management/ /apps/soca/cluster_logs_management
-    $AWS s3 sync s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca/cluster_web_ui/ /apps/soca/cluster_web_ui
-    $AWS s3 sync s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca/cluster_hooks/ /apps/soca/cluster_hooks
-fi
+# Retrieve SOCA configuration under soca.tar.gz and extract it on /apps/
+$AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca.tar.gz /root
+tar xvf /root/soca.tar.gz --strip-components=1 /apps/
+
 
 mkdir -p /apps/soca/cluster_manager/logs
 

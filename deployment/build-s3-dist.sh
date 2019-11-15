@@ -62,16 +62,11 @@ replace="s/%%VERSION%%/$3/g"
 echo "sed -i '' -e $replace $template_dist_dir/scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 
-# Solution Builder Specific
-# SOCA solution require EC2 scheduler to download files from S3 during initial set up
-# Solution Builder team does not support s3 sync, so for this specific build we create a tarball and use s3:GET directly
-# SchedulerPostReboot.sh then retrieve the tarball directly and extract it on the filesystem
+echo "tar -czf $template_dist_dir/soca.tar.gz $source_dir/soca"
 tar -czf $template_dist_dir/soca.tar.gz $source_dir/soca
 
 echo "cp -r $source_dir/scripts $template_dist_dir"
 cp -r $source_dir/scripts $template_dist_dir
-echo "cp -r $source_dir/soca $template_dist_dir"
-cp -r $source_dir/soca $template_dist_dir
 echo "cp -r $source_dir/templates $template_dist_dir"
 cp -r $source_dir/templates $template_dist_dir
 
@@ -81,7 +76,5 @@ echo "[Packing] Regional Assets"
 echo "------------------------------------------------------------------------------"
 echo "cp -r $source_dir/scripts $build_dist_dir"
 cp -r $source_dir/scripts $build_dist_dir
-echo "cp -r $source_dir/soca $build_dist_dir"
-cp -r $source_dir/soca $build_dist_dir
 echo "cp -r $source_dir/templates $build_dist_dir"
 cp -r $source_dir/templates $build_dist_dir
