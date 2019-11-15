@@ -12,7 +12,8 @@ AWS=$(which aws)
 
 # Retrieve SOCA configuration under soca.tar.gz and extract it on /apps/
 $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca.tar.gz /root
-tar xvf /root/soca.tar.gz --strip-components=1 /apps/
+mkdir /apps/soca
+tar -xvf /root/soca.tar.gz --strip-components=1 -C /apps/soca/ --no-same-owner
 
 
 mkdir -p /apps/soca/cluster_manager/logs
