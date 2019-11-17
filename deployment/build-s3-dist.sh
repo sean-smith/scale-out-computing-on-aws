@@ -62,13 +62,14 @@ replace="s/%%VERSION%%/$3/g"
 echo "sed -i '' -e $replace $template_dist_dir/scale-out-computing-on-aws.template"
 sed -i '' -e $replace $template_dist_dir/*.template
 
-echo "tar -czf $template_dist_dir/soca.tar.gz $source_dir/soca"
-tar -czf $template_dist_dir/soca.tar.gz $source_dir/soca
-
 echo "cp -r $source_dir/scripts $template_dist_dir"
 cp -r $source_dir/scripts $template_dist_dir
 echo "cp -r $source_dir/templates $template_dist_dir"
 cp -r $source_dir/templates $template_dist_dir
+
+echo "tar -czf $template_dist_dir/soca.tar.gz $source_dir/soca"
+cd $source_dir
+tar -czf $template_dist_dir/soca.tar.gz soca
 
 
 echo "------------------------------------------------------------------------------"
