@@ -29,7 +29,7 @@ queue_type:
     #scratch_size: "100"
     #scratch_iops: "3600"
     #efa_support: "false"
-    # .. Refer to the doc for more supported parameters https://soca.dev/tutorials/integration-ec2-job-parameters/
+    # .. Refer to the doc for more supported parameters
   desktop:
     queues: ["desktop"]
     instance_ami: "$SOCA_INSTALL_AMI"
