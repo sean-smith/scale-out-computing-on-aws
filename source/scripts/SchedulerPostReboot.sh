@@ -10,8 +10,8 @@ crontab -r
 AWS=$(which aws)
 # Retrieve SOCA configuration under soca.tar.gz and extract it on /apps/
 $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/soca.tar.gz /root
-tar -xvf /root/soca.tar.gz --strip-components=1 -C /apps/ --no-same-owner
-
+mkdir -p /apps/soca
+tar -xvf /root/soca.tar.gz -C /apps/soca --no-same-owner
 
 mkdir -p /apps/soca/cluster_manager/logs
 
