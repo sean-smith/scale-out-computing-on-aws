@@ -24,7 +24,6 @@ echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=
 cd ~
 
 # Install System required libraries
-
 if [[ $SOCA_BASE_OS = "rhel7" ]]
 then
     yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
@@ -109,6 +108,7 @@ else
 fi
 
 # Install PBSPro (Review possible containerization to reduce instance cold start)
+# You can build your own AMI with PBSPro pre-installed to reduce instance startup time
 cd ~
 wget $PBSPRO_URL
 if [[ $(md5sum $PBSPRO_TGZ | awk '{print $1}') != $PBSPRO_HASH ]];  then
