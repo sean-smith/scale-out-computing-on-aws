@@ -81,8 +81,8 @@ Parameters:
 
   ClientIp:
     Type: String
-    Default: "205.251.233.0/24"
-    Description: Default IP(s) allowed to directly SSH into the scheduler. Keep it restrictive !
+    Default: "0.0.0.0/0"
+    Description: Default IP(s) allowed to directly SSH into the scheduler. 0.0.0.0/0 means ALL access. You probably want to change it with your own IP/subnet. Make sure to keep it restrictive!
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: ClientIP must be a valid IP or network range of the form x.x.x.x/x
 
@@ -118,7 +118,7 @@ Mappings:
   Info:
     Data:
       ClusterIdPrefix: soca
-      Version: 0.8
+      Version: 1.1
     User:
       centos7: centos
       amazonlinux2: ec2-user
@@ -258,10 +258,12 @@ Resources:
           def lambda_handler(event, context):
             region = event['ResourceProperties']['Region']
             stack_name = event['ResourceProperties']['StackName']
-            regions_blacklist = ['ca-central-1', 'us-west-1']
+            regions_blacklist = ['ca-central-1', # only_2_az
+                                'us-west-1',  # only_2_az
+                                ]
 
             if region in regions_blacklist:
-              error_message = 'Please use a region with at least 3 AZs (Everything but Canada and Northern California'
+              error_message = 'Sorry, this region is not yet supported by SOCA'
               cfnresponse.send(event, context, cfnresponse.FAILED, {'error': error_message}, error_message)
               return error_message
 
@@ -270,8 +272,8 @@ Resources:
               cfnresponse.send(event, context, cfnresponse.FAILED, {'error': error_message}, error_message)
               return error_message
 
-            check_stack_name = False if not stack_name.islower() and not stack_name.isupper() else True
-            if check_stack_name is False:
+            stack_name_has_caps = any(c.isupper() for c in stack_name)
+            if stack_name_has_caps is True:
               error_message = 'Do not use any uppercase in the stack name'
               cfnresponse.send(event, context, cfnresponse.FAILED, {'error': error_message}, error_message)
               return error_message

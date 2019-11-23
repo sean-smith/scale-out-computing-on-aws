@@ -42,7 +42,7 @@ This command create a build (`r6l1` in this example) under `source/dist/<build_i
 
 ## Upload to S3
 
-Go to your Amazon S3 bash and click "Create Bucket"
+Go to your Amazon S3 console and click "Create Bucket"
 
 ![](imgs/install-1.png)
 
@@ -73,7 +73,7 @@ Your install template is located under `<S3_BUCKET_NAME>/<BUILD_ID>/scale-out-co
 
 ## Install Scale-Out Computing on AWS
 
-Open CloudFormation bash and select "Create Stack". Copy the URL of your install template and click "Next".
+Open CloudFormation console and select "Create Stack". Copy the URL of your install template and click "Next".
 
 ![](imgs/install-6.png)
 
