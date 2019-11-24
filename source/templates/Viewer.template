@@ -197,7 +197,7 @@ Resources:
     DependsOn: LoadBalancer
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub ${ClusterId}-SocaWebUi
+      Name: !Sub ${ClusterId}-WebUi
       VpcId: !Ref VpcId
       Port: 8443
       Protocol: HTTPS

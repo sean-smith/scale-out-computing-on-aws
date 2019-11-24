@@ -107,22 +107,29 @@ else
     fi
 fi
 
-# Install PBSPro (Review possible containerization to reduce instance cold start)
-# You can build your own AMI with PBSPro pre-installed to reduce instance startup time
+# Install PBSPro if needed
 cd ~
-wget $PBSPRO_URL
-if [[ $(md5sum $PBSPRO_TGZ | awk '{print $1}') != $PBSPRO_HASH ]];  then
-    echo -e "FATAL ERROR: Checksum for PBSPro failed. File may be compromised." > /etc/motd
-    exit 1
+PBSPRO_INSTALLED_VERS=$(/opt/pbs/bin/qstat --version | awk {'print $NF'})
+if [[ "$PBSPRO_INSTALLED_VERS" != "$PBSPRO_VERSION" ]]
+then
+    echo "PBSPro Not Detected, Installing PBSPro ..."
+    cd ~
+    wget $PBSPRO_URL
+    if [[ $(md5sum $PBSPRO_TGZ | awk '{print $1}') != $PBSPRO_HASH ]];  then
+        echo -e "FATAL ERROR: Checksum for PBSPro failed. File may be compromised." > /etc/motd
+        exit 1
+    fi
+    tar zxvf $PBSPRO_TGZ
+    cd pbspro-$PBSPRO_VERSION
+    ./autogen.sh
+    ./configure --prefix=/opt/pbs
+    make -j6
+    make install -j6
+    /opt/pbs/libexec/pbs_postinstall
+    chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
+else
+    echo "PBSPro already installed, and at correct version."
 fi
-tar zxvf $PBSPRO_TGZ
-cd pbspro-$PBSPRO_VERSION
-./autogen.sh
-./configure --prefix=/opt/pbs
-make -j6
-make install -j6
-/opt/pbs/libexec/pbs_postinstall
-chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
 
 # Edit path with new scheduler/python locations
 echo "export PATH=\"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/opt/pbs/bin:/opt/pbs/sbin:/opt/pbs/bin:/apps/python/latest/bin\" " >> /etc/environment

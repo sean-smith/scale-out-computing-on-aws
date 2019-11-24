@@ -43,4 +43,33 @@ Below is a list of parameters you can specify when you request your simulation t
 
 
 
+## How to use custom parameters
 
+!!!example
+    Here is an example about how to use a custom AMI at job or queue level. This example is applicable to all other parameters (simply change the parameter name to the one you one to use). 
+    
+#### For a single job
+Use `-l instance_ami` parameter if you want to only change the AMI for a single job
+
+~~~bash
+$ qsub -l instance_ami=ami-082b... -- /bin/echo Hello
+~~~
+
+!!!note "Priority"
+    Job resources have the highest priorities. Your job will always use the AMI specified at submission time even if it's different thant the one configure at queue level.
+
+#### For an entire queue
+
+Edit `/apps/soca/cluster_manager/settings/queue_mapping.yml` and update the default `instance_ami` parameter if you want all jobs in this queue to use your new AMI:
+
+~~~yaml hl_lines="4"
+queue_type:
+  compute:
+    queues: ["queue1", "queue2", "queue3"] 
+    instance_ami: "<YOUR_AMI_ID>" # <- Add your new AMI 
+    instance_type: ...
+    root_size: ...
+    scratch_size: ...
+    efa: ...
+    ....
+~~~

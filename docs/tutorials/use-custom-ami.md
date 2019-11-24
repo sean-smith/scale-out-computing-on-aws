@@ -4,11 +4,11 @@ title: Use your own AMI
 
 ### Step 1: Locate your Scale-Out Computing on AWS AMI
 
-Run `cat /etc/environment | grep Scale-Out Computing on AWS_INSTALL_AMI` on your scheduler host
+Run `cat /etc/environment | grep SOCA_INSTALL_AMI` on your scheduler host
 
 ~~~bash hl_lines="13"
-38f9d34dde89:~ mcrozes$ ssh -i <key>> ec2-user@<IP>
-Last login: Wed Oct  2 20:06:47 2019 from 205.251.233.178
+$ ssh -i <key> ec2-user@<IP>
+Last login: Wed Oct  2 20:06:47 2019 from <ip>
 
    _____  ____   ______ ___
   / ___/ / __ \ / ____//   |
@@ -16,16 +16,16 @@ Last login: Wed Oct  2 20:06:47 2019 from 205.251.233.178
  ___/ // /_/ // /___ / ___ |
 /____/ \____/ \____//_/  |_|
 Cluster: soca-uiupdates
-> source /etc/environment to load Scale-Out Computing on AWS paths
+> source /etc/environment to load SOCA paths
 
 [ec2-user@ip-30-0-1-28 ~]$ cat /etc/environment | grep Scale-Out Computing on AWS_INSTALL_AMI
-export Scale-Out Computing on AWS_INSTALL_AMI=ami-082b5a644766e0e6f
+export SOCA_INSTALL_AMI=ami-082b5a644766e0e6f
 [ec2-user@ip-30-0-1-28 ~]$
 ~~~
 
 ### Step 2: Launch a temporary EC2 instance
 
-Launch a new EC2 instance using the `Scale-Out Computing on AWS_INSTALL_AMI` 
+Launch a new EC2 instance using the `SOCA_INSTALL_AMI` 
 ![](../imgs/use-efa-ami-1.png)
 
 ### Step 3: Customize your AMI
