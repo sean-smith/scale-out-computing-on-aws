@@ -34,35 +34,51 @@ echo "$EFS_DATA:/ /data/ nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo
 echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 mount -a
 
-# Install Python
-mkdir -p /apps/python/installer
-cd /apps/python/installer
-wget $PYTHON_URL
-if [[ $(md5sum $PYTHON_TGZ | awk '{print $1}') != $PYTHON_HASH ]];  then
-    echo -e "FATAL ERROR: Checksum for Python failed. File may be compromised." > /etc/motd
-    exit 1
+# Install Python if needed
+PYTHON_INSTALLED_VERS=$(/apps/python/latest/bin/python3 --version | awk {'print $NF'})
+if [[ "$PYTHON_INSTALLED_VERS" != "$PYTHON_VERSION" ]]
+then
+    echo "Python not detected, installing"
+    mkdir -p /apps/python/installer
+    cd /apps/python/installer
+    wget $PYTHON_URL
+    if [[ $(md5sum $PYTHON_TGZ | awk '{print $1}') != $PYTHON_HASH ]];  then
+        echo -e "FATAL ERROR: Checksum for Python failed. File may be compromised." > /etc/motd
+        exit 1
+    fi
+    tar xvf $PYTHON_TGZ
+    cd Python-$PYTHON_VERSION
+    ./configure LDFLAGS="-L/usr/lib64/openssl" CPPFLAGS="-I/usr/include/openssl" --prefix=/apps/python/$PYTHON_VERSION
+    make
+    make install
+    ln -sf /apps/python/$PYTHON_VERSION /apps/python/latest
+else
+    echo "Python already installed and at correct version."
 fi
-tar xvf $PYTHON_TGZ
-cd Python-$PYTHON_VERSION
-./configure LDFLAGS="-L/usr/lib64/openssl" CPPFLAGS="-I/usr/include/openssl" --prefix=/apps/python/$PYTHON_VERSION
-make
-make install
-ln -sf /apps/python/$PYTHON_VERSION /apps/python/latest
-# Install PBSPro
+
+# Install PBSPro if needed
 cd ~
-wget $PBSPRO_URL
-if [[ $(md5sum $PBSPRO_TGZ | awk '{print $1}') != $PBSPRO_HASH ]];  then
-    echo -e "FATAL ERROR: Checksum for PBSPro failed. File may be compromised." > /etc/motd
-    exit 1
+PBSPRO_INSTALLED_VERS=$(/opt/pbs/bin/qstat --version | awk {'print $NF'})
+if [[ "$PBSPRO_INSTALLED_VERS" != "$PBSPRO_VERSION" ]]
+then
+    echo "PBSPro Not Detected, Installing PBSPro ..."
+    cd ~
+    wget $PBSPRO_URL
+    if [[ $(md5sum $PBSPRO_TGZ | awk '{print $1}') != $PBSPRO_HASH ]];  then
+        echo -e "FATAL ERROR: Checksum for PBSPro failed. File may be compromised." > /etc/motd
+        exit 1
+    fi
+    tar zxvf $PBSPRO_TGZ
+    cd pbspro-$PBSPRO_VERSION
+    ./autogen.sh
+    ./configure --prefix=/opt/pbs
+    make -j6
+    make install -j6
+    /opt/pbs/libexec/pbs_postinstall
+    chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
+else
+    echo "PBSPro already installed, and at correct version."
 fi
-tar zxvf $PBSPRO_TGZ
-cd pbspro-$PBSPRO_VERSION
-./autogen.sh
-./configure --prefix=/opt/pbs
-make
-make install
-/opt/pbs/libexec/pbs_postinstall
-chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
 
 # Edit path with new scheduler/python locations
 echo "export PATH=\"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/opt/pbs/bin:/opt/pbs/sbin:/opt/pbs/bin:/apps/python/latest/bin\" " >> /etc/environment
