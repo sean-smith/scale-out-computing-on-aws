@@ -1,21 +1,27 @@
 import argparse
-import boto3
-import yaml
-import random
-import uuid
-import sys
-import os
 import ast
+import os
+import random
 import re
+import sys
+import uuid
+
+import boto3
+
 sys.path.append(os.path.dirname(__file__))
 import configuration
-import botocore
+from botocore import exceptions
+import cloudformation_builder
+
+cloudformation = boto3.client('cloudformation')
+s3 = boto3.client('s3')
+ec2 = boto3.client('ec2')
+aligo_configuration = configuration.get_aligo_configuration()
 
 
 def can_launch_capacity(instance_type, count, image_id, subnet_id):
     try:
-        ec2 = boto3.client('ec2')
-        ec2.run_instances(
+       ec2.run_instances(
             ImageId=image_id,
             InstanceType=instance_type,
             SubnetId=subnet_id,
@@ -27,110 +33,119 @@ def can_launch_capacity(instance_type, count, image_id, subnet_id):
         if e.response['Error'].get('Code') == 'DryRunOperation':
             return True
         else:
-            print('Dry Run Failed, capacity can not be added: ' +str(e))
+            print('Dry Run Failed, capacity can not be added: ' + str (e))
             return False
 
 
-def main(instance_type,
-         desired_capacity,
-         queue,
-         custom_ami,
-         job_id,
-         job_name,
-         job_owner,
-         job_project,
-         keep_forever,
-         scratch_size,
-         scratch_iops,
-         root_size,
-         placement_group,
-         spot_price,
-         efa_support,
-         base_os,
-         subnet,
-         ht_support,
-         fsx_lustre_bucket,
-         fsx_lustre_size,
-         fsx_lustre_dns,
-         tags
-         ):
+def check_config(**kwargs):
+    error = False
+    if kwargs['job_id'] is None and kwargs['keep_forever'] is None:
+        error = return_message('--job_id or --keep_forever must be specified')
 
-    cloudformation = boto3.client('cloudformation')
-    s3 = boto3.resource('s3')
+    if kwargs['placement_group'] is None:
+        kwargs['placement_group'] = True
+    else:
+        if kwargs['placement_group'] not in [True, False]:
+            error = return_message('--placement_group must either be true or false')
 
-    aligo_configuration = configuration.get_aligo_configuration()
-    # Note: If you change the ComputeNode, you also need to adjust the IAM policy to match your new template name
-    create_stack_location = s3.Object(aligo_configuration['S3Bucket'], aligo_configuration['S3InstallFolder'] +'/templates/ComputeNode.template')
-    stack_template = create_stack_location.get()['Body'].read().decode('utf-8')
-    soca_private_subnets = [aligo_configuration['PrivateSubnet1'], aligo_configuration['PrivateSubnet2'], aligo_configuration['PrivateSubnet3']]
+    if not isinstance(int(kwargs['desired_capacity']), int):
+        return_message('Desired Capacity must be an int')
 
+    if kwargs['tags'] is None:
+        kwargs['tags'] = {}
+    else:
+        try:
+            kwargs['tags'] = ast.literal_eval(kwargs['tags'])
+            if not isinstance(kwargs['tags'], dict):
+                error = return_message('Tags must be a valid dictionary')
+        except ValueError:
+            error = return_message('Tags must be a valid dictionary')
 
-    if fsx_lustre_dns is False:
-        if fsx_lustre_bucket is False:
-            if fsx_lustre_size is not False:
-                return {'success': False,
-                    'error': 'You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity'}
+    if kwargs['fsx_lustre_dns'] is False:
+        if kwargs['fsx_lustre_bucket'] is False:
+            if kwargs['fsx_lustre_size'] is not False:
+                error = return_message('You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity')
         else:
-            if fsx_lustre_bucket.startswith("s3://"):
+            if kwargs['fsx_lustre_bucket'].startswith("s3://"):
                 # remove trailing / if exist
-                fsx_lustre_bucket = fsx_lustre_bucket if fsx_lustre_bucket[-1] != '/' else fsx_lustre_bucket[:-1]
-                s3_client = boto3.client("s3")
-                try:
-                    s3_client.get_bucket_acl(Bucket=fsx_lustre_bucket.split('s3://')[-1])
-                except botocore.exceptions.ClientError:
-                    return {'success': False,
-                            'error': 'SOCA does not have access to this bucket. Update IAM policy as described on https://soca.dev/tutorials/job-fsx-lustre-backend/'}
-
-                if fsx_lustre_size is False:
-                    fsx_lustre_size = 1200
-                else:
-                    fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
-                    if fsx_lustre_size not in fsx_lustre_capacity_allowed:
-                        return {'success': False,
-                                'error': 'fsx_lustre_size must be: 1200, 2400, 3600, 7200, 10800'}
-
+                kwargs['fsx_lustre_bucket'] = kwargs['fsx_lustre_bucket'] if kwargs['fsx_lustre_bucket'][-1] != '/' else kwargs['fsx_lustre_bucket'][:-1]
             else:
-                return {'success': False,
-                    'error': 'fsx_lustre_bucket must start with s3://'}
+                kwargs['fsx_lustre_bucket'] = "s3://" + kwargs['fsx_lustre_bucket']
 
+            try:
+                s3.get_bucket_acl(Bucket=kwargs['fsx_lustre_bucket'].split('s3://')[-1])
+            except exceptions.ClientError:
+                error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre_bucket'] + '). Refer to the documentation to update IAM policy')
 
+            if kwargs['fsx_lustre_size'] is False:
+                kwargs['fsx_lustre_size'] = 1200
+            else:
+                fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
+                if kwargs['fsx_lustre_size'] not in fsx_lustre_capacity_allowed:
+                    error = return_message('fsx_lustre_size must be: ' + ','.join(str(x) for x in fsx_lustre_capacity_allowed))
 
-    if subnet is False:
-        subnet_id = random.choice(soca_private_subnets)
+    soca_private_subnets = [aligo_configuration['PrivateSubnet1'],
+                            aligo_configuration['PrivateSubnet2'],
+                            aligo_configuration['PrivateSubnet3']]
+
+    if kwargs['subnet_id'] is False:
+        kwargs['subnet_id'] = random.choice(soca_private_subnets)
     else:
-       if subnet in soca_private_subnets:
-            subnet_id = subnet
-       else:
-           return {'success': False,
-                   'error': 'Incorrect subnet_id. Must be one of ' + str(soca_private_subnets)}
+        if kwargs['subnet_id'] not in soca_private_subnets:
+           error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
 
-    if int(desired_capacity) > 1:
-        if placement_group == 'false':
+    if int(kwargs['desired_capacity']) > 1:
+        if kwargs['placement_group'] is False:
             # for testing purpose, sometimes we want to compare performance w/ and w/o placement group
-            placement_group = 'false'
+            kwargs['placement_group'] = False
         else:
-            placement_group = 'true'
+            kwargs['placement_group'] = True
     else:
-        placement_group = 'false'
+        kwargs['placement_group'] = False
 
-    cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
+    cpus_count_pattern = re.search(r'[.](\d+)', kwargs['instance_type'])
     if cpus_count_pattern:
-        cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+        kwargs['cpu_per_system'] = int(cpus_count_pattern.group(1)) * 2
     else:
-        if 'xlarge' in instance_type:
-            cpu_per_system = '2'
+        if 'xlarge' in kwargs['instance_type']:
+            kwargs['cpu_per_system'] = 2
         else:
-            cpu_per_system = '1'
+            kwargs['cpu_per_system'] = 1
+
+    if kwargs['base_os'] is not False:
+        base_os_allowed = ['rhel7', 'centos7', 'amazonlinux2']
+        if kwargs['base_os'] not in base_os_allowed:
+            error = return_message('base_os must be one of the following value: ' + ','.join(base_os_allowed))
+
+    if kwargs['efa_support'] is True:
+        if 'n' not in kwargs['instance_type']:
+            error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
+
+    if error is not False:
+        return error
+    else:
+        return kwargs
 
 
-        # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
-    if keep_forever is True:
+def return_message(message, success=False):
+    return {'success': success,
+            'message': message}
+
+
+def main(**kwargs):
+    params = check_config(**kwargs)
+    # If error is detected, return error message to be logged on the queue.log files
+    if 'message' in params.keys():
+        return params
+
+    # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
+    tags = params['tags']
+    if params['keep_forever'] is True:
         unique_id = str(uuid.uuid4())
-        stack_name = aligo_configuration['ClusterId'] + '-keepforever-' + queue + '-' + unique_id
-        job_id = stack_name
+        cfn_stack_name = aligo_configuration['ClusterId'] + '-keepforever-' + params['queue'] + '-' + unique_id
         tags['soca:KeepForever'] = 'true'
     else:
-        stack_name = aligo_configuration['ClusterId'] + '-job-' + str(job_id)
+        cfn_stack_name = aligo_configuration['ClusterId'] + '-job-' + str(params['job_id'])
         tags['soca:KeepForever'] = 'false'
 
     if 'soca:NodeType' not in tags.keys():
@@ -140,74 +155,78 @@ def main(instance_type,
         tags['soca:ClusterId'] = aligo_configuration['ClusterId']
 
     if 'soca:JobId' not in tags.keys():
-        tags['soca:JobId'] = job_id
+        tags['soca:JobId'] = params['job_id']
 
     if 'Name' not in tags.keys():
-        tags['Name'] = stack_name.replace('_', '-')
+        tags['Name'] = cfn_stack_name.replace('_', '-')
+
+
+    # Check Mixed Instance Policy
 
     job_parameters = {
-        'StackUUID': str(uuid.uuid4()),
-        'Version': aligo_configuration['Version'],
-        'S3InstallFolder': aligo_configuration['S3InstallFolder'],
-        'S3Bucket': aligo_configuration['S3Bucket'],
-        'PlacementGroup':  placement_group,
-        'SecurityGroupId': aligo_configuration['ComputeNodeSecurityGroup'],
-        'KeepForever': 'true' if keep_forever is True else 'false', # needs to be lowercase
-        'SSHKeyPair': aligo_configuration['SSHKeyPair'],
-        'ComputeNodeInstanceProfile': aligo_configuration['ComputeNodeInstanceProfile'],
-        'Efa': efa_support,
-        'JobId': job_id,
-        'ScratchSize': 0 if scratch_size is False else scratch_size,
-        'RootSize': 10 if root_size is False else root_size,
-        'ImageId': custom_ami if custom_ami is not None else aligo_configuration['CustomAMI'],
-        'JobName': job_name,
-        'JobQueue': queue,
-        'JobOwner': job_owner,
-        'JobProject': job_project,
+        'BaseOS': aligo_configuration['BaseOS'] if params['base_os'] is False else params['base_os'],
         'ClusterId': aligo_configuration['ClusterId'],
+        'ComputeNodeInstanceProfileArn': aligo_configuration['ComputeNodeInstanceProfileArn'],
+        'CoreCount': params['cpu_per_system'],
+        'DesiredCapacity': params['desired_capacity'],
+        'Efa': False if params['efa_support'] is None else params['efa_support'],
         'EFSAppsDns': aligo_configuration['EFSAppsDns'],
         'EFSDataDns': aligo_configuration['EFSDataDns'],
-        'SubnetId': subnet_id,
-        'InstanceType': instance_type,
+        'FSxLustreBucket': params['fsx_lustre_bucket'],
+        'FSxLustreDns': params['fsx_lustre_dns'],
+        'FSxLustreSize': 1200 if params['fsx_lustre_size'] is False else params['fsx_lustre_size'],
+        'ImageId': params['instance_ami'] if params['instance_ami'] is not None else aligo_configuration['CustomAMI'],
+        'InstanceType': params['instance_type'],
+        'JobId': params['job_id'],
+        'JobName': params['job_name'],
+        'JobOwner': params['job_owner'],
+        'JobProject': params['job_project'],
+        'JobQueue': params['queue'],
+        'KeepForever': True if params['keep_forever'] is True else False,
+        'PlacementGroup': params['placement_group'],
+        'RootSize': 10 if params['root_size'] is False else params['root_size'],
+        'S3Bucket': aligo_configuration['S3Bucket'],
+        'S3InstallFolder': aligo_configuration['S3InstallFolder'],
         'SchedulerHostname': aligo_configuration['SchedulerPrivateDnsName'],
-        'DesiredCapacity': desired_capacity,
-        'BaseOS': aligo_configuration['BaseOS'] if base_os is False else base_os,
-        'SpotPrice': spot_price if spot_price is not None else 'false',
-        'CoreCount': cpu_per_system,
-        'ThreadsPerCore': 2 if ht_support == 'true' else 1,
+        'ScratchSize': 0 if params['scratch_size'] is False else params['scratch_size'],
+        'SecurityGroupId': aligo_configuration['ComputeNodeSecurityGroup'],
         'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false',
-        'VolumeTypeIops': scratch_iops,
-        'FSxLustreBucket': 'false' if fsx_lustre_bucket is False else fsx_lustre_bucket,
-        'FSxLustreSize': 1200 if fsx_lustre_size is False else fsx_lustre_size,
-        'FSxLustreDns': 'false' if fsx_lustre_dns is False else fsx_lustre_dns,
+        'SpotPrice': params['spot_price'] if params['spot_price'] is not None else False,
+        'SSHKeyPair': aligo_configuration['SSHKeyPair'],
+        'StackUUID': str(uuid.uuid4()),
+        'SubnetId': params['subnet_id'],
+        'ThreadsPerCore': 2 if params['ht_support'] == 'true' else 1,
+        'Version': aligo_configuration['Version'],
+        'VolumeTypeIops': params['scratch_iops']
     }
 
+    # Check MixedInstancePolicy
+    instances_count = job_parameters['InstanceType'].split(',').__len__()
+    if instances_count > 1:
+        cfn_stack_body = cloudformation_builder.main(instances_count=instances_count)
+    else:
+        cfn_stack_body = cloudformation_builder.main()
 
-    stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
-    stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v)} for k, v in job_parameters.items() if v]
-
-    if job_parameters['BaseOS'] not in ['rhel7', 'centos7', 'amazonlinux2']:
-        return {'success': False,
-                'error': 'base_os must be one of the following value: centos7, amazonlinux2, rhel7'}
-
-    if job_parameters['Efa'] == 'true':
-        if not 'n' in job_parameters['InstanceType']:
-            return {'success': False,
-                    'error': 'You have requested EFA support but your instance type does not support EFA: ' + str(job_parameters['InstanceType'])}
-
-    can_launch = can_launch_capacity(job_parameters['InstanceType'], job_parameters['DesiredCapacity'], job_parameters['ImageId'], subnet_id)
+    cfn_stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
+    cfn_stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v).lower()} for k, v in job_parameters.items()]
+    print(cfn_stack_params)
+    # Dry Run
+    can_launch = can_launch_capacity(job_parameters['InstanceType'],
+                                     job_parameters['DesiredCapacity'],
+                                     job_parameters['ImageId'],
+                                     job_parameters['SubnetId'])
 
     if can_launch is True:
         try:
-            launch = cloudformation.create_stack(StackName=stack_name,
-                                        TemplateBody=stack_template,
-                                        Parameters=stack_params,
-                                        Tags=stack_tags)
+            cloudformation.create_stack(
+                StackName=cfn_stack_name,
+                TemplateBody=cfn_stack_body,
+                Parameters=cfn_stack_params,
+                Tags=cfn_stack_tags)
 
-            # PBS configuration is automatically updated by nodes_manager
             return {'success': True,
-                    'stack_name': stack_name,
-                    'compute_node': 'job'+str(job_id)
+                    'stack_name': cfn_stack_name,
+                    'compute_node': 'job'+str(params['job_id'])
                     }
 
         except Exception as e:
@@ -217,85 +236,42 @@ def main(instance_type,
                     'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e) + ' : ' + str(e)}
     else:
         return {'success': False,
-                'error': 'Dry Run failed: ' + can_launch}
+                'error': 'Dry Run failed: ' + str(can_launch)}
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--instance_type', nargs='?', required=True, help="Instance type you want to deploy")
+
+    # Required
     parser.add_argument('--desired_capacity', nargs='?', required=True, help="Number of EC2 instances to deploy")
-    parser.add_argument('--queue', nargs='?', required=True, help="Queue to map the capacity")
-    parser.add_argument('--instance_ami', nargs='?', help="AMI to use")
-    parser.add_argument('--subnet_id', default=None, help='Launch capacity in a special subnet')
-    parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
+    parser.add_argument('--instance_type', nargs='?', required=True, help="Instance type you want to deploy")
     parser.add_argument('--job_name', nargs='?', required=True, help="Job Name for which the capacity is being provisioned")
     parser.add_argument('--job_owner', nargs='?', required=True, help="Job Owner for which the capacity is being provisioned")
-    parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
-    parser.add_argument('--scratch_size', default=False, nargs='?', help="Size of /scratch in GB")
-    parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
-    parser.add_argument('--root_size', default=False, nargs='?', help="Size of Root partition in GB")
-    parser.add_argument('--placement_group', help="Enable or disable placement group")
-    parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
-    parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
-    parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
-    parser.add_argument('--efa', action='store_const', const='true', help="Support for EFA")
-    parser.add_argument('--spot_price', nargs='?', help="Spot Price")
-    parser.add_argument('--ht_support', action='store_const', const='true', help="Enable Hyper Threading")
-    parser.add_argument('--fsx_lustre_bucket', default=False, help="Specify s3 bucket to mount for FSx")
-    parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
-    parser.add_argument('--fsx_lustre_dns', default=False, help="Mount existing FSx by providing the DNS")
+    parser.add_argument('--queue', nargs='?', required=True, help="Queue to map the capacity")
 
+    # Const
+    parser.add_argument('--efa_support', action='store_const', const=True, help="Support for EFA")
+    parser.add_argument('--ht_support', action='store_const', const=True, help="Enable Hyper Threading")
+    parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
+
+    # Optional
+    parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
+    parser.add_argument('--fsx_lustre_bucket', default=False, help="Specify s3 bucket to mount for FSx")
+    parser.add_argument('--fsx_lustre_dns', default=False, help="Mount existing FSx by providing the DNS")
+    parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
+    parser.add_argument('--instance_ami', nargs='?', help="AMI to use")
+    parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
+    parser.add_argument('--job_project', nargs='?', default=False,mhelp="Job Owner for which the capacity is being provisioned")
+    parser.add_argument('--placement_group', help="Enable or disable placement group")
+    parser.add_argument('--root_size', default=False, nargs='?', help="Size of Root partition in GB")
+    parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--scratch_size', default=False, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--spot_price', nargs='?', help="Spot Price")
+    parser.add_argument('--subnet_id', default=False, help='Launch capacity in a special subnet')
+    parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
 
     arg = parser.parse_args()
-
-    if arg.job_id is None and arg.keep_forever is None:
-        print('--job_id or --keep_forever must be specified')
-        exit(1)
-
-    if arg.placement_group is None:
-        placement_group = 'true'
-    else:
-        if arg.placement_group not in ['true', 'false']:
-            print('--placement_group must either be true or false')
-            exit(1)
-
-    if not isinstance(int(arg.desired_capacity), int):
-        print('Desired Capacity must be an int')
-        exit(1)
-
-    if arg.tags is None:
-        arg.tags = {}
-    else:
-        try:
-            arg.tags = ast.literal_eval(arg.tags)
-            if not isinstance(arg.tags, dict):
-                print('Tags must be a valid dictionary')
-                exit(1)
-        except ValueError:
-            print('Tags must be a valid dictionary')
-            exit(1)
-
-    launch = (main(arg.instance_type,
-               arg.desired_capacity,
-               arg.queue,
-               arg.instance_ami,
-               arg.job_id,
-               arg.job_name,
-               arg.job_owner,
-               arg.job_project,
-               arg.keep_forever,
-               arg.scratch_size,
-               arg.scratch_iops,
-               arg.root_size,
-               arg.placement_group,
-               arg.spot_price,
-               False if arg.efa is None else arg.efa,
-               arg.base_os,
-               False if arg.subnet_id is None else arg.subnet_id,
-               False if arg.ht_support is None else arg.ht_support,
-               arg.fsx_lustre_bucket,
-               arg.fsx_lustre_size,
-               arg.fsx_lustre_dns,
-               arg.tags))
+    launch = main(**dict(arg._get_kwargs()))
 
     if launch['success'] is True:
         if arg.keep_forever is True:
