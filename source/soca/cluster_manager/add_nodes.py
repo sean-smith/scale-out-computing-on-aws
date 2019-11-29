@@ -83,6 +83,9 @@ def check_config(**kwargs):
                 fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
                 if kwargs['fsx_lustre_size'] not in fsx_lustre_capacity_allowed:
                     error = return_message('fsx_lustre_size must be: ' + ','.join(str(x) for x in fsx_lustre_capacity_allowed))
+    else:
+        # Prevent case where fsx_lustre_dns and fsx_lustre_bucket are both configured.
+        kwargs['fsx_lustre_bucket'] = False
 
     soca_private_subnets = [aligo_configuration['PrivateSubnet1'],
                             aligo_configuration['PrivateSubnet2'],
@@ -92,35 +95,42 @@ def check_config(**kwargs):
         kwargs['subnet_id'] = random.choice(soca_private_subnets)
     else:
         if kwargs['subnet_id'] not in soca_private_subnets:
-           error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
+            error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
 
     if int(kwargs['desired_capacity']) > 1:
-        if kwargs['placement_group'] is False:
-            # for testing purpose, sometimes we want to compare performance w/ and w/o placement group
-            kwargs['placement_group'] = False
-        else:
+        if kwargs['placement_group'] is not False:
             kwargs['placement_group'] = True
     else:
         kwargs['placement_group'] = False
 
     cpus_count_pattern = re.search(r'[.](\d+)', kwargs['instance_type'])
     if cpus_count_pattern:
-        kwargs['cpu_per_system'] = int(cpus_count_pattern.group(1)) * 2
+        kwargs['core_count'] = int(cpus_count_pattern.group(1)) * 2
     else:
         if 'xlarge' in kwargs['instance_type']:
-            kwargs['cpu_per_system'] = 2
+            kwargs['core_count'] = 2
         else:
-            kwargs['cpu_per_system'] = 1
+            kwargs['core_count'] = 1
 
     if kwargs['base_os'] is not False:
         base_os_allowed = ['rhel7', 'centos7', 'amazonlinux2']
         if kwargs['base_os'] not in base_os_allowed:
             error = return_message('base_os must be one of the following value: ' + ','.join(base_os_allowed))
 
+    # EFA Checks
+    if kwargs['efa_support'] not in [True, False]:
+        kwargs['efa_support'] = False
+
     if kwargs['efa_support'] is True:
         if 'n' not in kwargs['instance_type']:
             error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
 
+    instance_type_count = (kwargs['instance_type'].split(',')).__len__()
+    if instance_type_count > 1:
+        if kwargs['spot_price'] is not False:
+            spot_price_count = (kwargs['spot_price'].split(',')).__len__()
+            if spot_price_count != instance_type_count:
+                error = return_message("The number of EC2 instances type " + str(kwargs['instance_type']) + " does not match with the number of Spot Price values " + str(kwargs["spot_price"] + ". You need to specify 1 Spot Price for each instance type selected"))
     if error is not False:
         return error
     else:
@@ -160,14 +170,11 @@ def main(**kwargs):
     if 'Name' not in tags.keys():
         tags['Name'] = cfn_stack_name.replace('_', '-')
 
-
-    # Check Mixed Instance Policy
-
     job_parameters = {
         'BaseOS': aligo_configuration['BaseOS'] if params['base_os'] is False else params['base_os'],
         'ClusterId': aligo_configuration['ClusterId'],
         'ComputeNodeInstanceProfileArn': aligo_configuration['ComputeNodeInstanceProfileArn'],
-        'CoreCount': params['cpu_per_system'],
+        'CoreCount': params['core_count'],
         'DesiredCapacity': params['desired_capacity'],
         'Efa': False if params['efa_support'] is None else params['efa_support'],
         'EFSAppsDns': aligo_configuration['EFSAppsDns'],
@@ -200,7 +207,6 @@ def main(**kwargs):
         'VolumeTypeIops': params['scratch_iops']
     }
 
-    # Check MixedInstancePolicy
     instances_count = job_parameters['InstanceType'].split(',').__len__()
     if instances_count > 1:
         cfn_stack_body = cloudformation_builder.main(instances_count=instances_count)
@@ -208,8 +214,6 @@ def main(**kwargs):
         cfn_stack_body = cloudformation_builder.main()
 
     cfn_stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
-    cfn_stack_params = [{'ParameterKey': str(k), 'ParameterValue': str(v).lower()} for k, v in job_parameters.items()]
-    print(cfn_stack_params)
     # Dry Run
     can_launch = can_launch_capacity(job_parameters['InstanceType'],
                                      job_parameters['DesiredCapacity'],
@@ -221,7 +225,6 @@ def main(**kwargs):
             cloudformation.create_stack(
                 StackName=cfn_stack_name,
                 TemplateBody=cfn_stack_body,
-                Parameters=cfn_stack_params,
                 Tags=cfn_stack_tags)
 
             return {'success': True,
