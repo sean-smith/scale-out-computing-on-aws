@@ -2,13 +2,11 @@ import os
 import sys
 
 from troposphere import Base64, GetAtt
-from troposphere import If, Sub
 from troposphere import Ref, Template
+from troposphere import Sub
 from troposphere.autoscaling import AutoScalingGroup, \
     LaunchTemplateSpecification, \
-    Tags, \
-    MixedInstancesPolicy, \
-    InstancesDistribution
+    Tags
 from troposphere.cloudformation import AWSCustomObject
 from troposphere.ec2 import PlacementGroup, \
     BlockDeviceMapping, \
@@ -26,15 +24,15 @@ class CustomResourceSendAnonymousMetrics(AWSCustomObject):
     resource_type = "Custom::SendAnonymousMetrics"
     props = {
         "ServiceToken": (str, True),
-        "DesiredCapacity": (int, True),
+        "DesiredCapacity": (str, True),
         "InstanceType": (str, True),
-        "Efa": (bool, True),
-        "ScratchSize": (int, True),
-        "RootSize": (int, True),
+        "Efa": (str, True),
+        "ScratchSize": (str, True),
+        "RootSize": (str, True),
         "SpotPrice": (str, True),
         "BaseOS": (str, True),
         "StackUUID": (str, True),
-        "KeepForever": (bool, True),
+        "KeepForever": (str, True),
         "FsxLustre": (str, True),
     }
 
@@ -59,7 +57,6 @@ def main(**params):
                 PIP=$(which pip2.7)
                 $PIP install awscli
         fi
-        
         if [ "''' + params['BaseOS'] + '''" == "amazonlinux2" ];
             then
                 /usr/sbin/update-motd --disable
@@ -72,7 +69,7 @@ def main(**params):
         echo export "SOCA_VERSION="''' + params['Version'] + '''"" >> /etc/environment
         echo export "SOCA_JOB_EFA="''' + str(params['Efa']).lower() + '''"" >> /etc/environment
         echo export "SOCA_JOB_ID="''' + params['JobId'] + '''"" >> /etc/environment
-        echo export "SOCA_SCRATCH_SIZE=''' + str(params['ScratchSize']).lower() + '''" >> /etc/environment
+        echo export "SOCA_SCRATCH_SIZE={}''' + format(params['ScratchSize']) + '''" >> /etc/environment
         echo export "SOCA_INSTALL_BUCKET="''' + params['S3Bucket'] + '''"" >> /etc/environment
         echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + params['S3InstallFolder'] + '''"" >> /etc/environment
         echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
@@ -99,14 +96,14 @@ def main(**params):
         
         $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
         $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
-        /bin/bash /root/ComputeNode.sh ''' + params['S3Bucket'] + ''' ''' + params['EFSDataDns'] + ''' ''' + params['EFSAppsDns'] + ''' ''' + params['SchedulerHostname'] + '''>> /root/ComputeNode.sh.log 2>&1  
-            
+        /bin/bash /root/ComputeNode.sh ''' + params['S3Bucket'] + ''' ''' + params['EFSDataDns'] + ''' ''' + params['EFSAppsDns'] + ''' ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1      
         '''
-        ltd = LaunchTemplateData()
+
+        ltd = LaunchTemplateData("NodeLaunchTemplateData")
         ltd.EbsOptimized = True
         ltd.CpuOptions = CpuOptions(
-            CoreCount=params["CoreCount"],
-            ThreadsPerCore=params["ThreadsPerCore"])
+            CoreCount=int(params["CoreCount"]),
+            ThreadsPerCore=1 if params["ThreadsPerCore"] is False else 2)
         ltd.IamInstanceProfile = IamInstanceProfile(Arn=params["ComputeNodeInstanceProfileArn"])
         ltd.KeyName = params["SSHKeyPair"]
         ltd.ImageId = params["ImageId"]
@@ -115,14 +112,15 @@ def main(**params):
                 MarketType="spot",
                 SpotOptions=SpotOptions(
                     MaxPrice=params["SpotPrice"]))
+
         ltd.InstanceType = params["InstanceType"]
-        if params["Efa"] is not False:
-            ltd.NetworkInterfaces = [NetworkInterfaces(
-                InterfaceType="efa",
-                DeleteOnTermination=True,
-                DeviceIndex=0,
-                Groups=params["SecurityGroupId"]
-            )]
+        ltd.NetworkInterfaces = [NetworkInterfaces(
+            InterfaceType="efa" if params["Efa"] is not False else Ref("AWS::NoValue"),
+            DeleteOnTermination=True,
+            DeviceIndex=0,
+            Groups=[params["SecurityGroupId"]]
+        )]
+
         ltd.UserData = Base64(Sub(UserData))
         ltd.BlockDeviceMappings = [
             BlockDeviceMapping(
@@ -153,6 +151,7 @@ def main(**params):
 
         # If More than 1 instance, create MixedInstancesPolicy
         instance_type_count = (params["InstanceType"].split(",")).__len__()
+        '''        
         if instance_type_count > 1:
             mip = MixedInstancesPolicy()
             id = InstancesDistribution()
@@ -170,15 +169,15 @@ def main(**params):
             # Will Create Override
             pass
         # End
-
+        '''
         # Begin AutoScalingGroup Resource
         asg = AutoScalingGroup("AutoScalingComputeGroup")
         asg.DependsOn = "NodeLaunchTemplate"
         asg.LaunchTemplate = LaunchTemplateSpecification(
             LaunchTemplateId=Ref(lt),
             Version=GetAtt(lt, "LatestVersionNumber"))
-        asg.MinSize = params["DesiredCapacity"]
-        asg.MaxSize = params["DesiredCapacity"]
+        asg.MinSize = int(params["DesiredCapacity"])
+        asg.MaxSize = int(params["DesiredCapacity"])
         asg.VPCZoneIdentifier = [params["SubnetId"]]
         if params["PlacementGroup"] is True:
             pg = PlacementGroup("ComputeNodePlacementGroup")
@@ -200,7 +199,6 @@ def main(**params):
             _soca_ClusterId=params["ClusterId"],
             _soca_Node_Type="soca-compute-node",
             PropagateAtLaunch=True)
-
         t.add_resource(asg)
         # End AutoScalingGroup Resource
 
@@ -209,16 +207,17 @@ def main(**params):
         if allow_anonymous_data_collection is True:
             metrics = CustomResourceSendAnonymousMetrics("SendAnonymousData")
             metrics.ServiceToken = params["SolutionMetricLambda"]
-            metrics.DesiredCapacity = params["DesiredCapacity"]
-            metrics.InstanceType = params["InstanceType"]
-            metrics.Efa = params["Efa"]
-            metrics.ScratchSize = params["ScratchSize"]
-            metrics.RootSize = params["RootSize"]
-            metrics.SpotPrice = 'False' if params["SpotPrice"] is False else params["SpotPrice"]
-            metrics.BaseOS = params["BaseOS"]
-            metrics.StackUUID = params["StackUUID"]
-            metrics.KeepForever = params["KeepForever"]
-            metrics.FsxLustre = If("UseFsxLustre", "true", "false")
+            metrics.DesiredCapacity = str(params["DesiredCapacity"])
+            metrics.InstanceType = str(params["InstanceType"])
+            metrics.Efa = str(params["Efa"])
+            metrics.ScratchSize = str(params["ScratchSize"])
+            metrics.RootSize = str(params["RootSize"])
+            metrics.SpotPrice = str(params["SpotPrice"])
+            metrics.BaseOS = str(params["BaseOS"])
+            metrics.StackUUID = str(params["StackUUID"])
+            metrics.KeepForever = str(params["KeepForever"])
+            metrics.FsxLustre = "False" if params["FSxLustreBucket"] is False else 'True'
+            t.add_resource(metrics)
             # End Custom Resource
 
         # Tags must use "soca:<Key>" syntax
@@ -229,4 +228,4 @@ def main(**params):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         return {'success': False,
-                'output': 'cloudformation_builder.py' + (str(e) + ': error:' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))}
+                'output': 'cloudformation_builder.py: ' + (str(e) + ': error :' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))}

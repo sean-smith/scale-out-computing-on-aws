@@ -160,11 +160,11 @@ def main(**kwargs):
                                    'fsx_lustre_dns': False,
                                    'fsx_lustre_size': False,
                                    'ht_support': False,
-                                   'root_size': False,
-                                   'scratch_size': False,
+                                   'root_size': 10,
+                                   'scratch_size': 0,
                                    'spot_price': False,
                                    'subnet_id': False,
-                                   'scratch_iops': False
+                                   'scratch_iops': 0
                                    }
         for k, v in optional_job_parameters.items():
             if k not in kwargs.keys():

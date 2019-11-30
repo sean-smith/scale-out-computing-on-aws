@@ -393,7 +393,7 @@ Resources:
         SchedulerSecurityGroup: !GetAtt Security.Outputs.SchedulerSecurityGroup
         ComputeNodeIAMRoleArn: !GetAtt Security.Outputs.ComputeNodeIAMRoleArn
         ComputeNodeIAMRole: !GetAtt Security.Outputs.ComputeNodeIAMRole
-        ComputeNodeInstanceProfile: !GetAtt Security.Outputs.ComputeNodeInstanceProfile
+        ComputeNodeInstanceProfileArn: !GetAtt Security.Outputs.ComputeNodeInstanceProfileArn
         SchedulerIAMRoleArn: !GetAtt Security.Outputs.SchedulerIAMRoleArn
         SchedulerIAMRole: !GetAtt Security.Outputs.SchedulerIAMRole
         ComputeNodeSecurityGroup: !GetAtt Security.Outputs.ComputeNodeSecurityGroup

@@ -289,7 +289,7 @@ if __name__ == "__main__":
     queues = False
     # Retrieve Default Queue parameters
     stream_resource_mapping = open('/apps/soca/cluster_manager/settings/queue_mapping.yml', "r")
-    docs = yaml.load_all(stream_resource_mapping)
+    docs = yaml.load_all(stream_resource_mapping, Loader=yaml.FullLoader)
     for doc in docs:
         for items in doc.values():
             for type, info in items.items():
@@ -301,7 +301,7 @@ if __name__ == "__main__":
 
     # Generate FlexLM mapping
     stream_flexlm_mapping = open('/apps/soca/cluster_manager/settings/licenses_mapping.yml', "r")
-    docs = yaml.load_all(stream_flexlm_mapping)
+    docs = yaml.load_all(stream_flexlm_mapping, Loader=yaml.FullLoader)
     custom_flexlm_resources = {}
     for doc in docs:
         for k, v in doc.items():
