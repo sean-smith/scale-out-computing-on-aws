@@ -39,19 +39,21 @@ def can_launch_capacity(instance_type, count, image_id, subnet_id):
 
 def check_config(**kwargs):
     error = False
+    # Convert str to bool when possible
+    for k, v in kwargs.items():
+        if v in ['true', 'True', 'yes']:
+            kwargs[k] = True
+        if v in ['false', 'False', 'no']:
+            kwargs[k] = False
+
+     ## Must convert true,True into bool() and false/False
     if kwargs['job_id'] is None and kwargs['keep_forever'] is None:
         error = return_message('--job_id or --keep_forever must be specified')
-
-    if kwargs['placement_group'] is None:
-        kwargs['placement_group'] = True
-    else:
-        if kwargs['placement_group'] not in [True, False]:
-            error = return_message('--placement_group must either be true or false')
 
     if not isinstance(int(kwargs['desired_capacity']), int):
         return_message('Desired Capacity must be an int')
 
-    if kwargs['tags'] is None:
+    if not 'tags' in kwargs.keys() or kwargs['tags'] is None:
         kwargs['tags'] = {}
     else:
         try:
@@ -64,7 +66,7 @@ def check_config(**kwargs):
     if kwargs['fsx_lustre_dns'] is False:
         if kwargs['fsx_lustre_bucket'] is False:
             if kwargs['fsx_lustre_size'] is not False:
-                error = return_message('You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_capacity')
+                error = return_message('You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_size')
         else:
             if kwargs['fsx_lustre_bucket'].startswith("s3://"):
                 # remove trailing / if exist
@@ -98,8 +100,11 @@ def check_config(**kwargs):
             error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
 
     if int(kwargs['desired_capacity']) > 1:
-        if kwargs['placement_group'] is not False:
+        if 'placement_group' not in kwargs.keys():
             kwargs['placement_group'] = True
+        else:
+            if kwargs['placement_group'] is not False:
+                kwargs['placement_group'] = True
     else:
         kwargs['placement_group'] = False
 
@@ -112,18 +117,21 @@ def check_config(**kwargs):
         else:
             kwargs['core_count'] = 1
 
+    # Validate Base OS
     if kwargs['base_os'] is not False:
         base_os_allowed = ['rhel7', 'centos7', 'amazonlinux2']
         if kwargs['base_os'] not in base_os_allowed:
             error = return_message('base_os must be one of the following value: ' + ','.join(base_os_allowed))
+    else:
+        kwargs['base_os'] = aligo_configuration['BaseOS']
 
-    # EFA Checks
+    # Validate EFA
     if kwargs['efa_support'] not in [True, False]:
         kwargs['efa_support'] = False
-
-    if kwargs['efa_support'] is True:
-        if 'n' not in kwargs['instance_type']:
-            error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
+    else:
+        if kwargs['efa_support'] is True:
+            if 'n' not in kwargs['instance_type']:
+                error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
 
     instance_type_count = (kwargs['instance_type'].split(',')).__len__()
     if instance_type_count > 1:
@@ -131,6 +139,7 @@ def check_config(**kwargs):
             spot_price_count = (kwargs['spot_price'].split(',')).__len__()
             if spot_price_count != instance_type_count:
                 error = return_message("The number of EC2 instances type " + str(kwargs['instance_type']) + " does not match with the number of Spot Price values " + str(kwargs["spot_price"] + ". You need to specify 1 Spot Price for each instance type selected"))
+
     if error is not False:
         return error
     else:
@@ -143,104 +152,252 @@ def return_message(message, success=False):
 
 
 def main(**kwargs):
-    params = check_config(**kwargs)
-    # If error is detected, return error message to be logged on the queue.log files
-    if 'message' in params.keys():
-        return params
+    try:
+        # Create default value for optional parameters if needed
+        optional_job_parameters = {'base_os': False,
+                                   'efa_support': False,
+                                   'fsx_lustre_bucket': False,
+                                   'fsx_lustre_dns': False,
+                                   'fsx_lustre_size': False,
+                                   'ht_support': False,
+                                   'root_size': False,
+                                   'scratch_size': False,
+                                   'spot_price': False,
+                                   'subnet_id': False,
+                                   'scratch_iops': False
+                                   }
+        for k, v in optional_job_parameters.items():
+            if k not in kwargs.keys():
+                kwargs[k] = v
 
-    # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
-    tags = params['tags']
-    if params['keep_forever'] is True:
-        unique_id = str(uuid.uuid4())
-        cfn_stack_name = aligo_configuration['ClusterId'] + '-keepforever-' + params['queue'] + '-' + unique_id
-        tags['soca:KeepForever'] = 'true'
-    else:
-        cfn_stack_name = aligo_configuration['ClusterId'] + '-job-' + str(params['job_id'])
-        tags['soca:KeepForever'] = 'false'
+        required_job_parameters = []
 
-    if 'soca:NodeType' not in tags.keys():
-        tags['soca:NodeType'] = 'soca-compute-node'
-
-    if 'soca:ClusterId' not in tags.keys():
-        tags['soca:ClusterId'] = aligo_configuration['ClusterId']
-
-    if 'soca:JobId' not in tags.keys():
-        tags['soca:JobId'] = params['job_id']
-
-    if 'Name' not in tags.keys():
-        tags['Name'] = cfn_stack_name.replace('_', '-')
-
-    job_parameters = {
-        'BaseOS': aligo_configuration['BaseOS'] if params['base_os'] is False else params['base_os'],
-        'ClusterId': aligo_configuration['ClusterId'],
-        'ComputeNodeInstanceProfileArn': aligo_configuration['ComputeNodeInstanceProfileArn'],
-        'CoreCount': params['core_count'],
-        'DesiredCapacity': params['desired_capacity'],
-        'Efa': False if params['efa_support'] is None else params['efa_support'],
-        'EFSAppsDns': aligo_configuration['EFSAppsDns'],
-        'EFSDataDns': aligo_configuration['EFSDataDns'],
-        'FSxLustreBucket': params['fsx_lustre_bucket'],
-        'FSxLustreDns': params['fsx_lustre_dns'],
-        'FSxLustreSize': 1200 if params['fsx_lustre_size'] is False else params['fsx_lustre_size'],
-        'ImageId': params['instance_ami'] if params['instance_ami'] is not None else aligo_configuration['CustomAMI'],
-        'InstanceType': params['instance_type'],
-        'JobId': params['job_id'],
-        'JobName': params['job_name'],
-        'JobOwner': params['job_owner'],
-        'JobProject': params['job_project'],
-        'JobQueue': params['queue'],
-        'KeepForever': True if params['keep_forever'] is True else False,
-        'PlacementGroup': params['placement_group'],
-        'RootSize': 10 if params['root_size'] is False else params['root_size'],
-        'S3Bucket': aligo_configuration['S3Bucket'],
-        'S3InstallFolder': aligo_configuration['S3InstallFolder'],
-        'SchedulerHostname': aligo_configuration['SchedulerPrivateDnsName'],
-        'ScratchSize': 0 if params['scratch_size'] is False else params['scratch_size'],
-        'SecurityGroupId': aligo_configuration['ComputeNodeSecurityGroup'],
-        'SolutionMetricLambda': aligo_configuration['SolutionMetricLambda'] if 'SolutionMetricLambda' in aligo_configuration.keys() else 'false',
-        'SpotPrice': params['spot_price'] if params['spot_price'] is not None else False,
-        'SSHKeyPair': aligo_configuration['SSHKeyPair'],
-        'StackUUID': str(uuid.uuid4()),
-        'SubnetId': params['subnet_id'],
-        'ThreadsPerCore': 2 if params['ht_support'] == 'true' else 1,
-        'Version': aligo_configuration['Version'],
-        'VolumeTypeIops': params['scratch_iops']
-    }
-
-    instances_count = job_parameters['InstanceType'].split(',').__len__()
-    if instances_count > 1:
-        cfn_stack_body = cloudformation_builder.main(instances_count=instances_count)
-    else:
-        cfn_stack_body = cloudformation_builder.main()
-
-    cfn_stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
-    # Dry Run
-    can_launch = can_launch_capacity(job_parameters['InstanceType'],
-                                     job_parameters['DesiredCapacity'],
-                                     job_parameters['ImageId'],
-                                     job_parameters['SubnetId'])
-
-    if can_launch is True:
+        # Validate Job parameters
         try:
-            cloudformation.create_stack(
-                StackName=cfn_stack_name,
-                TemplateBody=cfn_stack_body,
-                Tags=cfn_stack_tags)
-
-            return {'success': True,
-                    'stack_name': cfn_stack_name,
-                    'compute_node': 'job'+str(params['job_id'])
-                    }
-
+            params = check_config(**kwargs)
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            return {'success': False,
-                    'error':  str(exc_type) + ' : ' + str(fname) + ' : ' + str(exc_tb.tb_lineno) + ' : ' + str(e) + ' : ' + str(e)}
-    else:
-        return {'success': False,
-                'error': 'Dry Run failed: ' + str(can_launch)}
+            return return_message('Unable to verify parameters ' + str(e) + ': error:' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno) + ' ' + str(kwargs))
 
+        # If error is detected, return error message to be logged on the queue.log files
+        if 'message' in params.keys():
+            return params
+
+        # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
+        tags = params['tags']
+        if params['keep_forever'] is True:
+            unique_id = str(uuid.uuid4())
+            cfn_stack_name = aligo_configuration['ClusterId'] + '-keepforever-' + params['queue'] + '-' + unique_id
+            tags['soca:KeepForever'] = 'true'
+        else:
+            cfn_stack_name = aligo_configuration['ClusterId'] + '-job-' + str(params['job_id'])
+            tags['soca:KeepForever'] = 'false'
+
+        if 'soca:NodeType' not in tags.keys():
+            tags['soca:NodeType'] = 'soca-compute-node'
+
+        if 'soca:ClusterId' not in tags.keys():
+            tags['soca:ClusterId'] = aligo_configuration['ClusterId']
+
+        if 'soca:JobId' not in tags.keys():
+            tags['soca:JobId'] = params['job_id']
+
+        if 'Name' not in tags.keys():
+            tags['Name'] = cfn_stack_name.replace('_', '-')
+
+        # List Parameters, retrieve values and set Default value if needed
+        parameters_list = {
+            'BaseOS': {
+                'Key': 'base_os',
+                'Default': aligo_configuration['BaseOS'],
+            },
+            'ClusterId': {
+                'Key': None,
+                'Default': aligo_configuration['ClusterId'],
+            },
+            'ComputeNodeInstanceProfileArn': {
+                'Key': None,
+                'Default': aligo_configuration['ComputeNodeInstanceProfileArn'],
+            },
+            'CoreCount': {
+                'Key': 'core_count',
+                'Default': None,
+            },
+            'DesiredCapacity': {
+                'Key': 'desired_capacity',
+                'Default': None,
+            },
+            'Efa': {
+                'Key': 'efa_support',
+                'Default': False,
+            },
+            'EFSAppsDns': {
+                'Key': None,
+                'Default': aligo_configuration['EFSAppsDns'],
+            },
+            'EFSDataDns': {
+                'Key': None,
+                'Default': aligo_configuration['EFSDataDns'],
+            },
+            'FSxLustreBucket': {
+                'Key': 'fsx_lustre_bucket',
+                'Default': False
+            },
+            'FSxLustreDns': {
+                'Key': 'fsx_lustre_dns',
+                'Default': False
+            },
+            'FSxLustreSize': {
+                'Key': 'fsx_lustre_size',
+                'Default': 1200
+            },
+            'ImageId': {
+                'Key': 'instance_ami',
+                'Default': aligo_configuration['CustomAMI']
+            },
+            'InstanceType': {
+                'Key': 'instance_type',
+                'Default': None
+            },
+            'JobId': {
+                'Key': 'job_id',
+                'Default': None
+            },
+            'JobName': {
+                'Key': 'job_name',
+                'Default': None
+            },
+            'JobOwner': {
+                'Key': 'job_owner',
+                'Default': None
+            },
+            'JobProject': {
+                'Key': 'job_project',
+                'Default': None
+            },
+            'JobQueue': {
+                'Key': 'queue',
+                'Default': None
+            },
+            'KeepForever': {
+                'Key': 'keep_forever',
+                'Default': False
+            },
+            'PlacementGroup': {
+                'Key': 'placement_group',
+                'Default': True
+            },
+            'RootSize': {
+                'Key': 'root_size',
+                'Default': 10
+            },
+            'S3Bucket': {
+                'Key': None,
+                'Default': aligo_configuration['S3Bucket']
+            },
+            'S3InstallFolder': {
+                'Key': None,
+                'Default': aligo_configuration['S3InstallFolder']
+            },
+            'SchedulerPrivateDnsName': {
+                'Key': None,
+                'Default': aligo_configuration['SchedulerPrivateDnsName']
+            },
+            'ScratchSize': {
+                'Key': 'scratch_size',
+                'Default': 0
+            },
+            'SecurityGroupId': {
+                'Key': None,
+                'Default': aligo_configuration['ComputeNodeSecurityGroup']
+            },
+            'SchedulerHostname': {
+                'Key': None,
+                'Default': aligo_configuration['SchedulerPrivateDnsName']
+            },
+            'SolutionMetricLambda': {
+                'Key': None,
+                'Default': aligo_configuration['SolutionMetricLambda']
+            },
+            'SpotPrice': {
+                'Key': 'spot_price',
+                'Default': False
+            },
+            'SSHKeyPair': {
+                'Key': None,
+                'Default': aligo_configuration['SSHKeyPair']
+            },
+            'StackUUID': {
+                'Key': None,
+                'Default': str(uuid.uuid4())
+            },
+            'SubnetId': {
+                'Key': 'subnet_id',
+                'Default': None
+            },
+            'ThreadsPerCore': {
+                'Key': 'ht_support',
+                'Default': 1
+            },
+            'Version': {
+                'Key': None,
+                'Default': aligo_configuration['Version']
+            },
+            'VolumeTypeIops': {
+                'Key': 'scratch_iops',
+                'Default': 0
+            },
+        }
+
+        cfn_stack_parameters = {}
+        for k, v in parameters_list.items():
+            if v['Key'] is not None:
+                if v['Key'] not in params.keys():
+                    cfn_stack_parameters[k] = v['Default']
+                else:
+                    cfn_stack_parameters[k] = params[v['Key']]
+            else:
+                if v['Default'] is None:
+                    error = return_message('Unable to detect value for ' + k)
+                    return error
+                else:
+                    cfn_stack_parameters[k] = v['Default']
+
+        cfn_stack_body = cloudformation_builder.main(**cfn_stack_parameters)
+        if cfn_stack_body['success'] is False:
+            return return_message(cfn_stack_body['output'])
+        cfn_stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
+
+        # Dry Run
+        can_launch = can_launch_capacity(cfn_stack_parameters['InstanceType'],
+                                         cfn_stack_parameters['DesiredCapacity'],
+                                         cfn_stack_parameters['ImageId'],
+                                         cfn_stack_parameters['SubnetId'])
+
+        if can_launch is True:
+            try:
+                cloudformation.create_stack(
+                    StackName=cfn_stack_name,
+                    TemplateBody=cfn_stack_body['output'],
+                    Tags=cfn_stack_tags)
+
+                return {'success': True,
+                        'stack_name': cfn_stack_name,
+                        'compute_node': 'job'+str(params['job_id'])
+                        }
+
+            except Exception as e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                return return_message(str(e) + ': error:' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno) + ' ' + str(kwargs))
+
+        else:
+            return return_message('Dry Run failed: ' + str(can_launch))
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        return return_message(str(e) + ': error:' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno) + ' ' + str(kwargs))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

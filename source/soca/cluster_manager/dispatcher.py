@@ -3,20 +3,21 @@ SOCA DYNAMIC CLUSTER MANAGER
 This script retrieve all queued jobs, calculate PBS resources required to launch each job
 and provision EC2 capacity if all resources conditions are met.
 """
-import json
 import argparse
-import boto3
-import logging
+import datetime
 import fnmatch
+import json
+import logging
+import os
 import re
 import subprocess
-import yaml
-import datetime
-from datetime import timedelta
-import pytz
-import ast
-import os
 import sys
+from datetime import timedelta
+
+import boto3
+import pytz
+import yaml
+
 sys.path.append(os.path.dirname(__file__))
 import configuration
 import add_nodes
@@ -476,33 +477,17 @@ if __name__ == "__main__":
                         logpush('job_' + job_id + ' can run, doing dry run test with following parameters: ' + job_parameter_values['instance_type'] + ' *  ' +str(desired_capacity))
                         if can_launch_capacity(job_parameter_values['instance_type'], desired_capacity, job_parameter_values['instance_ami']) is True:
                             try:
-                                keep_forever = 'false'
-                                create_new_asg = add_nodes.main(job_parameter_values['instance_type'],
-                                                                desired_capacity,
-                                                                queue_name,
-                                                                job_parameter_values['instance_ami'],
-                                                                job_id,
-                                                                job['get_job_name'],
-                                                                job['get_job_owner'],
-                                                                job['get_job_project'],
-                                                                keep_forever,
-                                                                job_parameter_values['scratch_size'] if 'scratch_size' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['scratch_iops'] if 'scratch_iops' in job_parameter_values.keys() else 0,
-                                                                job_parameter_values['root_size'] if 'root_size' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['placement_group'] if 'placement_group' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['spot_price'] if 'spot_price' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['efa_support'] if 'efa_support' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['base_os'] if 'base_os' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['subnet_id'] if 'subnet_id' in job_parameter_values.keys() else False,
-                                                                'false' if 'ht_support' not in job_parameter_values.keys() else job_parameter_values['ht_support'] if job_parameter_values['ht_support'] in ['true', 'false'] else 'false',
-                                                                job_parameter_values['fsx_lustre_bucket'] if 'fsx_lustre_bucket' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['fsx_lustre_size'] if 'fsx_lustre_size' in job_parameter_values.keys() else False,
-                                                                job_parameter_values['fsx_lustre_dns'] if 'fsx_lustre_dns' in job_parameter_values.keys() else False,
 
-                                                                # Additional tags below
-                                                                {}
-                                                                )
+                                # Adding extra parameters to job_parameter_values
+                                job_parameter_values['desired_capacity'] = desired_capacity
+                                job_parameter_values['queue'] = queue_name
+                                job_parameter_values['job_id'] = job_id
+                                job_parameter_values['job_name'] = job['get_job_name']
+                                job_parameter_values['job_owner'] = job['get_job_owner']
+                                job_parameter_values['job_project'] = job['get_job_project']
+                                job_parameter_values['keep_forever'] = False
 
+                                create_new_asg = add_nodes.main(**job_parameter_values)
                                 if create_new_asg['success'] is True:
                                     compute_unit = create_new_asg['compute_node']
                                     stack_id = create_new_asg['stack_name']
@@ -523,14 +508,13 @@ if __name__ == "__main__":
                                         logpush('License available: ' + str(license_available[resource]))
 
                                 else:
-                                    logpush('Error while trying to create ASG: ' + str(create_new_asg['error']))
+                                    logpush('Error while trying to create ASG: ' + str(create_new_asg))
 
 
                             except Exception as e:
-                                logpush('Create ASG failed for job_'+job_id + ' with error: ' + str(e), 'error')
                                 exc_type, exc_obj, exc_tb = sys.exc_info()
                                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                                logpush(str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))
+                                logpush('Create ASG (refer to add_nodes.py) failed for job_'+job_id + ' with error: ' + str(e) + ' ' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno), 'error')
 
                         else:
                             pass
