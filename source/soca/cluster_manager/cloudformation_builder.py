@@ -3,7 +3,7 @@ import sys
 
 from troposphere import Base64, GetAtt
 from troposphere import Ref, Template
-from troposphere import Sub
+from troposphere import Tags as default_tags  # without PropagateAtLaunch
 from troposphere.autoscaling import AutoScalingGroup, \
     LaunchTemplateSpecification, \
     Tags
@@ -18,6 +18,7 @@ from troposphere.ec2 import PlacementGroup, \
     InstanceMarketOptions, \
     NetworkInterfaces, \
     SpotOptions
+from troposphere.fsx import FileSystem, LustreConfiguration
 
 
 class CustomResourceSendAnonymousMetrics(AWSCustomObject):
@@ -41,7 +42,7 @@ t = Template()
 t.set_version("2010-09-09")
 t.set_description("(SOCA) - Base template to deploy compute nodes.")
 allow_anonymous_data_collection = True  # change to False to disable.
-
+debug = False
 
 def main(**params):
     try:
@@ -69,7 +70,7 @@ def main(**params):
         echo export "SOCA_VERSION="''' + params['Version'] + '''"" >> /etc/environment
         echo export "SOCA_JOB_EFA="''' + str(params['Efa']).lower() + '''"" >> /etc/environment
         echo export "SOCA_JOB_ID="''' + params['JobId'] + '''"" >> /etc/environment
-        echo export "SOCA_SCRATCH_SIZE={}''' + format(params['ScratchSize']) + '''" >> /etc/environment
+        echo export "SOCA_SCRATCH_SIZE=''' + str(params['ScratchSize']) + '''" >> /etc/environment
         echo export "SOCA_INSTALL_BUCKET="''' + params['S3Bucket'] + '''"" >> /etc/environment
         echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + params['S3InstallFolder'] + '''"" >> /etc/environment
         echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
@@ -121,14 +122,15 @@ def main(**params):
             Groups=[params["SecurityGroupId"]]
         )]
 
-        ltd.UserData = Base64(Sub(UserData))
+        ltd.UserData = Base64(UserData)
         ltd.BlockDeviceMappings = [
             BlockDeviceMapping(
-                DeviceName="/dev/xvda" if params["BaseOS"] is "amazonlinux2" else "/dev/sda1",
+                DeviceName="/dev/xvda" if params["BaseOS"] == "amazonlinux2" else "/dev/sda1",
                 Ebs=EBSBlockDevice(
                     VolumeSize=params["RootSize"],
                     VolumeType="gp2",
-                    DeleteOnTermination=True))
+                    DeleteOnTermination=True,
+                    Encrypted=True))
         ]
         if params["ScratchSize"] > 0:
             ltd.BlockDeviceMappings.append(
@@ -138,13 +140,14 @@ def main(**params):
                         VolumeSize=params["ScratchSize"],
                         VolumeType="io1" if params["VolumeTypeIops"] > 0 else "gp2",
                         Iops=params["VolumeTypeIops"] if params["VolumeTypeIops"] > 0 else Ref("AWS::NoValue"),
-                        DeleteOnTermination=True))
+                        DeleteOnTermination=True,
+                        Encrypted=True))
             )
         # End LaunchTemplateData
 
         # Begin Launch Template Resource
         lt = LaunchTemplate("NodeLaunchTemplate")
-        lt.LaunchTemplateName = Sub(params["ClusterId"] + "-" + params["JobId"])
+        lt.LaunchTemplateName = params["ClusterId"] + "-" + params["JobId"]
         lt.LaunchTemplateData = ltd
         t.add_resource(lt)
         # End Launch Template Resource
@@ -170,6 +173,34 @@ def main(**params):
             pass
         # End
         '''
+        # Begin FSx for Lustre
+        if params["FSxLustreBucket"] is not False:
+            fsx_lustre_configuration = LustreConfiguration()
+            fsx_lustre_configuration.ImportPath = params["FSxLustreBucket"]
+            fsx_lustre_configuration.ExportPath = params['FSxLustreBucket'] + "/" + params["ClusterId"] + "-fsxoutput/job-" + params["JobId"] + "/"
+            fsx_lustre = FileSystem("FSxForLustre")
+            fsx_lustre.FileSystemType = "LUSTRE"
+            fsx_lustre.StorageCapacity = params["FSxLustreSize"]
+            fsx_lustre.SecurityGroupIds = [params["SecurityGroupId"]]
+            fsx_lustre.SubnetIds = [params["SubnetId"]]
+            fsx_lustre.LustreConfiguration = fsx_lustre_configuration
+            fsx_lustre.Tags = default_tags(
+                # False disable PropagateAtLaunch
+                Name=params["ClusterId"]+"-compute-job-" + params["JobId"],
+                _soca_JobId=params["JobId"],
+                _soca_JobName=params["JobName"],
+                _soca_JobQueue=params["JobQueue"],
+                _soca_StackId=Ref("AWS::StackName"),
+                _soca_JobOwner=params["JobOwner"],
+                _soca_JobProject=params["JobProject"],
+                _soca_KeepForever=params["KeepForever"],
+                _soca_FSx="True",
+                _soca_ClusterId=params["ClusterId"],
+            )
+            t.add_resource(fsx_lustre)
+        # End FSx For Lustre
+
+        # End FSx for Lustre
         # Begin AutoScalingGroup Resource
         asg = AutoScalingGroup("AutoScalingComputeGroup")
         asg.DependsOn = "NodeLaunchTemplate"
@@ -182,23 +213,20 @@ def main(**params):
         if params["PlacementGroup"] is True:
             pg = PlacementGroup("ComputeNodePlacementGroup")
             pg.Strategy = "cluster"
-            pg.Condition = "UsePlacementGroup"
             t.add_resource(pg)
             asg.PlacementGroup = Ref(pg)
 
-        # Note: Tags must be soca:<Key>, but we can use : in attribute name. _soca_ will be replaced with soca:
         asg.Tags = Tags(
-            Name=Sub(params["ClusterId"]+"-compute-job-" + params["JobId"]),
+            Name=params["ClusterId"]+"-compute-job-" + params["JobId"],
             _soca_JobId=params["JobId"],
             _soca_JobName=params["JobName"],
             _soca_JobQueue=params["JobQueue"],
-            _soca_StackId={"Fn::Sub": "${AWS::StackName}"},
+            _soca_StackId=Ref("AWS::StackName"),
             _soca_JobOwner=params["JobOwner"],
             _soca_JobProject=params["JobProject"],
             _soca_KeepForever=params["KeepForever"],
             _soca_ClusterId=params["ClusterId"],
-            _soca_Node_Type="soca-compute-node",
-            PropagateAtLaunch=True)
+            _soca_NodeType="soca-compute-node")
         t.add_resource(asg)
         # End AutoScalingGroup Resource
 
@@ -220,6 +248,8 @@ def main(**params):
             t.add_resource(metrics)
             # End Custom Resource
 
+        if debug is True:
+            print(t.to_json())
         # Tags must use "soca:<Key>" syntax
         template_output = t.to_yaml().replace("_soca_", "soca:")
         return {'success': True,
