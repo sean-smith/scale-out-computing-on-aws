@@ -19,22 +19,24 @@ ec2 = boto3.client('ec2')
 aligo_configuration = configuration.get_aligo_configuration()
 
 
-def can_launch_capacity(instance_type, count, image_id, subnet_id):
-    try:
-       ec2.run_instances(
-            ImageId=image_id,
-            InstanceType=instance_type,
-            SubnetId=subnet_id,
-            MaxCount=int(count),
-            MinCount=int(count),
-            DryRun=True)
+def can_launch_capacity(instance_type, count, image_id,subnet_id):
+    instance_to_test = instance_type.split('+')
+    for instance in instance_to_test:
+        try:
+            ec2.run_instances(
+                ImageId=image_id,
+                InstanceType=instance,
+                SubnetId=subnet_id,
+                MaxCount=count,
+                MinCount=count,
+                DryRun=True)
 
-    except Exception as e:
-        if e.response['Error'].get('Code') == 'DryRunOperation':
-            return True
-        else:
-            print('Dry Run Failed, capacity can not be added: ' + str (e))
-            return False
+        except Exception as e:
+            if e.response['Error'].get('Code') == 'DryRunOperation':
+                return True
+            else:
+                print('Dry Run Failed, capacity ' + instance + ' can not be added: ' + str(e), 'error')
+                return False
 
 
 def check_config(**kwargs):

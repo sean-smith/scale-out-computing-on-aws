@@ -3,10 +3,13 @@ import sys
 
 from troposphere import Base64, GetAtt
 from troposphere import Ref, Template, Sub
-from troposphere import Tags as default_tags  # without PropagateAtLaunch
+from troposphere import Tags as base_Tags  # without PropagateAtLaunch
 from troposphere.autoscaling import AutoScalingGroup, \
     LaunchTemplateSpecification, \
-    Tags
+    Tags, \
+    LaunchTemplateOverrides, \
+    MixedInstancesPolicy
+from troposphere.autoscaling import LaunchTemplate as asg_LaunchTemplate
 from troposphere.cloudformation import AWSCustomObject
 from troposphere.ec2 import PlacementGroup, \
     BlockDeviceMapping, \
@@ -42,17 +45,19 @@ t = Template()
 t.set_version("2010-09-09")
 t.set_description("(SOCA) - Base template to deploy compute nodes.")
 allow_anonymous_data_collection = True  # change to False to disable.
-debug = False
+debug = True
+
 
 def main(**params):
     try:
+        instances_list = (params["InstanceType"].split("+"))
         # Begin LaunchTemplateData
         UserData = '''
-        #!/bin/bash -xe
-        # Aligo Specific - DO NOT EDIT
-        export PATH=$PATH:/usr/local/bin
-        if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] + '''" == "rhel7" ];
-            then
+#!/bin/bash -xe
+# Aligo Specific - DO NOT EDIT
+export PATH=$PATH:/usr/local/bin
+if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] + '''" == "rhel7" ];
+    then
                 EASY_INSTALL=$(which easy_install-2.7)
                 $EASY_INSTALL pip
                 PIP=$(which pip2.7)
@@ -114,7 +119,7 @@ def main(**params):
                 SpotOptions=SpotOptions(
                     MaxPrice=params["SpotPrice"]))
 
-        ltd.InstanceType = params["InstanceType"]
+        ltd.InstanceType = params["InstanceType"][0]
         ltd.NetworkInterfaces = [NetworkInterfaces(
             InterfaceType="efa" if params["Efa"] is not False else Ref("AWS::NoValue"),
             DeleteOnTermination=True,
@@ -152,27 +157,22 @@ def main(**params):
         t.add_resource(lt)
         # End Launch Template Resource
 
-        # If More than 1 instance, create MixedInstancesPolicy
-        instance_type_count = (params["InstanceType"].split(",")).__len__()
-        '''        
-        if instance_type_count > 1:
+        # Begin MixedPolicyInstance
+        if instances_list.__len__() > 1:
             mip = MixedInstancesPolicy()
-            id = InstancesDistribution()
-            # if Spot detected, create EC2 Spot Fleet
-            """
-            "OnDemandAllocationStrategy": (basestring, False),
-            "OnDemandBaseCapacity": (integer, False),
-            "OnDemandPercentageAboveBaseCapacity": (integer, False),
-            "SpotAllocationStrategy": (basestring, False),
-            "SpotInstancePools": (integer, False),
-            "SpotMaxPrice": (basestring, False),
-            """
-            mip.LaunchTemplate = Ref(lt)
-            mip.InstancesDistribution = Ref(id)
-            # Will Create Override
-            pass
-        # End
-        '''
+            asg_lt = asg_LaunchTemplate()
+            asg_lt.Overrides = []
+            for instance in instances_list:
+                asg_lt.Overrides.append(LaunchTemplateOverrides(
+                    InstanceType=instance
+                ))
+            asg_lt.LaunchTemplateSpecification = LaunchTemplateSpecification(
+                LaunchTemplateId=Ref(lt),
+                Version=GetAtt(lt, "LatestVersionNumber")
+            )
+            mip.LaunchTemplate = asg_lt
+        # End MixedPolicyInstance
+
         # Begin FSx for Lustre
         if params["FSxLustreBucket"] is not False:
             fsx_lustre_configuration = LustreConfiguration()
@@ -184,7 +184,7 @@ def main(**params):
             fsx_lustre.SecurityGroupIds = [params["SecurityGroupId"]]
             fsx_lustre.SubnetIds = [params["SubnetId"]]
             fsx_lustre.LustreConfiguration = fsx_lustre_configuration
-            fsx_lustre.Tags = default_tags(
+            fsx_lustre.Tags = base_Tags(
                 # False disable PropagateAtLaunch
                 Name=params["ClusterId"]+"-compute-job-" + params["JobId"],
                 _soca_JobId=params["JobId"],
@@ -200,13 +200,16 @@ def main(**params):
             t.add_resource(fsx_lustre)
         # End FSx For Lustre
 
-        # End FSx for Lustre
         # Begin AutoScalingGroup Resource
         asg = AutoScalingGroup("AutoScalingComputeGroup")
         asg.DependsOn = "NodeLaunchTemplate"
-        asg.LaunchTemplate = LaunchTemplateSpecification(
-            LaunchTemplateId=Ref(lt),
-            Version=GetAtt(lt, "LatestVersionNumber"))
+        if instances_list.__len__() > 1:
+            asg.MixedInstancesPolicy = mip
+        else:
+            asg.LaunchTemplate = LaunchTemplateSpecification(
+                LaunchTemplateId=Ref(lt),
+                Version=GetAtt(lt, "LatestVersionNumber"))
+
         asg.MinSize = int(params["DesiredCapacity"])
         asg.MaxSize = int(params["DesiredCapacity"])
         asg.VPCZoneIdentifier = [params["SubnetId"]]
@@ -250,6 +253,7 @@ def main(**params):
 
         if debug is True:
             print(t.to_json())
+
         # Tags must use "soca:<Key>" syntax
         template_output = t.to_yaml().replace("_soca_", "soca:")
         return {'success': True,

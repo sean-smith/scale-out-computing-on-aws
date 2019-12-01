@@ -191,24 +191,25 @@ def check_available_licenses(commands, license_to_check):
 
 # BEGIN EC2 FUNCTIONS
 def can_launch_capacity(instance_type, count, image_id):
-    try:
-        ec2.run_instances(
-            ImageId=image_id,
-            InstanceType=instance_type,
-            SubnetId=aligo_configuration['PrivateSubnet1'],
-            MaxCount=count,
-            MinCount=count,
-            DryRun=True)
+    instance_to_test = instance_type.split('+')
+    for instance in instance_to_test:
+        try:
+            ec2.run_instances(
+                ImageId=image_id,
+                InstanceType=instance,
+                SubnetId=aligo_configuration['PrivateSubnet1'],
+                MaxCount=count,
+                MinCount=count,
+                DryRun=True)
 
-    except Exception as e:
-        if e.response['Error'].get('Code') == 'DryRunOperation':
-            logpush('Dry Run Succeed, capacity can be added')
-            return True
-        else:
-            logpush('Dry Run Failed, capacity can not be added: ' + str(e), 'error')
-            return False
+        except Exception as e:
+            if e.response['Error'].get('Code') == 'DryRunOperation':
+                logpush('[Dispatcher.py] Dry Run Succeed for ' + instance + ', capacity can be added')
+            else:
+                logpush('[Dispatcher.py] Dry Run Failed, capacity ' + instance + ' can not be added: ' + str(e), 'error')
+                return False
+    return True
 
-    ## need to check ServiceQuota
 
 def clean_cloudformation_stack():
     pass
