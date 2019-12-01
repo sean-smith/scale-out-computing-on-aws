@@ -2,7 +2,7 @@ import os
 import sys
 
 from troposphere import Base64, GetAtt
-from troposphere import Ref, Template
+from troposphere import Ref, Template, Sub
 from troposphere import Tags as default_tags  # without PropagateAtLaunch
 from troposphere.autoscaling import AutoScalingGroup, \
     LaunchTemplateSpecification, \
@@ -122,7 +122,7 @@ def main(**params):
             Groups=[params["SecurityGroupId"]]
         )]
 
-        ltd.UserData = Base64(UserData)
+        ltd.UserData = Base64(Sub(UserData))
         ltd.BlockDeviceMappings = [
             BlockDeviceMapping(
                 DeviceName="/dev/xvda" if params["BaseOS"] == "amazonlinux2" else "/dev/sda1",
@@ -194,7 +194,7 @@ def main(**params):
                 _soca_JobOwner=params["JobOwner"],
                 _soca_JobProject=params["JobProject"],
                 _soca_KeepForever=params["KeepForever"],
-                _soca_FSx="True",
+                _soca_FSx="true",
                 _soca_ClusterId=params["ClusterId"],
             )
             t.add_resource(fsx_lustre)
