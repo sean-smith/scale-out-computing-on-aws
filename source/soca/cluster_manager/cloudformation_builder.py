@@ -117,7 +117,9 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
             ltd.InstanceMarketOptions = InstanceMarketOptions(
                 MarketType="spot",
                 SpotOptions=SpotOptions(
-                    MaxPrice=params["SpotPrice"]))
+                    MaxPrice="" if params["SpotPrice"] == "auto" else params["SpotPrice"]  # auto -> cap at OD price
+                )
+            )
 
         ltd.InstanceType = params["InstanceType"][0]
         ltd.NetworkInterfaces = [NetworkInterfaces(

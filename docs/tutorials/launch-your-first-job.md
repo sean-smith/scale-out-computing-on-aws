@@ -4,11 +4,11 @@ title: Launch your first job
 ## Submit your job
 
 !!!info "Things to know before you start"
-    * Jobs start on average 6 minutes after submission (this value may differ depending on the number and type of compute resource you need to be provisioned)
-    * You can launch 'AlwaysOn' instances if you want to avoid the ColdStart penalty
-    * If your simulation requires a lot of disk I/O, it's recommended to use high performance SSD-NVMe disks (using /scratch location) and not default $HOME path
+    * Jobs start on average 5 minutes after submission (this value may differ depending on the number and type of compute resource you need to be provisioned). [You can reduce this cold-start by pre-configuring your AMI](../../tutorials/reduce-compute-node-launch-time/)
+    * Nodes are ephemeral and tie to a given job id. If needed, [you can launch 'AlwaysOn' instances](../../tutorials/launch-always-on-instances/) that will be running 24/7.
+    * If your simulation requires a lot of disk I/O, [it's recommended to use high performance SSD-NVMe](../../tutorials/integration-ec2-job-parameters/#storage) disks (using /scratch location) and not default $HOME path
 
-Create a simple text file and name it "job_submit.que". See below for a simple template (you will be required to edit whatever is between **)
+To get started, create a simple text file and name it "job_submit.que". See below for a simple template (you will be required to edit whatever is between **)
 
 ~~~console
 #!/bin/bash
@@ -180,6 +180,14 @@ The web ui will also reflect this change.
 * * *
 
 ## Examples
+
+!!!example "Job Submission Simulator"
+    Use [the web-based simulator](../../job-configuration-generator/) to generate your qsub/script command.
+    
+!!!info "How to set a parameter"
+    - In a script: #PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2
+    - Using qsub: qsub -l parameter_name=parameter_value -l parameter_name_2=parameter_value_2 myscript.sh
+    
 
 Refer to [this page to get a list of all supported parameters](/tutorials/integration-ec2-job-parameters/)
 For the rest of the examples below, I will run a simple script named "script.sh" with the following content:

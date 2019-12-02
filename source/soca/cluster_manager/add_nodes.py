@@ -135,13 +135,6 @@ def check_config(**kwargs):
             if 'n' not in kwargs['instance_type']:
                 error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
 
-    instance_type_count = (kwargs['instance_type'].split(',')).__len__()
-    if instance_type_count > 1:
-        if kwargs['spot_price'] is not False:
-            spot_price_count = (kwargs['spot_price'].split(',')).__len__()
-            if spot_price_count != instance_type_count:
-                error = return_message("The number of EC2 instances type " + str(kwargs['instance_type']) + " does not match with the number of Spot Price values " + str(kwargs["spot_price"] + ". You need to specify 1 Spot Price for each instance type selected"))
-
     if error is not False:
         return error
     else:

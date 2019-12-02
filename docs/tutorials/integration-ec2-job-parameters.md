@@ -15,7 +15,7 @@ Below is a list of parameters you can specify when you request your simulation t
 | -l instance_type | Reference to the type of instance you want to provision for the job   | -l instance_type=c5.xlarge |
 | -l instance_ami| Reference to a custom AMI you want to use  | -l instance_ami=ami-12345|
 | -l base_os | Select the base OS of the AMI (centos7, rhel7 or amazonlinux2) | -l base_os=centos7 |
-| -l spot_price | Enable support for spot instance by specifying the maximum price you are willing to pay  | -l spot_price=1.5 |
+| -l spot_price | Enable support for spot instance by specifying the maximum price you are willing to pay. Use "auto" to cap at OD price  | -l spot_price=1.5 / -l spot_price=auto|
 | -l subnet_id | Deploy capacity in a specific private subnet | -l subnet_id=sub-12345 |
 | -l ht_support | Enable or disable support for Hyper Threading (disabled by default) | -l ht_support=yes |
 
