@@ -1,19 +1,19 @@
-import boto3
-import datetime
-import collections
 import os
-import sys
-import uuid
-import string
-import random
 import base64
-import yaml
 import glob
-import subprocess
-import generic.parameters as parameters
 import json
-from pwd import getpwnam
+import os
+import random
+import string
+import subprocess
+import uuid
 from os import path
+from pwd import getpwnam
+
+import generic.parameters as parameters
+import yaml
+
+
 def run_command(cmd, type):
     try:
         if type == "check_output":
@@ -79,11 +79,11 @@ echo ''' + params['session_password_b64'] + ''' | base64 --decode | /usr/libexec
 while true
     do
         session_keepalive=`/usr/bin/dcv list-sessions | grep ''' + session_id + ''' | wc -l`
-        if [ $session_keepalive -ne 1 ]
+        if [[ $session_keepalive -ne 1 ]];
             then
                 exit 0
         fi
-        sleep 3600
+        sleep 300
     done
 eof
 '''

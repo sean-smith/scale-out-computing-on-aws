@@ -3,22 +3,13 @@
 source /etc/environment
 source /root/config.cfg
 
-if [ $# -lt 4 ]
+if [ $# -lt 1 ]
   then
     exit 0
 fi
 
-BUCKET=$1
-EFS_DATA=$2
-EFS_APPS=$3
-SCHEDULER_HOSTNAME=$4
+SCHEDULER_HOSTNAME=$1
 AWS=$(which aws)
-# Mount EFS
-mkdir -p /data
-mkdir -p /apps
-
-echo "$EFS_DATA:/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 
 # Prepare PBS/System
 cd ~
@@ -255,7 +246,7 @@ EOF
     sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 fi
 
-
 # Reboot to disable SELINUX
+
 sudo reboot
-# Upon reboot, ComputenodePostinstall will be executed
+# Upon reboot, ComputenodePostReboot will be executed

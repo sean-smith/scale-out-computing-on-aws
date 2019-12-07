@@ -8,7 +8,8 @@ from troposphere.autoscaling import AutoScalingGroup, \
     LaunchTemplateSpecification, \
     Tags, \
     LaunchTemplateOverrides, \
-    MixedInstancesPolicy
+    MixedInstancesPolicy, \
+    InstancesDistribution
 from troposphere.autoscaling import LaunchTemplate as asg_LaunchTemplate
 from troposphere.cloudformation import AWSCustomObject
 from troposphere.ec2 import PlacementGroup, \
@@ -45,12 +46,17 @@ t = Template()
 t.set_version("2010-09-09")
 t.set_description("(SOCA) - Base template to deploy compute nodes.")
 allow_anonymous_data_collection = True  # change to False to disable.
-debug = True
+debug = False
 
 
 def main(**params):
     try:
-        instances_list = (params["InstanceType"].split("+"))
+        mip_usage = False
+        instances_list = params["InstanceType"].split("+")
+        asg_lt = asg_LaunchTemplate()
+        ltd = LaunchTemplateData("NodeLaunchTemplateData")
+        mip = MixedInstancesPolicy()
+
         # Begin LaunchTemplateData
         UserData = '''
 #!/bin/bash -xe
@@ -62,7 +68,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
                 $EASY_INSTALL pip
                 PIP=$(which pip2.7)
                 $PIP install awscli
-        fi
+ fi
         if [ "''' + params['BaseOS'] + '''" == "amazonlinux2" ];
             then
                 /usr/sbin/update-motd --disable
@@ -82,8 +88,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
         echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
         echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
-        
-        
+           
         source /etc/environment
         AWS=$(which aws)
         
@@ -97,15 +102,17 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         # Give some sudo permission to the user on this specific machine
         echo "''' + params['JobOwner'] + ''' ALL=(ALL) /bin/yum" >> /etc/sudoers
         
-        echo "@reboot /bin/aws s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodePostReboot.sh /root && /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
-        # Feel free to add new scripts based on your own requirement.
-        
+        echo "@reboot /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
+        mkdir -p /apps
+        mkdir -p /data
+        echo "''' + params['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+        echo "''' + params['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+        mount -a 
         $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-        $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNode.sh /root/
-        /bin/bash /root/ComputeNode.sh ''' + params['S3Bucket'] + ''' ''' + params['EFSDataDns'] + ''' ''' + params['EFSAppsDns'] + ''' ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1      
+        /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1
         '''
 
-        ltd = LaunchTemplateData("NodeLaunchTemplateData")
+
         ltd.EbsOptimized = True
         ltd.CpuOptions = CpuOptions(
             CoreCount=int(params["CoreCount"]),
@@ -113,15 +120,15 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         ltd.IamInstanceProfile = IamInstanceProfile(Arn=params["ComputeNodeInstanceProfileArn"])
         ltd.KeyName = params["SSHKeyPair"]
         ltd.ImageId = params["ImageId"]
-        if params["SpotPrice"] is not False:
+        if params["SpotPrice"] is not False and params["SpotAllocationCount"] is False:
             ltd.InstanceMarketOptions = InstanceMarketOptions(
                 MarketType="spot",
                 SpotOptions=SpotOptions(
-                    MaxPrice="" if params["SpotPrice"] == "auto" else params["SpotPrice"]  # auto -> cap at OD price
+                    MaxPrice=Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]  # auto -> cap at OD price
                 )
             )
 
-        ltd.InstanceType = params["InstanceType"][0]
+        ltd.InstanceType = instances_list[0]
         ltd.NetworkInterfaces = [NetworkInterfaces(
             InterfaceType="efa" if params["Efa"] is not False else Ref("AWS::NoValue"),
             DeleteOnTermination=True,
@@ -159,19 +166,30 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         t.add_resource(lt)
         # End Launch Template Resource
 
-        # Begin MixedPolicyInstance
-        if instances_list.__len__() > 1:
-            mip = MixedInstancesPolicy()
-            asg_lt = asg_LaunchTemplate()
-            asg_lt.Overrides = []
-            for instance in instances_list:
-                asg_lt.Overrides.append(LaunchTemplateOverrides(
-                    InstanceType=instance
-                ))
-            asg_lt.LaunchTemplateSpecification = LaunchTemplateSpecification(
-                LaunchTemplateId=Ref(lt),
-                Version=GetAtt(lt, "LatestVersionNumber")
-            )
+
+        asg_lt.LaunchTemplateSpecification = LaunchTemplateSpecification(
+            LaunchTemplateId=Ref(lt),
+            Version=GetAtt(lt, "LatestVersionNumber")
+        )
+
+        asg_lt.Overrides = []
+        for instance in instances_list:
+            asg_lt.Overrides.append(LaunchTemplateOverrides(
+                 InstanceType=instance
+        ))
+
+        # Begin InstancesDistribution
+        if params["SpotPrice"] is not False and \
+           params["SpotAllocationCount"] is not False and\
+           (params["DesiredCapacity"] - params["SpotAllocationCount"]) > 0:
+
+            mip_usage = True
+            idistribution = InstancesDistribution()
+            idistribution.OnDemandAllocationStrategy = "prioritized"  # only supported value
+            idistribution.OnDemandBaseCapacity = params["DesiredCapacity"] - params["SpotAllocationCount"]
+            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]
+            idistribution.SpotAllocationStrategy = params['SpotAllocationStrategy']
+            mip.InstancesDistribution = idistribution
             mip.LaunchTemplate = asg_lt
         # End MixedPolicyInstance
 
@@ -205,8 +223,9 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         # Begin AutoScalingGroup Resource
         asg = AutoScalingGroup("AutoScalingComputeGroup")
         asg.DependsOn = "NodeLaunchTemplate"
-        if instances_list.__len__() > 1:
+        if mip_usage is True:
             asg.MixedInstancesPolicy = mip
+
         else:
             asg.LaunchTemplate = LaunchTemplateSpecification(
                 LaunchTemplateId=Ref(lt),

@@ -10,23 +10,20 @@ crontab -r
 systemctl stop pbs
 
 # Begin USER Customization
-$AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodeUserCustomization.sh /root/
-/bin/bash /root/ComputeNodeUserCustomization.sh >> /root/ComputeNodeUserCustomization.log 2>&1
-rm /root/ComputeNodeUserCustomization.sh
+#$AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodeUserCustomization.sh /root/
+/bin/bash /apps/soca/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> /root/ComputeNodeUserCustomization.log 2>&1
 # End USER Customization
 
 # Begin DCV Customization
-if [ "$SOCA_JOB_QUEUE" == "desktop" ]; then
+if [[ "$SOCA_JOB_QUEUE" == "desktop" ]]; then
     echo "Installing DCV"
-    $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodeInstallDCV.sh /root/
-    /bin/bash /root/ComputeNodeInstallDCV.sh >> /root/ComputeNodeInstallDCV.log 2>&1
-    rm /root/ComputeNodeInstallDCV.sh
+    /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNodeInstallDCV.sh >> /root/ComputeNodeInstallDCV.log 2>&1
     sleep 30
 fi
 # End DCV Customization
 
 # Begin EFA Customization
-if [ $SOCA_JOB_EFA == "true" ]; then
+if [[ "$SOCA_JOB_EFA" == "true" ]]; then
     echo "Installing EFA"
     cd /root/
     curl --silent -O $EFA_URL
@@ -46,12 +43,12 @@ Compute Node Ready for queue: $SOCA_JOB_QUEUE
 
 # Configure FSx if specified by the user.
 # Right before the reboot to minimize the time to wait for FSx to be AVAILABLE
-if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]] || [[ $SOCA_FSX_LUSTRE_DNS != 'false' ]] ; then
+if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'false' ]] ; then
     echo "FSx request detected, installing FSX Lustre client ... "
     FSX_MOUNTPOINT="/fsx"
     mkdir -p $FSX_MOUNTPOINT
 
-    if [[ $SOCA_FSX_LUSTRE_DNS == 'false' ]]; then
+    if [[ "$SOCA_FSX_LUSTRE_DNS" == 'false' ]]; then
         # Retrieve FSX DNS assigned to this job
         FSX_ARN=$($AWS resourcegroupstaggingapi get-resources --tag-filters  "Key=soca:FSx,Values=true" "Key=soca:StackId,Values=$AWS_STACK_ID" --query ResourceTagMappingList[].ResourceARN --output text)
         echo "GET_FSX_ARN: " $FSX_ARN
@@ -65,7 +62,7 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]] || [[ $SOCA_FSX_LUSTRE_DNS != 'false
         CHECK_FSX_STATUS=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
         LOOP_COUNT=1
         echo "FSX_DNS: " $FSX_DNS
-        while [[ $CHECK_FSX_STATUS != "AVAILABLE" ]] && [[ $LOOP_COUNT -lt 10 ]]
+        while [[ "$CHECK_FSX_STATUS" != "AVAILABLE" ]] && [[ $LOOP_COUNT -lt 10 ]]
             do
                 echo "FSX does not seems to be on AVAILABLE status yet ... waiting 60 secs"
                 sleep 60
@@ -74,7 +71,7 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]] || [[ $SOCA_FSX_LUSTRE_DNS != 'false
                 ((LOOP_COUNT++))
         done
 
-        if [[ $CHECK_FSX_STATUS == "AVAILABLE" ]]; then
+        if [[ "$CHECK_FSX_STATUS" == "AVAILABLE" ]]; then
             echo "FSx is AVAILABLE"
             echo "$FSX_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
         else
@@ -87,7 +84,7 @@ if [[ $SOCA_FSX_LUSTRE_BUCKET != 'false' ]] || [[ $SOCA_FSX_LUSTRE_DNS != 'false
     fi
 
     # Install Clients
-    if [[ $SOCA_BASE_OS == "amazonlinux2" ]]; then
+    if [[ "$SOCA_BASE_OS" == "amazonlinux2" ]]; then
         sudo amazon-linux-extras install -y lustre2.10
     else
         sudo yum -y install https://downloads.whamcloud.com/public/lustre/lustre-2.10.6/el7/client/RPMS/x86_64/kmod-lustre-client-2.10.6-1.el7.x86_64.rpm

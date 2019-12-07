@@ -43,9 +43,9 @@ def check_config(**kwargs):
     error = False
     # Convert str to bool when possible
     for k, v in kwargs.items():
-        if v in ['true', 'True', 'yes']:
+        if str(v).lower() in ['true', 'yes']:
             kwargs[k] = True
-        if v in ['false', 'False', 'no']:
+        if str(v) in ['false', 'no']:
             kwargs[k] = False
 
      ## Must convert true,True into bool() and false/False
@@ -119,13 +119,34 @@ def check_config(**kwargs):
         else:
             kwargs['core_count'] = 1
 
+    # Validate Spot Allocation Strategy
+    if kwargs['spot_allocation_strategy'] is not False:
+        spot_allocation_strategy_allowed = ['lowest-price', 'capacity-optimized']
+        if kwargs['spot_allocation_strategy'] not in spot_allocation_strategy_allowed:
+            error = return_message('spot_allocation_strategy_allowed (' + str(kwargs['spot_allocation_strategy']) + ') must be one of the following value: ' + ','.join(spot_allocation_strategy_allowed))
+
+    # Validate Spot Allocation Percentage
+    if kwargs['spot_allocation_count'] is not False:
+        if isinstance(kwargs['spot_allocation_count'], int):
+            if int(kwargs['spot_allocation_count']) > kwargs['desired_capacity']:
+                error = return_message('spot_allocation_count (' + str(kwargs['spot_allocation_count']) + ') must be an lower or equal to the number of nodes provisioned for this simulation (' + str(kwargs['desired_capacity']) + ')')
+        else:
+            error = return_message('spot_allocation_count (' + str(kwargs['spot_allocation_count']) + ') must be an integer')
+
     # Validate Base OS
     if kwargs['base_os'] is not False:
         base_os_allowed = ['rhel7', 'centos7', 'amazonlinux2']
         if kwargs['base_os'] not in base_os_allowed:
-            error = return_message('base_os must be one of the following value: ' + ','.join(base_os_allowed))
+            error = return_message('base_os (' + str(kwargs['base_os']) + ') must be one of the following value: ' + ','.join(base_os_allowed))
     else:
         kwargs['base_os'] = aligo_configuration['BaseOS']
+
+    # Validate Spot Price
+    if kwargs['spot_price'] is not False:
+        if kwargs['spot_price'] == 'auto' or isinstance(kwargs['spot_price'], float):
+            pass
+        else:
+            error = return_message('spot_price must be either "auto" or a float value"')
 
     # Validate EFA
     if kwargs['efa_support'] not in [True, False]:
@@ -157,10 +178,13 @@ def main(**kwargs):
                                    'ht_support': False,
                                    'root_size': 10,
                                    'scratch_size': 0,
+                                   'spot_allocation_count': False,
+                                   'spot_allocation_strategy': 'lowest-price',
                                    'spot_price': False,
                                    'subnet_id': False,
                                    'scratch_iops': 0
                                    }
+
         for k, v in optional_job_parameters.items():
             if k not in kwargs.keys():
                 kwargs[k] = v
@@ -315,6 +339,14 @@ def main(**kwargs):
                 'Key': None,
                 'Default': aligo_configuration['SolutionMetricLambda']
             },
+            'SpotAllocationCount': {
+                'Key': 'spot_allocation_count',
+                'Default': False
+            },
+            'SpotAllocationStrategy': {
+                'Key': 'spot_allocation_strategy',
+                'Default': 'lowest-price'
+            },
             'SpotPrice': {
                 'Key': 'spot_price',
                 'Default': False
@@ -421,6 +453,8 @@ if __name__ == "__main__":
     parser.add_argument('--root_size', default=False, nargs='?', help="Size of Root partition in GB")
     parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--scratch_size', default=False, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--spot_allocation_count', default=False, nargs='?', help="When using mixed OD and SPOT, choose % of SPOT")
+    parser.add_argument('--spot_allocation_strategy', default=False, nargs='?', help="lowest-cost or capacity-optimized")
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
     parser.add_argument('--subnet_id', default=False, help='Launch capacity in a special subnet')
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")

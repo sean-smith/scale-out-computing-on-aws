@@ -70,7 +70,7 @@ Parameters:
   SchedulerIAMRole:
     Type: String
 
-  ComputeNodeInstanceProfile:
+  ComputeNodeInstanceProfileArn:
     Type: String
 
   ESDomainEndpoint:
@@ -114,13 +114,12 @@ Resources:
           import sys
           import datetime
           import cfnresponse
-          from urllib.request import Request
-          from urllib.request import urlopen
+          import urllib3
           import os
 
           '''
           To improve performance and usability, SOCA sends anonymous metrics to AWS.
-          You can disable this by switching "Send AnonymousData" to "No" on ComputeNode.template
+          You can disable this by switching "Send AnonymousData" to "No" on cloudformation_builder.py
           Data tracked:
             - SOCA Instance information
             - SOCA Instance Count
@@ -137,11 +136,13 @@ Resources:
                   metrics = dict(time_stamp, **params)
                   json_data = json.dumps(metrics, indent=4)
                   print(params)
+                  http = urllib3.PoolManager()
                   headers = {'content-type': 'application/json'}
-                  req = Request(url, json_data.encode('utf-8'), headers)
-                  rsp = urlopen(req)
-                  content = rsp.read()
-                  rsp_code = rsp.getcode()
+                  req = http.request('POST',
+                                      url,
+                                      body=json_data.encode('utf-8'),
+                                      headers=headers)
+                  rsp_code = req.status
                   print('Response Code: {}'.format(rsp_code))
               except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -201,7 +202,7 @@ Resources:
       "SchedulerIAMRole": "${SchedulerIAMRole}",
       "ComputeNodeIAMRoleArn": "${ComputeNodeIAMRoleArn}",
       "ComputeNodeIAMRole": "${ComputeNodeIAMRole}",
-      "ComputeNodeInstanceProfile": "${ComputeNodeInstanceProfile}",
+      "ComputeNodeInstanceProfileArn": "${ComputeNodeInstanceProfileArn}",
       "EFSDataDns": "${EFSDataDns}",
       "EFSAppsDns": "${EFSAppsDns}",
       "ClusterId": "${ClusterId}",
