@@ -106,5 +106,15 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
     mount -a
 fi
 
+# Disable HyperThreading
+if [[ $SOCA_INSTANCE_HYPERTHREADING == "false" ]];
+then
+    echo "Disabling Hyperthreading"  >> /root/ComputeNodeUserCustomization.log
+    for cpunum in $(cat /sys/devices/system/cpu/cpu*/topology/thread_siblings_list | cut -s -d, -f2- | tr ',' '\n' | sort -un);
+        do
+            echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
+        done
+fi
+
 # Post-Boot routine completed, starting PBS
 systemctl start pbs

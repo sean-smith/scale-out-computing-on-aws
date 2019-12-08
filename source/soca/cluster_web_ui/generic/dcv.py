@@ -1,4 +1,3 @@
-import os
 import base64
 import glob
 import json
@@ -79,7 +78,7 @@ echo ''' + params['session_password_b64'] + ''' | base64 --decode | /usr/libexec
 while true
     do
         session_keepalive=`/usr/bin/dcv list-sessions | grep ''' + session_id + ''' | wc -l`
-        if [[ $session_keepalive -ne 1 ]];
+        if [ $session_keepalive -ne 1 ];
             then
                 exit 0
         fi

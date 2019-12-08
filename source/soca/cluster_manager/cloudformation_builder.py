@@ -17,7 +17,6 @@ from troposphere.ec2 import PlacementGroup, \
     LaunchTemplate, \
     LaunchTemplateData, \
     EBSBlockDevice, \
-    CpuOptions, \
     IamInstanceProfile, \
     InstanceMarketOptions, \
     NetworkInterfaces, \
@@ -41,16 +40,14 @@ class CustomResourceSendAnonymousMetrics(AWSCustomObject):
         "FsxLustre": (str, True),
     }
 
-# Metadata
-t = Template()
-t.set_version("2010-09-09")
-t.set_description("(SOCA) - Base template to deploy compute nodes.")
-allow_anonymous_data_collection = True  # change to False to disable.
-debug = False
-
-
 def main(**params):
     try:
+        # Metadata
+        t = Template()
+        t.set_version("2010-09-09")
+        t.set_description("(SOCA) - Base template to deploy compute nodes.")
+        allow_anonymous_data_collection = True  # change to False to disable.
+        debug = False
         mip_usage = False
         instances_list = params["InstanceType"].split("+")
         asg_lt = asg_LaunchTemplate()
@@ -86,6 +83,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + params['S3InstallFolder'] + '''"" >> /etc/environment
         echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
         echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
+        echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
         echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
         echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
            
@@ -112,11 +110,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1
         '''
 
-
         ltd.EbsOptimized = True
-        ltd.CpuOptions = CpuOptions(
-            CoreCount=int(params["CoreCount"]),
-            ThreadsPerCore=1 if params["ThreadsPerCore"] is False else 2)
         ltd.IamInstanceProfile = IamInstanceProfile(Arn=params["ComputeNodeInstanceProfileArn"])
         ltd.KeyName = params["SSHKeyPair"]
         ltd.ImageId = params["ImageId"]
@@ -175,14 +169,12 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         asg_lt.Overrides = []
         for instance in instances_list:
             asg_lt.Overrides.append(LaunchTemplateOverrides(
-                 InstanceType=instance
-        ))
+                 InstanceType=instance))
 
         # Begin InstancesDistribution
         if params["SpotPrice"] is not False and \
            params["SpotAllocationCount"] is not False and\
            (params["DesiredCapacity"] - params["SpotAllocationCount"]) > 0:
-
             mip_usage = True
             idistribution = InstancesDistribution()
             idistribution.OnDemandAllocationStrategy = "prioritized"  # only supported value
@@ -190,7 +182,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
             idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]
             idistribution.SpotAllocationStrategy = params['SpotAllocationStrategy']
             mip.InstancesDistribution = idistribution
-            mip.LaunchTemplate = asg_lt
+
         # End MixedPolicyInstance
 
         # Begin FSx for Lustre
@@ -223,7 +215,8 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         # Begin AutoScalingGroup Resource
         asg = AutoScalingGroup("AutoScalingComputeGroup")
         asg.DependsOn = "NodeLaunchTemplate"
-        if mip_usage is True:
+        if mip_usage is True or instances_list.__len__() > 1:
+            mip.LaunchTemplate = asg_lt
             asg.MixedInstancesPolicy = mip
 
         else:
@@ -279,6 +272,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
         template_output = t.to_yaml().replace("_soca_", "soca:")
         return {'success': True,
                 'output': template_output}
+
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
