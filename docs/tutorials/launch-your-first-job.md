@@ -49,7 +49,8 @@ Syntax is as follow:
 * In a script: `#PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2`
 * Using qsub: `qsub -l parameter_name=parameter_value -l parameter_name_2=parameter_value_2 myscript.sh`
 
-If you don't specify them, your job will use the default values configured for your queue (see `/apps/soca/cluster_manager/settings/queue_mapping.yml`) 
+!!!info
+    [If you don't specify them, your job will use the default values configured for your queue (see `/apps/soca/cluster_manager/settings/queue_mapping.yml`) ](../integration-ec2-job-parameters/#how-to-use-custom-parameters)
 
 
 ## Specify an EC2 Instance Type (optional)
@@ -189,7 +190,7 @@ The web ui will also reflect this change.
     - Using qsub: qsub -l parameter_name=parameter_value -l parameter_name_2=parameter_value_2 myscript.sh
     
 
-Refer to [this page to get a list of all supported parameters](/tutorials/integration-ec2-job-parameters/)
+Refer to [this page to get a list of all supported parameters](../tutorials/integration-ec2-job-parameters/)
 For the rest of the examples below, I will run a simple script named "script.sh" with the following content:
  
 ~~~bash
@@ -199,7 +200,8 @@ For the rest of the examples below, I will run a simple script named "script.sh"
 echo `hostname`
 ~~~
 ***
-**Run a simple script on 1 node using default settings on 'normal' queue**
+
+#### Run a simple script on 1 node using default settings on 'normal' queue
 ~~~bash
 #!/bin/bash
 #PBS -N my_job_name
@@ -212,7 +214,8 @@ cd $HOME
 ./script.sh >> my_output.log 2>&1
 ~~~
 ***
-**Run a simple script on 1 node using default settings on 'normal' queue**
+
+#### Run a simple script on 1 node using default settings on 'normal' queue
 ~~~bash
 #!/bin/bash
 #PBS -N my_job_name
@@ -225,7 +228,8 @@ cd $HOME
 ./script.sh >> my_output.log 2>&1
 ~~~
 ***
-**Run a simple MPI script on 3 nodes using custom EC2 instance type**
+
+#### Run a simple MPI script on 3 nodes using custom EC2 instance type
 
 This job will use a 3 c5.18xlarge instances
 ~~~bash
@@ -244,7 +248,8 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 /apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 108 script.sh > my_output.log
 ~~~
 ***
-**Run a simple script on 3 nodes using custom License Restriction**
+
+#### Run a simple script on 3 nodes using custom License Restriction
 
 This job will only start if we have at least 4 Comsol Acoustic licenses available
 ~~~bash
@@ -264,7 +269,8 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 ~~~
 
 ***
-**Run a simple script on 5 nodes using custom AMI**
+
+#### Run a simple script on 5 nodes using custom AMI
 
 This job will use a user-specified AMI ID
 ~~~bash
@@ -283,7 +289,8 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 /apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
 ~~~
 ***
-**Run a simple script on 5 nodes using custom AMI using a different OS**
+
+#### Run a simple script on 5 nodes using custom AMI using a different OS
 
 This job will use a user-specified AMI ID which use a operating system different than the scheduler
 ~~~bash
@@ -303,7 +310,7 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 ~~~
 ***
 
-**Run a simple script on 5 m5.24xlarge SPOT instances as long as bid price is lower than $2.5 per hour**
+#### Run a simple script on 5 m5.24xlarge SPOT instances as long as instance price is lower than $2.5 per hour
 
 This job will use SPOT instances. Instances will be automatically terminated if BID price is higher than $2.5 / per hour per instance
 
@@ -324,7 +331,26 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 ~~~
 ***
 
-**Submit a job with EFA**
+#### Run a simple script on 5 m5.24xlarge SPOT instances as long as instance price is lower than OD price
+
+~~~bash
+#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q normal
+#PBS -l nodes=5,instance_type=m5.24xlarge,spot_price=auto
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# m5.24xlarge is 48 cores so -np is 48 * 5 hosts
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 240 script.sh > my_output.log
+~~~
+***
+
+#### Submit a job with EFA
 
  Make sure to use an instance type supported by EFA [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html#efa-instance-types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html#efa-instance-types)
 ~~~
@@ -343,7 +369,74 @@ export PATH=$PATH:/apps/openmpi/4.0.1/bin/
 /apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
 ~~~
 ***
-**Combine everything**
+
+#### Use 50 c5.xlarge for your job and fallback to m5.xlarge and r5.xlarge if capacity is not available
+
+AWS honors the instance order, so it will try to provision 50 c5.large first and fallback to m5.xlarge/r5.xlarge if needed (in case your account has instance limitation or AWS can't allocate more than X instance type on a given AZ/region). Ultimately, you may end up with the following configuration (but not limited to):
+
+- 50 c5.xlarge
+- 30 c5.xlarge, 20 m5.xlarge
+- 20 c5.xlarge, 20 m5.xlarge, 10 r5.xlarge
+- Or any other combination. The only certain know is that you will get 50 instances
+
+~~~
+#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q normal
+#PBS -l nodes=50,instance_type=c5.xlarge+m5.xlarge+r5.xlarge
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5n.18xlarge is 36 cores so -np is 36 * 5
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
+~~~
+***
+
+#### Use multiple SPOT instance type
+
+~~~
+#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q normal
+#PBS -l nodes=5,instance_type=c5.xlarge+m5.xlarge+r5.xlarge, spot_price=auto
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5n.18xlarge is 36 cores so -np is 36 * 5
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
+~~~
+***
+
+#### Provision 50 instances (10 On-Demand and 40 SPOT)
+
+~~~
+#!/bin/bash
+#PBS -N my_job_name
+#PBS -V -j oe -o my_job_name.qlog
+#PBS -P project_a
+#PBS -q normal
+#PBS -l nodes=50,instance_type=c5.large,spot_allocation_count=40
+## END PBS SETTINGS
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE | sort | uniq > mpi_nodes
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/openmpi/4.0.1/lib/
+export PATH=$PATH:/apps/openmpi/4.0.1/bin/
+# c5n.18xlarge is 36 cores so -np is 36 * 5
+/apps/openmpi/4.0.1/bin/mpirun --hostfile mpi_nodes -np 180 script.sh > my_output.log
+~~~
+***
+
+
+
+#### Multi-lines parameters
 
 Custom AMI running on a different distribution than the scheduler, with EFA enable, without placement group and within a specific subnet_id
 

@@ -102,6 +102,7 @@ Looking at the EBS bash, the disk type is now "io1" and the number of IOPS match
 ![](../imgs/storage-2.png)
 
 ### Instance store partition
+
 !!! warning "Free storage is always good"
     You are not charged for instance storage (included in the price of the instance)
 
