@@ -43,7 +43,7 @@ Run `qdel <job_id>` to remove a job from the queue. If the job was running, asso
 
 ## Custom AWS scheduler resources (optional)
 
-[Here is a list](../../tutorials/integration-ec2-job-parameters) of scheduler resources specially designed for workloads running on AWS. The line starting with -l (lowercase L) is meant to define scheduler resources which will be used by this job. 
+[Here is a list](../integration-ec2-job-parameters) of scheduler resources specially designed for workloads running on AWS. The line starting with -l (lowercase L) is meant to define scheduler resources which will be used by this job. 
 Syntax is as follow:  
 
 * In a script: `#PBS -l parameter_name=parameter_value,parameter_name_2=parameter_value_2`
@@ -190,7 +190,7 @@ The web ui will also reflect this change.
     - Using qsub: qsub -l parameter_name=parameter_value -l parameter_name_2=parameter_value_2 myscript.sh
     
 
-Refer to [this page to get a list of all supported parameters](../tutorials/integration-ec2-job-parameters/)
+Refer to [this page to get a list of all supported parameters](../integration-ec2-job-parameters/)
 For the rest of the examples below, I will run a simple script named "script.sh" with the following content:
  
 ~~~bash

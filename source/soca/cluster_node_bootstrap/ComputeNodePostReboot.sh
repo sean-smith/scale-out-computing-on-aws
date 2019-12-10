@@ -10,14 +10,15 @@ crontab -r
 systemctl stop pbs
 
 # Begin USER Customization
-#$AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/ComputeNodeUserCustomization.sh /root/
-/bin/bash /apps/soca/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> /root/ComputeNodeUserCustomization.log 2>&1
+cp /apps/soca/cluster_node_bootstrap/ComputeNodeUserCustomization.sh /root
+/bin/bash /root/ComputeNodeUserCustomization.sh >> /root/ComputeNodeUserCustomization.log 2>&1
 # End USER Customization
 
 # Begin DCV Customization
 if [[ "$SOCA_JOB_QUEUE" == "desktop" ]]; then
     echo "Installing DCV"
-    /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNodeInstallDCV.sh >> /root/ComputeNodeInstallDCV.log 2>&1
+    cp /apps/soca/cluster_node_bootstrap/ComputeNodeInstallDCV.sh /root
+    /bin/bash /root/ComputeNodeInstallDCV.sh >> /root/ComputeNodeInstallDCV.log 2>&1
     sleep 30
 fi
 # End DCV Customization

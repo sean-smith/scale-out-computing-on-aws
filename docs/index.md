@@ -21,7 +21,7 @@ You can [access your Scale-Out Computing on AWS cluster](access-soca-cluster/) e
 [^1]: [DCV](https://docs.aws.amazon.com/dcv/latest/adminguide/what-is-dcv.html) is a remote visualization technology that enables users to easily and securely connect to graphic-intensive 3D applications hosted on a remote high-performance server.*
 
 ## Simple Job Submission
-Scale-Out Computing on AWS supports a list of parameters designed to simplify your job submission on AWS. Advanced users can either manually choose compute/storage/network configuration for their job or simply ignore these parameters and let Scale-Out Computing on AWS choose the most optimal hardware (defined by the HPC administrator)
+Scale-Out Computing on AWS [supports a list of parameters designed to simplify your job submission on AWS]((tutorials/integration-ec2-job-parameters/). Advanced users can either manually choose compute/storage/network configuration for their job or simply ignore these parameters and let Scale-Out Computing on AWS picks the most optimal hardware (defined by the HPC administrator)
 
 ~~~bash
 # Advanced Configuration
@@ -36,8 +36,10 @@ user@host$ qsub -l instance_type=c5n.18xlarge \
 user@host$ qsub myscript.sh
 ~~~
 
-- [Refer to this page for tutorial and examples](tutorials/launch-your-first-job/)
-- [Refer to this page to list all supported parameters](tutorials/integration-ec2-job-parameters/)
+!!!info
+    - [Check our Web-Based utility to generate you submission command](job-configuration-generator/)
+    - [Refer to this page for tutorial and examples](tutorials/launch-your-first-job/)
+    - [Refer to this page to list all supported parameters](tutorials/integration-ec2-job-parameters/)
 
 ## OS agnostic and support for custom AMI
 Customers can integrate their Centos7/Rhel7/AmazonLinux2 AMI automatically by simply using ==-l instance_ami=<ami_id\>== at job submission. There is no limitation in term of AMI numbers (you can have 10 jobs running simultaneously using 10 different AMIs)

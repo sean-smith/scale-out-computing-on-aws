@@ -151,10 +151,10 @@ Below is a list of parameters you can specify when you request your simulation t
 
 - Description: Create an ephemeral FSx for your job and mount the  S3 bucket specified 
 - Unit: GB
-- Example: `-l fsx_lustre_capacity=3600`: Provision a 3.6TB EFS disk
+- Example: `-l fsx_lustre_sizey=3600`: Provision a 3.6TB EFS disk
 
 !!!info    
-    If `fsx_lustre_size` is not specified, default to 1200 GB
+    If `fsx_lustre_size` is not specified, default to 1200 GB (smallest size supported)
     
 #### fsx_lustre_dns
 

@@ -4,23 +4,24 @@ distribution = {'amazonlinux2': 'ami-082b5a644766e0e6f',
                 'rhel7': 'ami-036affea69a1101c9'}
 
 # S3 Bucket to mount on FSx. Make sure you DO have updated your IAM policy and added API permission to your bucket for the scheduler
-# Must start with s3://
 fsx_s3_bucket = ''
+fsx_dns = ''
 
 for distro in distribution.keys():
     for k, ami_id in distribution.items():
         if k == distro:
-            print("============ " + distro + "============ ")
-            print('Generating commands to test EFA ... for ' + distro)
+            print("#============ " + distro + " ============ ")
             print('qsub -N ' + distro + '_efa -l instance_type=c5n.18xlarge -l efa_support=true -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /opt/amazon/efa/bin/fi_info -p efa')
-            print('Generating commands to test custom root/scratch size ... for ' + distro)
             print('qsub -N ' + distro + '_root_scratch -l root_size=26 -l scratch_size=98 -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/df -h')
-            print('Generating commands to test automatic detection of instance store as /scratch partition ... for ' + distro)
+            print('qsub -N ' + distro + '_scratch_iops -l scratch_size=100 -l scratch_iops=3000 -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/df -h')
+
             print('qsub -N ' + distro + '_instance_store -l instance_type=m5ad.4xlarge -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/df -h')
             if fsx_s3_bucket != '':
-                print('Generating commands to test FSx ... for ' + distro)
                 print('qsub -N ' + distro + '_fsx -l fsx_lustre_bucket=s3://'+fsx_s3_bucket+' -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/df -h')
 
-            print('Generating commands to enable hyperthreading ' + distro)
-            print('qsub -N ' + distro + '_ht_enabled -l instance_type=m5.4xlarge -l ht_support=true -- /bin/lscpu --extended')
-            print('qsub -N ' + distro + '_ht_disabled -l instance_type=m5.4xlarge -- /bin/lscpu --extended')
+            if fsx_dns != '':
+                print('qsub -N ' + distro + '_fsx -l fsx_lustre_dns='+fsx_dns+' -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/ls -ltr /fsx')
+
+            print('qsub -N ' + distro + '_ht_enabled -l instance_type=m5.4xlarge -l ht_support=true -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/lscpu --extended')
+            print('qsub -N ' + distro + '_ht_disabled -l instance_type=m5.4xlarge -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/lscpu --extended')
+            print('qsub -N ' + distro + '_spot -l instance_type=m5.4xlarge -l spot_price=auto -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- echo "Run on Scheduler: /bin/aws ec2 describe-spot-instance-requests --region=us-west-2"')

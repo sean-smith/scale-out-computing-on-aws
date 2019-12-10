@@ -78,7 +78,19 @@ then
     chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
 else
     echo "PBSPro already installed, and at correct version."
+    echo "PBS_SERVER=$SERVER_HOSTNAME_ALT
+PBS_START_SERVER=1
+PBS_START_SCHED=1
+PBS_START_COMM=1
+PBS_START_MOM=0
+PBS_EXEC=/opt/pbs
+PBS_HOME=/var/spool/pbs
+PBS_CORE_LIMIT=unlimited
+PBS_SCP=/usr/bin/scp
+" > /etc/pbs.conf
+    echo "$clienthost $SERVER_HOSTNAME_ALT" > /var/spool/pbs/mom_priv/config
 fi
+
 
 # Edit path with new scheduler/python locations
 echo "export PATH=\"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/opt/pbs/bin:/opt/pbs/sbin:/opt/pbs/bin:/apps/python/latest/bin\" " >> /etc/environment
@@ -97,6 +109,8 @@ scratch_iops type=string
 root_size type=string
 placement_group type=string
 spot_price type=string
+spot_allocation_count type=string
+spot_allocation_strategy type=string
 efa_support type=string
 ht_support type=string
 base_os type=string
@@ -334,7 +348,9 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
       flask==1.0.3 \
       gunicorn==19.9.0 \
       pyopenssl==19.0.0 \
-      flask_wtf==0.14.2
+      flask_wtf==0.14.2 \
+      PyYAML==5.2 \
+      troposphere
 
 # Install SSM
 yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm

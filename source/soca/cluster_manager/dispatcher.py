@@ -158,7 +158,11 @@ def logpush(message, status='info'):
 def get_jobs_infos(queue):
     command = [system_cmds['aligoqstat'], '-f', 'json', '-u', 'all',  '-q', queue]
     output = run_command(command, "check_output")
-    return json.loads(output)
+    try:
+        return json.loads(output)
+    except Exception as e:
+        # no job
+        return {}
 
 
 def check_if_queue_started(queue_name):

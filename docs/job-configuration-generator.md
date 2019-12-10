@@ -6,8 +6,8 @@ title: Job Submission Generator
 
 !!!info "Automatic parameter selection"
     - You can manually specify parameters at job submission using the command below. If needed, all parameters [can also be automatically configured at queue level](../tutorials/integration-ec2-job-parameters/#how-to-use-custom-parameters). 
-    - Job will use the default parameters configured for its queue unless the parameter is explicitely specified during submission (**job parameters override queue parameters**),
-    - [Refer to this page](../tutorials/launch-your-first-job/#examples) for examples.
+    - Job will use the default parameters configured for its queue unless the parameters are explicitly specified during submission (**job parameters override queue parameters**).
+    - [Refer to this page](../tutorials/launch-your-first-job/#examples) for additional examples.
     
 
 <body ng-app="myApp">
@@ -19,14 +19,14 @@ title: Job Submission Generator
 }
 
 .input2 {
-
-width: 100%;
   padding: 12px;
+  width: 85%;
   border: 1px solid #ccc;
   border-radius: 4px;
   resize: vertical;
+  font-size: 15px;
+  margin-top: 6px;
 }
-
 
 .container {
   border-radius: 5px;
@@ -44,13 +44,6 @@ width: 100%;
   float: left;
   width: 75%;
   margin-top: 6px;
-}
-
-/* Clear floats after the columns */
-.row:after {
-  content: "";
-  display: table;
-  clear: both;
 }
 
 /* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
@@ -102,67 +95,69 @@ myscript.sh
 <form name="QsubForm">
 
 <h3> Compute parameters: </h3>
+    
+   <input class="input2" name="nodes" size="35" type="text" ng-change="myFunc()" ng-model="nodes" placeholder="How many EC2 instance(s) do you want to provision for your job?" pattern="\d+"/>
+          <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#nodes">Documentation</a></i>
+        <div ng-messages="QsubForm.nodes.$error">
+            <div style="color: red; font-size: medium" ng-message="pattern">Must be a number</div>
+       </div>
+   
+   <input class="input2"  size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="instance_type" placeholder="What type of instance do you need? (use + to specify more than one eg. c5.large+m5.large)" />
+   <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#instance_type">Documentation</a></i>
+   
 
-   <input class="input2" name="nodes" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="nodes" placeholder="Number of nodes to provision for your simulation" pattern="\d+"/>
-      <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#nodes">Documentation</a></i>
-    <div ng-messages="QsubForm.nodes.$error">
-        <div style="color: red; font-size: medium" ng-message="pattern">Must be a number</div>
-   </div>
-
-   <input class="input2" required name="instance_ami" size="35" ng-minlength="3" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="instance_ami" placeholder="Specify your instance AMI" pattern="^ami-[a-zA-Z0-9]*" />
+   <input class="input2" required name="instance_ami" size="35" ng-minlength="3" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="instance_ami" placeholder="Enter the AMI ID if you are planning to use a custom AMI" pattern="^ami-[a-zA-Z0-9]*" />
    <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#instance_ami">Documentation</a></i>
    <div ng-messages="QsubForm.instance_ami.$error">
         <div style="color: red; font-size: medium" ng-message="pattern">Image name must start with "ami-"</div>
    </div>
    
-   <input class="input2" required name="base_os" size="35" ng-minlength="3" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="base_os" placeholder="Specify the base os of your AMI (default to OS selected during installation)" pattern="centos7|rhel7|amazonlinux2" />
+   <input class="input2" required name="base_os" size="35" ng-minlength="3" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="base_os" placeholder="What's the operating system of your AMI (if different that the base os specified during install)" pattern="centos7|rhel7|amazonlinux2" />
    <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#base_os">Documentation</a></i>
 
    <div ng-messages="QsubForm.base_os.$error">
         <div style="color: red; font-size: medium" ng-message="pattern">Must be centos7, rhel7 or amazonlinux2</div>
    </div>
    
-   <input class="input2"  size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="instance_type" placeholder="Specify your instance type (use + to specify more than one eg. c5.large+m5.large)" />
-   <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#instance_type">Documentation</a></i>
-   
-   <input class="input2"  name="subnet_id" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="subnet_id" placeholder="Specify your subnet id" pattern="^sub-[a-zA-Z0-9]*" />
+  
+   <input class="input2"  name="subnet_id" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="subnet_id" placeholder="Enter the subnet ID if you are planning to use a specific subnet" pattern="^sub-[a-zA-Z0-9]*" />
       <i><a style="padding: 5px"target="_blank"  href="../tutorials/integration-ec2-job-parameters/#subnet_id">Documentation</a></i>
     <div ng-messages="QsubForm.subnet_id.$error">
         <div style="color: red; font-size: medium" ng-message="pattern">Subnet name must start with "sub-"</div>
    </div>
    
-   <input class="input2"  name="spot_price" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="spot_price" placeholder="Specify your maximum spot price (use auto to match OD price)" pattern="[+-]?([0-9]*[.])?[0-9]+|auto"/>
+   <input class="input2"  name="spot_price" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="spot_price" placeholder="Need SPOT instances? Enter the maximum price you are willing to pay (or auto to match OD price)" pattern="[+-]?([0-9]*[.])?[0-9]+|auto"/>
    <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#spot_price">Documentation</a></i>
 
    <div ng-messages="QsubForm.spot_price.$error">
-        <div style="color: red; font-size: medium" ng-message="pattern">Spot Price must be a float (eg 1.2) or auto</div>
+        <div style="color: red; font-size: medium" ng-message="pattern">Spot Price must be a float (eg 1.2) or auto (match OD price)</div>
    </div>
    
-   <input class="input2"  name="spot_allocation_count" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="spot_allocation_count" placeholder="Specify the number of SPOT instances to provision when using mixed OD and SPOT" />
+   <input class="input2"  name="spot_allocation_count" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="spot_allocation_count" placeholder="Want to launch both OD and SPOT? Specify the number of SPOT instances to provision for your job" />
    <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#spot_allocation_count">Documentation</a></i>
 
    <div ng-messages="QsubForm.spot_allocation_count.$error">
         <div style="color: red; font-size: medium" ng-message="pattern">Spot Price must be a float (eg 1.2)</div>
    </div>
    
-   <input class="input2"  name="spot_allocation_strategy" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="spot_allocation_strategy" placeholder="SPOT allocation strategy: lowest-cost (default)  or capacity-optimized" pattern="lowest-cost|capacity-optimized"/>
+   <input class="input2"  name="spot_allocation_strategy" size="35" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="spot_allocation_strategy" placeholder="What's your SPOT allocation strategy when using more than 1 SPOT instance type" pattern="lowest-cost|capacity-optimized"/>
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#spot_allocation_strategy">Documentation</a></i>
    <div ng-messages="QsubForm.spot_allocation_strategy.$error">
-        <div style="color: red; font-size: medium" ng-message="pattern">Must be either lowest-cost or capacity-optimized</div>
+        <div style="color: red; font-size: medium" ng-message="pattern">Must be either lowest-cost (default) or capacity-optimized</div>
    </div>
 
     
 <h3> Storage parameters: </h3>   
    
    
-   <input class="input2"  name="root_size" size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="root_size" placeholder="Size of the root partition (in GB)"  pattern="\d+" />
+   <input class="input2"  name="root_size" size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="root_size" placeholder="How much storage to allocate for the root partition (in GB)"  pattern="\d+" />
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#root_size">Documentation</a></i>
 
    <div ng-messages="QsubForm.root_size.$error">
         <div style="color: red; font-size: medium" ng-message="pattern">Root Size must be a number</div>
    </div>
    
-   <input class="input2"  name="scratch_size" size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="scratch_size" placeholder="Size of the scratch partition (in GB)" pattern="\d+"/>
+   <input class="input2"  name="scratch_size" size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="scratch_size" placeholder="How much storage to allocate for the scratch partition (in GB)" pattern="\d+"/>
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#scratch_size">Documentation</a></i>
 
    <div ng-messages="QsubForm.scratch_size.$error">
@@ -170,7 +165,7 @@ myscript.sh
    </div>
    
   
-   <input class="input2"  size="50" name = "scratch_iops" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="scratch_iops" placeholder="IOPS to be provisioned for scratch partition (will automatically provision io1 EBS if specified)" pattern="\d+" />
+   <input class="input2"  size="50" name = "scratch_iops" style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="scratch_iops" placeholder="Do you need IOPS optimized EBS for /scratch? If yes enter the number of provisioned IO to provision" pattern="\d+" />
        <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#scratch_iops">Documentation</a></i>
 
    <div ng-messages="QsubForm.scratch_iops.$error">
@@ -178,13 +173,13 @@ myscript.sh
    </div>
    
    
-   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_bucket" placeholder="Specify S3 bucket name to mount using FSx for Lustre (will create a new one)" />
+   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_bucket" placeholder="Enter the name of the S3 bucket to mount as FSx for Lustre (/fsx)" />
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre_bucket">Documentation</a></i>
 
-   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_size" placeholder="Size of the FSx partition (in GB)" />
+   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_size" placeholder="How much storage do you want to provision for your FSx partition (in GB)" />
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre_size">Documentation</a></i>
 
-   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_dns" placeholder="Specify an existing FSx to mount on all nodes" />
+   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_dns" placeholder="Already have an FSx for Lustre? Enter the DNS to mount it accross all nodes" />
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre_dns">Documentation</a></i>
 
 

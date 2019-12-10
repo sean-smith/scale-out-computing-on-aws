@@ -40,6 +40,7 @@ class CustomResourceSendAnonymousMetrics(AWSCustomObject):
         "FsxLustre": (str, True),
     }
 
+
 def main(**params):
     try:
         # Metadata
@@ -55,60 +56,63 @@ def main(**params):
         mip = MixedInstancesPolicy()
 
         # Begin LaunchTemplateData
-        UserData = '''
-#!/bin/bash -xe
-# Aligo Specific - DO NOT EDIT
+        UserData = '''#!/bin/bash -xe
 export PATH=$PATH:/usr/local/bin
-if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] + '''" == "rhel7" ];
+if [[ "''' + params['BaseOS'] + '''" == "centos7" ]] || [[ "''' + params['BaseOS'] + '''" == "rhel7" ]];
     then
-                EASY_INSTALL=$(which easy_install-2.7)
-                $EASY_INSTALL pip
-                PIP=$(which pip2.7)
-                $PIP install awscli
- fi
-        if [ "''' + params['BaseOS'] + '''" == "amazonlinux2" ];
-            then
-                /usr/sbin/update-motd --disable
-        fi
-        echo export "SOCA_BASE_OS="''' + params['BaseOS'] + '''"" >> /etc/environment
-        echo export "SOCA_JOB_QUEUE="''' + params['JobQueue'] + '''"" >> /etc/environment
-        echo export "SOCA_JOB_OWNER="''' + params['JobOwner'] + '''"" >> /etc/environment
-        echo export "SOCA_JOB_NAME="''' + params['JobName'] + '''"" >> /etc/environment
-        echo export "SOCA_JOB_PROJECT="''' + params['JobProject'] + '''"" >> /etc/environment
-        echo export "SOCA_VERSION="''' + params['Version'] + '''"" >> /etc/environment
-        echo export "SOCA_JOB_EFA="''' + str(params['Efa']).lower() + '''"" >> /etc/environment
-        echo export "SOCA_JOB_ID="''' + params['JobId'] + '''"" >> /etc/environment
-        echo export "SOCA_SCRATCH_SIZE=''' + str(params['ScratchSize']) + '''" >> /etc/environment
-        echo export "SOCA_INSTALL_BUCKET="''' + params['S3Bucket'] + '''"" >> /etc/environment
-        echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + params['S3InstallFolder'] + '''"" >> /etc/environment
-        echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
-        echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
-        echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
-        echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
-        echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
+        EASY_INSTALL=$(which easy_install-2.7)
+        $EASY_INSTALL pip
+        PIP=$(which pip2.7)
+        $PIP install awscli
+        yum install nfs-utils # enforce install of nfs-utils
+fi
+if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
+    then
+        /usr/sbin/update-motd --disable
+fi
+echo export "SOCA_BASE_OS="''' + params['BaseOS'] + '''"" >> /etc/environment
+echo export "SOCA_JOB_QUEUE="''' + params['JobQueue'] + '''"" >> /etc/environment
+echo export "SOCA_JOB_OWNER="''' + params['JobOwner'] + '''"" >> /etc/environment
+echo export "SOCA_JOB_NAME="''' + params['JobName'] + '''"" >> /etc/environment
+echo export "SOCA_JOB_PROJECT="''' + params['JobProject'] + '''"" >> /etc/environment
+echo export "SOCA_VERSION="''' + params['Version'] + '''"" >> /etc/environment
+echo export "SOCA_JOB_EFA="''' + str(params['Efa']).lower() + '''"" >> /etc/environment
+echo export "SOCA_JOB_ID="''' + params['JobId'] + '''"" >> /etc/environment
+echo export "SOCA_SCRATCH_SIZE=''' + str(params['ScratchSize']) + '''" >> /etc/environment
+echo export "SOCA_INSTALL_BUCKET="''' + params['S3Bucket'] + '''"" >> /etc/environment
+echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + params['S3InstallFolder'] + '''"" >> /etc/environment
+echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
+echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
+echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
+echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
+echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
            
-        source /etc/environment
-        AWS=$(which aws)
+source /etc/environment
+AWS=$(which aws)
         
-        # Tag EBS disks manually as CFN does not support it
-        AWS_AVAIL_ZONE=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
-        AWS_REGION="`echo \"$AWS_AVAIL_ZONE\" | sed "s/[a-z]$//"`"
-        AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-        EBS_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query "Volumes[*].[VolumeId]" --out text | tr "\n" " ")
-        $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value="$SOCA_JOB_OWNER" Key=soca:JobProject,Value="$SOCA_JOB_PROJECT" Key=Name,Value="soca-job-$SOCA_JOB_ID"  Key=soca:JobId,Value="$SOCA_JOB_ID" Key=soca:JobQueue,Value="$SOCA_JOB_QUEUE"
+# Tag EBS disks manually as CFN ASG does not support it
+AWS_AVAIL_ZONE=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
+AWS_REGION="`echo \"$AWS_AVAIL_ZONE\" | sed "s/[a-z]$//"`"
+AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+EBS_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query "Volumes[*].[VolumeId]" --out text | tr "\n" " ")
+$AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=soca:JobOwner,Value="$SOCA_JOB_OWNER" Key=soca:JobProject,Value="$SOCA_JOB_PROJECT" Key=Name,Value="soca-job-$SOCA_JOB_ID"  Key=soca:JobId,Value="$SOCA_JOB_ID" Key=soca:JobQueue,Value="$SOCA_JOB_QUEUE"
         
-        # Give some sudo permission to the user on this specific machine
-        echo "''' + params['JobOwner'] + ''' ALL=(ALL) /bin/yum" >> /etc/sudoers
-        
-        echo "@reboot /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
-        mkdir -p /apps
-        mkdir -p /data
-        echo "''' + params['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-        echo "''' + params['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-        mount -a 
-        $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-        /bin/bash /apps/soca/cluster_node_bootstrap/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1
-        '''
+# Give yum permission to the user on this specific machine
+echo "''' + params['JobOwner'] + ''' ALL=(ALL) /bin/yum" >> /etc/sudoers
+    
+mkdir -p /apps
+mkdir -p /data
+
+# Mount EFS
+echo "''' + params['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+echo "''' + params['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+mount -a 
+    
+cp /apps/soca/cluster_node_bootstrap/ComputeNodePostReboot.sh /root
+echo "@reboot /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
+$AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
+cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
+/bin/bash /root/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1'''
 
         ltd.EbsOptimized = True
         ltd.IamInstanceProfile = IamInstanceProfile(Arn=params["ComputeNodeInstanceProfileArn"])
@@ -121,7 +125,6 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
                     MaxPrice=Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]  # auto -> cap at OD price
                 )
             )
-
         ltd.InstanceType = instances_list[0]
         ltd.NetworkInterfaces = [NetworkInterfaces(
             InterfaceType="efa" if params["Efa"] is not False else Ref("AWS::NoValue"),
@@ -129,7 +132,6 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
             DeviceIndex=0,
             Groups=[params["SecurityGroupId"]]
         )]
-
         ltd.UserData = Base64(Sub(UserData))
         ltd.BlockDeviceMappings = [
             BlockDeviceMapping(
@@ -179,6 +181,7 @@ if [ "''' + params['BaseOS'] + '''" == "centos7" ] || [ "''' + params['BaseOS'] 
             idistribution = InstancesDistribution()
             idistribution.OnDemandAllocationStrategy = "prioritized"  # only supported value
             idistribution.OnDemandBaseCapacity = params["DesiredCapacity"] - params["SpotAllocationCount"]
+            idistribution.OnDemandPercentageAboveBaseCapacity = "0"  # force the other instances to be SPOT
             idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]
             idistribution.SpotAllocationStrategy = params['SpotAllocationStrategy']
             mip.InstancesDistribution = idistribution

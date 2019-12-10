@@ -57,35 +57,36 @@ def build_qsub(session_owner, session_number, walltime, instance_type):
               'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
               'walltime': walltime}
 
-    qsub_command = '''<<eof
+    qsub_command = '''#!/bin/bash
 #PBS -N ''' + params['pbs_job_name'] + '''
 #PBS -q ''' + params['pbs_queue'] + '''
 #PBS -P ''' + params['pbs_project'] + '''
 #PBS -l walltime=''' + params['walltime'] + '''
 #PBS -l instance_type=''' + params['instance_type'] + '''
-#PBS -e /dev/null
-#PBS -o /dev/null
+
+mkdir -p ~/.dcvsessions
+cd ~/.dcvsessions
+
 # Create the DCV Session
 ''' + params['dcv_create_session'] + '''
             
 # Query dcvsimpleauth with add-user
 echo ''' + params['session_password_b64'] + ''' | base64 --decode | /usr/libexec/dcvsimpleextauth.py add-user --user ''' + session_owner + ''' --session ''' + session_id + ''' --auth-dir ''' + parameters.get_parameter('dcv', 'auth_dir') + '''
 
-# Disable Gnome Lock Screen 
-/usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+# Disable Gnome Lock Screen if needed
+# /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
    
 # Keep job open
 while true
     do
         session_keepalive=`/usr/bin/dcv list-sessions | grep ''' + session_id + ''' | wc -l`
-        if [ $session_keepalive -ne 1 ];
+        if [ $session_keepalive -ne 1 ]
             then
                 exit 0
         fi
-        sleep 300
+        sleep 3600
     done
-eof
-'''
+eof'''
     yaml_config = parameters.get_parameter('dcv', 'session_location') + '/dcv_' + session_owner + '_' + str(session_number) + '.yml'
     if path.exists(yaml_config):
         print(yaml_config + ' already exist.')
@@ -150,7 +151,7 @@ def update_yaml(yaml_file, exec_host):
         session_info['host'] = exec_host
         session_info['state'] = 'running'
         session_info['yaml_file'] = yaml_file
-        session_info['url'] =  'https://' + parameters.get_aligo_configuration()['LoadBalancerDNSName'] + '/' + exec_host + '/?authToken=' + session_info['session_password'] + '#' + session_info['session_id']
+        session_info['url'] = 'https://' + parameters.get_aligo_configuration()['LoadBalancerDNSName'] + '/' + exec_host + '/?authToken=' + session_info['session_password'] + '#' + session_info['session_id']
 
         with open(yaml_file, "w") as f:
             yaml.dump(session_info, f, default_flow_style=False)
