@@ -25,7 +25,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Disabled by default*
 
 - Description: Enable support for hyper-threading
-- Allowed Value: `yes` `true` (case insensitive) 
+- Allowed Value: `yes` `true` `no` `false` (case insensitive) 
 - Examples:
     - `-l ht_support=True`: Enable hyper-threading for all instances
     - `-l ht_support=False`: Disable hyper-threading for all instances (default)
@@ -102,6 +102,18 @@ Below is a list of parameters you can specify when you request your simulation t
 ## Storage
 
 ### EBS
+
+#### keep_ebs
+
+*Disabled by default*
+
+- Description: Retain or not the EBS disks once the simulation is complete
+- Allowed Value: `yes` `true` `false` `no` (case insensitive)
+- Default Value: `False`
+- Example: 
+    - `-l keep_ebs=False`: (Default) All EBS disks associated to the job will be deleted
+    - `-l keep_ebs=True`: Retain EBS disks after the simulation has terminated (mostly for debugging/troubleshooting procedures)
+
 
 #### root_size
 

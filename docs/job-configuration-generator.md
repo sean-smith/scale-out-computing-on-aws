@@ -88,6 +88,7 @@ margin-right: 0;
 {{qsub_spot_allocation_strategy}}
 {{qsub_nodes}}
 {{qsub_base_os}}
+{{qsub_keep_ebs}}
 myscript.sh
 
 <h2> Job Parameters</h2>
@@ -187,6 +188,7 @@ myscript.sh
    <input type="checkbox" ng-change="myFunc()" ng-model="efa_support"> I want to use EFA <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#efa_support">Documentation</a></i> <br>
    <input type="checkbox" ng-change="myFunc()" ng-model="placement_group"> I do not want to use Placement Group (enabled by default)    <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#placement_group">Documentation</a></i> <br>
    <input type="checkbox" ng-change="myFunc()" ng-model="ht_support"> I want to enable HyperThreading (disabled by default)   <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#ht_support">Documentation</a></i><br>
+   <input type="checkbox" ng-change="myFunc()" ng-model="keep_ebs"> I want to retain my EBS disks (disabled by default)   <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#keep_ebs">Documentation</a></i><br>
 
 </form> 
   
@@ -212,7 +214,8 @@ myscript.sh
         if($scope.spot_allocation_strategy){$scope.qsub_spot_allocation_strategy= "-l spot_allocation_strategy=" + $scope.spot_allocation_strategy;}else{$scope.qsub_spot_allocation_strategy= "";}     
 
         
-        
+        if($scope.keep_ebs){$scope.qsub_keep_ebs = "-l keep_ebs=True";}else{$scope.qsub_keep_ebs= "";}
+
         if($scope.efa_support){$scope.qsub_efa_support = "-l efa_support=True";}else{$scope.qsub_efa_support= "";}
         if($scope.placement_group){$scope.qsub_placement_group = "-l placement_group=False";}else{$scope.qsub_placement_group= "";}
         if($scope.ht_support){$scope.qsub_ht_support = "-l ht_support=True";}else{$scope.qsub_ht_support= "";}

@@ -156,6 +156,10 @@ def check_config(**kwargs):
             if 'n' not in kwargs['instance_type']:
                 error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
 
+    # Validate Keep EBS
+    if kwargs['keep_ebs'] not in [True, False]:
+        kwargs['keep_ebs'] = False
+
     if error is not False:
         return error
     else:
@@ -176,6 +180,7 @@ def main(**kwargs):
                                    'fsx_lustre_dns': False,
                                    'fsx_lustre_size': False,
                                    'ht_support': False,
+                                   'keep_ebs': False,
                                    'root_size': 10,
                                    'scratch_size': 0,
                                    'spot_allocation_count': False,
@@ -298,6 +303,10 @@ def main(**kwargs):
             'JobQueue': {
                 'Key': 'queue',
                 'Default': None
+            },
+            'KeepEbs': {
+                'Key': 'keep_ebs',
+                'Default': False
             },
             'KeepForever': {
                 'Key': 'keep_forever',
@@ -456,6 +465,7 @@ if __name__ == "__main__":
     parser.add_argument('--spot_allocation_count', default=False, nargs='?', help="When using mixed OD and SPOT, choose % of SPOT")
     parser.add_argument('--spot_allocation_strategy', default=False, nargs='?', help="lowest-cost or capacity-optimized")
     parser.add_argument('--spot_price', nargs='?', help="Spot Price")
+    parser.add_argument('--keep_ebs', action='store_const', const=True, default=False, help="Do not delete EBS disk")
     parser.add_argument('--subnet_id', default=False, help='Launch capacity in a special subnet')
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")
 

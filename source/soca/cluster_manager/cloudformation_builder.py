@@ -142,7 +142,7 @@ cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
                 Ebs=EBSBlockDevice(
                     VolumeSize=params["RootSize"],
                     VolumeType="gp2",
-                    DeleteOnTermination=True,
+                    DeleteOnTermination="false" if params["KeepEbs"] is True else "true",
                     Encrypted=True))
         ]
         if params["ScratchSize"] > 0:
@@ -153,7 +153,7 @@ cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
                         VolumeSize=params["ScratchSize"],
                         VolumeType="io1" if params["VolumeTypeIops"] > 0 else "gp2",
                         Iops=params["VolumeTypeIops"] if params["VolumeTypeIops"] > 0 else Ref("AWS::NoValue"),
-                        DeleteOnTermination=True,
+                        DeleteOnTermination="false" if params["KeepEbs"] is True else "true",
                         Encrypted=True))
             )
         # End LaunchTemplateData

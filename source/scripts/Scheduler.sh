@@ -113,6 +113,7 @@ spot_allocation_count type=string
 spot_allocation_strategy type=string
 efa_support type=string
 ht_support type=string
+keep_ebs type=string
 base_os type=string
 fsx_lustre_bucket type=string
 fsx_lustre_size type=string

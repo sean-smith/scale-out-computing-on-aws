@@ -17,7 +17,7 @@ for distro in distribution.keys():
 
             print('qsub -N ' + distro + '_instance_store -l instance_type=m5ad.4xlarge -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/df -h')
             if fsx_s3_bucket != '':
-                print('qsub -N ' + distro + '_fsx_ephemeral -l fsx_lustre_bucket=s3://'+fsx_s3_bucket+' -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/df -h')
+                print('qsub -N ' + distro + '_fsx_ephemeral -l fsx_lustre_bucket=s3://'+fsx_s3_bucket+' -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/ls -ltr /fsx')
 
             if fsx_dns != '':
                 print('qsub -N ' + distro + '_fsx_exising -l fsx_lustre_dns='+fsx_dns+' -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/ls -ltr /fsx')
@@ -25,6 +25,5 @@ for distro in distribution.keys():
             print('qsub -N ' + distro + '_ht_enabled -l instance_type=m5.4xlarge -l ht_support=true -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/lscpu --extended')
             print('qsub -N ' + distro + '_ht_disabled -l instance_type=m5.4xlarge -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/lscpu --extended')
             print('qsub -N ' + distro + '_spot_auto -l instance_type=t3.medium -l spot_price=auto -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/echo "Run on Scheduler: /bin/aws ec2 describe-spot-instance-requests --region=us-west-2"')
-            print('qsub -N ' + distro + '_spot_fixed -l instance_type=t3.large -l spot_price=1.11 -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/echo "Run on Scheduler: /bin/aws ec2 describe-spot-instance-requests --region=us-west-2"')
-
+            print('qsub -N ' + distro + '_spot_fixed -l instance_type=t2.large -l spot_price=0.45 -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- /bin/echo "Run on Scheduler: /bin/aws ec2 describe-spot-instance-requests --region=us-west-2"')
             print('qsub -N ' + distro + '_spot_allocation l instance_type=r5.large -l nodes=5 -l spot_allocation_count=4 -l spot_price=auto -l instance_ami=' +ami_id + ' -l base_os=' + distro + ' -- echo "Run on Scheduler: /bin/aws ec2 describe-spot-instance-requests --region=us-west-2"')
