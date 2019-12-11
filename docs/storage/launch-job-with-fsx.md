@@ -15,7 +15,7 @@ Amazon FSx provides FSx for Lustre for compute-intensive workloads.
 
 ## Pre-requisite for FSx for Lustre
 
-You need to give Scale-Out Computing on AWS the permission to map the S3 bucket you want to mount on FSx. To do that, add a new inline policy to the **scheduler IAM role**. The Scheduler IAM role can be found on the IAM bash and is named `<Scale-Out Computing on AWS_STACK_NAME>-Security-<UUID>-SchedulerIAMRole-<UUID>`.
+You need to give Scale-Out Computing on AWS the permission to map the S3 bucket you want to mount on FSx. To do that, add a new inline policy to the **scheduler IAM role**. The Scheduler IAM role can be found on the IAM bash and is named `<SOCA_AWS_STACK_NAME>-Security-<UUID>-SchedulerIAMRole-<UUID>`.
 To create an inline policy, select your IAM role, click "Add Inline Policy":
 
 ![](../imgs/fsx-4.png)
@@ -130,7 +130,7 @@ By default Scale-Out Computing on AWS mounts fsx on `/fsx`. If you need to chang
 
 ~~~bash hl_lines="4"
 ...
-if [[ $Scale-Out Computing on AWS_FSX_LUSTRE_BUCKET != 'false' ]]; then
+if [[ $SOCA_AWS_FSX_LUSTRE_BUCKET != 'false' ]]; then
     echo "FSx request detected, installing FSX Lustre client ... "
     FSX_MOUNTPOINT="/fsx" ## <-- Update mountpoint here
     mkdir -p $FSX_MOUNTPOINT
@@ -138,7 +138,7 @@ if [[ $Scale-Out Computing on AWS_FSX_LUSTRE_BUCKET != 'false' ]]; then
 ~~~
 
 ## Learn about the other storage options on Scale-Out Computing on AWS
-[Click here to learn about the other storage options]({{ site.baseurl }}/tutorials/understand-storage-backend-options-scratch/) offered by Scale-Out Computing on AWS.
+[Click here to learn about the other storage options](../understand-storage-backend-options-scratch/) offered by Scale-Out Computing on AWS.
 
 ## Troubleshooting and most common errors
 
@@ -146,7 +146,7 @@ Like any other parameter, FSx options can be debugged using `/apps/soca/cluster_
 
 ~~~bash
 [Error while trying to create ASG: Scale-Out Computing on AWS does not have access to this bucket. 
-Update IAM policy as described on https://soca.dev/tutorials/job-fsx-lustre-backend/]
+Update IAM policy as described on the documentation]
 ~~~
 
 **Resolution**: Scale-Out Computing on AWS does not have access to this S3 bucket. Update your IAM role with the policy listed above
@@ -155,10 +155,3 @@ Update IAM policy as described on https://soca.dev/tutorials/job-fsx-lustre-back
 [Error while trying to create ASG: fsx_lustre_size must be: 1200, 2400, 3600, 7200, 10800]
 ~~~
 **Resolution**: fsx_lustre_size must be 1200, 2400, 3600 and increments of 3600
-
-~~~bash
-[Error while trying to create ASG: fsx_lustre_bucket must start with s3://]
-~~~
-**Resolution**: fsx_lustre_bucket must start with s3://. Use s3://mybucket/mypath if you want to mount mybucket/mypath.
-
-

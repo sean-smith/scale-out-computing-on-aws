@@ -64,7 +64,7 @@ if [[ "''' + params['BaseOS'] + '''" == "centos7" ]] || [[ "''' + params['BaseOS
         $EASY_INSTALL pip
         PIP=$(which pip2.7)
         $PIP install awscli
-        yum install nfs-utils # enforce install of nfs-utils
+        yum install -y nfs-utils # enforce install of nfs-utils
 fi
 if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
     then
@@ -115,6 +115,9 @@ cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
 /bin/bash /root/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1'''
 
         ltd.EbsOptimized = True
+        for instance in instances_list:
+            if "t2." in instance:
+                ltd.EbsOptimized = False
         ltd.IamInstanceProfile = IamInstanceProfile(Arn=params["ComputeNodeInstanceProfileArn"])
         ltd.KeyName = params["SSHKeyPair"]
         ltd.ImageId = params["ImageId"]
@@ -122,7 +125,7 @@ cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
             ltd.InstanceMarketOptions = InstanceMarketOptions(
                 MarketType="spot",
                 SpotOptions=SpotOptions(
-                    MaxPrice=Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]  # auto -> cap at OD price
+                    MaxPrice=Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(params["SpotPrice"])  # auto -> cap at OD price
                 )
             )
         ltd.InstanceType = instances_list[0]
@@ -182,7 +185,7 @@ cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
             idistribution.OnDemandAllocationStrategy = "prioritized"  # only supported value
             idistribution.OnDemandBaseCapacity = params["DesiredCapacity"] - params["SpotAllocationCount"]
             idistribution.OnDemandPercentageAboveBaseCapacity = "0"  # force the other instances to be SPOT
-            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else params["SpotPrice"]
+            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(params["SpotPrice"])
             idistribution.SpotAllocationStrategy = params['SpotAllocationStrategy']
             mip.InstancesDistribution = idistribution
 

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed bug when stack name only use uppercase
 - ComputeNode bootstrap scripts are now loaded from EFS
 - Support for MixedInstancePolicy and InstanceDistribution
+- Support for non-EBS optimized instances such as t2
 - Other various improvements
 
 ## [1.0.0] - 2019-11-20

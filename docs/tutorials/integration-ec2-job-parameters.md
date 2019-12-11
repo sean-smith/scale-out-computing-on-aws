@@ -89,6 +89,9 @@ Below is a list of parameters you can specify when you request your simulation t
     - `-l spot_price=auto`: Max price will be capped to the On-Demand price
     - `-l spot_price=1.4`: Max price you are willing to pay for this instance will be $1.4 an hour.
 
+!!!note 
+    `spot_price` is capped to On-Demand price (e.g: Assuming you are provisioning a t3.medium, AWS will default spot price to 0.418 (OD price) even though you specified `-l spot_price=15`)
+
 #### subnet_id
 
 - Description: Reference to a subnet ID to use
@@ -96,7 +99,6 @@ Below is a list of parameters you can specify when you request your simulation t
 - Examples:
     - `-l subnet_id=sub-abcde123`
 
-      
 ## Storage
 
 ### EBS
