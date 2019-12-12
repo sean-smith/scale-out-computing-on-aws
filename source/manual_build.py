@@ -1,10 +1,10 @@
-import sys
+import fileinput
 import os
-import re
-from shutil import make_archive, copy, copytree
 import random
 import string
-import fileinput
+import sys
+from shutil import make_archive, copy, copytree
+
 if __name__ == "__main__":
     build_path = os.path.dirname(os.path.realpath(__file__))
     os.chdir(build_path)
@@ -17,13 +17,11 @@ if __name__ == "__main__":
     print(" > Creating temporary build folder ... ")
     print(" > Copying required files ... ")
     targets = ['scripts', 'templates', 'scale-out-computing-on-aws.template']
-
     for target in targets:
         if os.path.isdir(target):
             copytree(target, build_folder + '/' + target)
         else:
             copy(target, build_folder + '/' + target)
-
     make_archive(build_folder + '/soca', 'gztar', 'soca')
 
     # Replace Placeholder
