@@ -4,8 +4,8 @@ distribution = {'amazonlinux2': 'ami-082b5a644766e0e6f',
                 'rhel7': 'ami-036affea69a1101c9'}
 
 # S3 Bucket to mount on FSx. Make sure you DO have updated your IAM policy and added API permission to your bucket for the scheduler
-fsx_s3_bucket = 'socam'
-fsx_dns = 'fs-038f8483665b82a69.fsx.us-west-2.amazonaws.com'
+fsx_s3_bucket = ''
+fsx_dns = ''
 
 for distro in distribution.keys():
     for k, ami_id in distribution.items():
