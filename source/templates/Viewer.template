@@ -137,6 +137,8 @@ Resources:
         rules_to_suppress:
           - id: W28
             reason: "Name is required to easily identify resource deployed by SOCA"
+          - id: W52
+            reason: "Not Front Facing"
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub ${ClusterId}-viewer

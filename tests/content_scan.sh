@@ -19,10 +19,9 @@ viperlight scan
 $CFN_NAG_SCAN  -i $CWD/../source/solution-for-scale-out-computing-on-aws.template --fail-on-warnings
 for template in $(ls $CWD/../source/templates);
     do
-       $CFN_NAG_SCAN  -i $CWD/../source/templates/$template --fail-on-warnings
+       $CFN_NAG_SCAN  -i $CWD/../source/templates/$template --fail-on-warnings || ec2=$?
 done
 
-
-
+if [ "$ec2" -ne "0" ]; then echo 'ERROR-2'; else echo 'SUCCESS-2'; ec2=0; fi
 
 
