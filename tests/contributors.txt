@@ -24,3 +24,9 @@ Clone this repo
 cd to source
 run mkdocs gh-deploy
 This command will deploy the revision to gh-branch
+
+
+
+
+Test Endpoint: https://solutions-test-reference.s3.amazonaws.com/scale-out-computing-on-aws/v1.1.0/scale-out-computing-on-aws.template
+Prod Endpoint:
