@@ -8,7 +8,7 @@ Below is a list of parameters you can specify when you request your simulation t
 !!!info 
     If you don't specify them, your job will use the default values configured for your queue (see `/apps/soca/cluster_manager/settings/queue_mapping.yml`)
     ____
-    You can [the web-based simulator](../../job-configuration-generator/) to generate your qsub command very easily.
+    You can use [the web-based simulator](../../job-configuration-generator/) to generate your qsub command very easily.
 
 ## Compute
 

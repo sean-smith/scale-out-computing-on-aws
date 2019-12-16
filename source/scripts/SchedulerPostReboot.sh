@@ -69,6 +69,9 @@ echo "
 ## Cluster Management
 * * * * * source /etc/environment;  /apps/python/latest/bin/python3  /apps/soca/cluster_manager/nodes_manager.py >> /apps/soca/cluster_manager/nodes_manager.py.log 2>&1
 
+## Cluster Web UI
+@reboot /apps/soca/cluster_web_ui/socawebui.sh start
+
 ## Automatic Host Provisioning
 */3 * * * * source /etc/environment;  /apps/python/latest/bin/python3 /apps/soca/cluster_manager/dispatcher.py -c /apps/soca/cluster_manager/settings/queue_mapping.yml -t compute
 */3 * * * * source /etc/environment;  /apps/python/latest/bin/python3 /apps/soca/cluster_manager/dispatcher.py -c /apps/soca/cluster_manager/settings/queue_mapping.yml -t desktop
