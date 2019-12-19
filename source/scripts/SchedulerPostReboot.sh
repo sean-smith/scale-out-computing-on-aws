@@ -22,6 +22,8 @@ cat <<EOT >> /apps/soca/cluster_manager/settings/queue_mapping.yml
 queue_type:
   compute:
     queues: ["high", "normal", "low"]
+    allowed_users: [] # empty list = all users can submit job
+    excluded_users: [] # empty list = no restrictions
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
@@ -32,6 +34,8 @@ queue_type:
     # .. Refer to the doc for more supported parameters
   desktop:
     queues: ["desktop"]
+    allowed_users: [] # empty list = all users can submit job
+    excluded_users: [] # empty list = no restrictions
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"

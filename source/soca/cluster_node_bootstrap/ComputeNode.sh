@@ -246,7 +246,12 @@ EOF
     sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 fi
 
-# Reboot to disable SELINUX
+# Disable ulimit
+echo -e  "
+* hard memlock unlimited
+* soft memlock unlimited
+" > /etc/security/limits.conf
 
+# Reboot to disable SELINUX
 sudo reboot
 # Upon reboot, ComputenodePostReboot will be executed
