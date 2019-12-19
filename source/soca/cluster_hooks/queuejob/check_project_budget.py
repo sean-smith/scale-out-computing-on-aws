@@ -1,6 +1,6 @@
 '''
 This hook reject the job if the user does not have a valid budget associated
-
+Doc: https://awslabs.github.io/scale-out-computing-on-aws/analytics/set-up-budget-project/
 create hook check_project_budget event=queuejob
 import hook check_project_budget application/x-python default /apps/soca/cluster_hooks/queuejob/check_project_budget.py
 
@@ -9,9 +9,10 @@ Note: If you make any change to this file, you MUST re-execute the import comman
 
 #!/apps/python/latest/bin/python3
 
-import pbs
 import sys
-from ConfigParser import SafeConfigParser # PBS env is py2.7, so use ConfigParser and not configparser
+
+import pbs
+from ConfigParser import SafeConfigParser  # PBS env is py2.7, so use ConfigParser and not configparser
 
 if "/apps/python/latest/lib/python3.7/site-packages" not in sys.path:
     sys.path.append("/apps/python/latest/lib/python3.7/site-packages/")

@@ -1,6 +1,6 @@
 #!/apps/python/latest/bin/python3
 '''
-Update ses_sender_email with your SES user. Visit https://soca.dev/tutorials/job-start-stop-email-notification/ for help
+Update ses_sender_email with your SES user. https://awslabs.github.io/scale-out-computing-on-aws/tutorials/job-start-stop-email-notification/ for help
 If SES verified your domain, you can use any address @yourdomain
 If SES verified only some addresses, you can only use these specific addresses
 --
@@ -13,8 +13,9 @@ import hook notify_job_start application/x-python default /apps/soca/cluster_hoo
 import hook notify_job_complete application/x-python default /apps/soca/cluster_hooks/job_notifications.py
 '''
 
-import pbs
 import sys
+
+import pbs
 
 if "/apps/python/latest/lib/python3.7/site-packages" not in sys.path:
     sys.path.append("/apps/python/latest/lib/python3.7/site-packages/")
