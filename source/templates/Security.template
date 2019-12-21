@@ -250,8 +250,11 @@ Resources:
             Principal:
               Service:
                 - !Sub "ec2.${AWS::URLSuffix}"
+                - !Sub "ssm.${AWS::URLSuffix}"
             Action:
               - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore # Support for SSM
       Policies:
         - PolicyName: SchedulerReadPermissions
           PolicyDocument:

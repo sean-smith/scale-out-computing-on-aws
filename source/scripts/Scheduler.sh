@@ -8,6 +8,11 @@ if [ $# -lt 2 ]
     exit 1
 fi
 
+# Install SSM
+yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+systemctl enable amazon-ssm-agent
+systemctl restart amazon-ssm-agent
+
 EFS_DATA=$1
 EFS_APPS=$2
 SERVER_IP=$(hostname -I)
@@ -352,11 +357,6 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
       flask_wtf==0.14.2 \
       PyYAML==5.2 \
       troposphere
-
-# Install SSM
-yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-systemctl enable amazon-ssm-agent
-systemctl restart amazon-ssm-agent
 
 # Reboot to ensure SELINUX is disabled
 # Note: Upon reboot, SchedulerPostReboot.sh script will be executed and will finalize scheduler configuration
