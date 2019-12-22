@@ -40,3 +40,4 @@ markdown_extensions:
   - pymdownx.tilde
   - toc:
       permalink: true
+  - attr_list
