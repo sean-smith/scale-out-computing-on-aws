@@ -51,12 +51,21 @@ for doc in docs:
                 allowed_users = []
                 excluded_users = []
 
+                if isinstance(info['allowed_users'], list) is not True:
+                    e.reject("allowed_users (" + queue_settings_file + ") must be a list. Detected: " +str(type(info['allowed_users'])))
+
+                if isinstance(info['excluded_users'], list) is not True:
+                    e.reject("excluded_users (" + queue_settings_file + ") must be a list. Detected: " + str(type(info['excluded_users'])))
+
                 if 'allowed_users' in info.keys():
                     for user in info['allowed_users']:
                         if "cn=" in user.lower():
                             allowed_users = allowed_users + find_users_in_ldap_group(user)
                         else:
                             allowed_users.append(user)
+
+                    #pbs.logmsg(pbs.LOG_DEBUG, 'queue_acl: allowed_users  ' + str(allowed_users))
+
                 else:
                     message = "allowed_users directive not detected on " + str(queue_settings_file)
                     e.reject(message)
@@ -67,6 +76,7 @@ for doc in docs:
                             excluded_users = allowed_users + find_users_in_ldap_group(user)
                         else:
                             excluded_users.append(user)
+                    #pbs.logmsg(pbs.LOG_DEBUG, 'queue_acl: excluded_users  ' + str(excluded_users))
                 else:
                     message = "excluded_users directive not detected on " + str(queue_settings_file)
                     e.reject(message)

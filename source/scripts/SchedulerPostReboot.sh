@@ -19,11 +19,14 @@ mkdir -p /apps/soca/cluster_manager/logs
 cat <<EOT >> /apps/soca/cluster_manager/settings/queue_mapping.yml
 # This manage automatic provisioning for your queues
 # These are default values. Users can override them at job submission
+# https://awslabs.github.io/scale-out-computing-on-aws/tutorials/create-your-own-queue/
 queue_type:
   compute:
     queues: ["high", "normal", "low"]
+    # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    # Default job parameters: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
@@ -31,31 +34,34 @@ queue_type:
     #scratch_size: "100"
     #scratch_iops: "3600"
     #efa_support: "false"
-    # .. Refer to the doc - https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/ - for more supported parameters
+    # .. Refer to the doc for more supported parameters
   desktop:
     queues: ["desktop"]
+    # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    # Default job parameters: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
     root_size: "10"
-    # .. Refer to the doc - https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/ - for more supported parameters
+    # .. Refer to the doc for more supported parameters
   test:
     queues: ["test"]
+    # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    # Default job parameters: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
     root_size: "10"
-    #scratch_size: "100"
-    #scratch_iops: "3600"
-    #efa_support: "false"
-    # .. Refer to the doc - https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/ - for more supported parameters
+    #spot_price: "auto"
+    #placement_group: "false"
+    # .. Refer to the doc for more supported parameters
 EOT
 
-# Generate 10 years internal SSL certificate for Soca Web Ui
+# Generate 10 years internal SSL certificate for Soca Web UI
 cd /apps/soca/cluster_web_ui
 openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
     -subj "/C=US/ST=California/L=Sunnyvale/CN=internal.soca.webui.cert" \
