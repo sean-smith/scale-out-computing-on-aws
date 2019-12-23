@@ -50,7 +50,8 @@ def send_notification(subject, email_message, job_owner_email_address):
 
 
 def find_email(job_owner):
-    # Ideally we should be using python-ldap, but facing some issue importing it with PBS env
+    # Ideally we should be using python-ldap, but facing some issue importing it with PBS env as PBS py is still py2
+    # Will migrate to python-ldap when pbspro supports py3 natively
     cmd = 'ldapsearch -x -b "ou=People,dc=soca,dc=local" -LLL "(uid='+job_owner+')" mail | grep "mail:" | cut -d " " -f 2'
     email_address = os.popen(cmd).read()
     pbs.logmsg(pbs.LOG_DEBUG, 'notify_job: Detected email for ' + job_owner + ' : ' + email_address)

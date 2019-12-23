@@ -157,6 +157,11 @@ systemctl start pbs
 /opt/pbs/bin/qmgr -c "set queue desktop started = True"
 /opt/pbs/bin/qmgr -c "set queue desktop enabled = True"
 /opt/pbs/bin/qmgr -c "set queue desktop default_chunk.compute_node=tbd"
+/opt/pbs/bin/qmgr -c "create queue test"
+/opt/pbs/bin/qmgr -c "set queue test queue_type = Execution"
+/opt/pbs/bin/qmgr -c "set queue test started = True"
+/opt/pbs/bin/qmgr -c "set queue test enabled = True"
+/opt/pbs/bin/qmgr -c "set queue test default_chunk.compute_node=tbd"
 /opt/pbs/bin/qmgr -c "create queue alwayson"
 /opt/pbs/bin/qmgr -c "set queue alwayson queue_type = Execution"
 /opt/pbs/bin/qmgr -c "set queue alwayson started = True"
@@ -357,6 +362,11 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
       flask_wtf==0.14.2 \
       PyYAML==5.2 \
       troposphere
+
+# PBS hooks still run on python2 env, so some packages are required
+
+EASY_INSTALL=$(which easy_install-2.7)
+$EASY_INSTALL yaml python-ldap boto3
 
 # Reboot to ensure SELINUX is disabled
 # Note: Upon reboot, SchedulerPostReboot.sh script will be executed and will finalize scheduler configuration

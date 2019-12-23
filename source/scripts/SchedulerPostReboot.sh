@@ -23,7 +23,7 @@ queue_type:
   compute:
     queues: ["high", "normal", "low"]
     allowed_users: [] # empty list = all users can submit job
-    excluded_users: [] # empty list = no restrictions
+    excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
@@ -31,15 +31,28 @@ queue_type:
     #scratch_size: "100"
     #scratch_iops: "3600"
     #efa_support: "false"
-    # .. Refer to the doc for more supported parameters
+    # .. Refer to the doc - https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/ - for more supported parameters
   desktop:
     queues: ["desktop"]
     allowed_users: [] # empty list = all users can submit job
-    excluded_users: [] # empty list = no restrictions
+    excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
     instance_ami: "$SOCA_INSTALL_AMI"
     instance_type: "c5.large"
     ht_support: "false"
     root_size: "10"
+    # .. Refer to the doc - https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/ - for more supported parameters
+  test:
+    queues: ["test"]
+    allowed_users: [] # empty list = all users can submit job
+    excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    instance_ami: "$SOCA_INSTALL_AMI"
+    instance_type: "c5.large"
+    ht_support: "false"
+    root_size: "10"
+    #scratch_size: "100"
+    #scratch_iops: "3600"
+    #efa_support: "false"
+    # .. Refer to the doc - https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/ - for more supported parameters
 EOT
 
 # Generate 10 years internal SSL certificate for Soca Web Ui
@@ -51,12 +64,11 @@ openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
 # Wait for PBS to restart
 sleep 60
 
-# Finalize PBS configuration
-#/opt/pbs/bin/qmgr -c "set queue cpus default_chunk.compute_node=tbd"
-
 # Create Default PBS hooks
 qmgr -c "create hook soca_aws_infos event=execjob_begin"
 qmgr -c "import hook soca_aws_infos application/x-python default /apps/soca/cluster_hooks/execjob_begin/soca_aws_infos.py"
+qmgr -c "create hook check_queue_acl event=queuejob"
+qmgr -c "import hook check_queue_acl application/x-python default /apps/soca/cluster_hooks/queuejob/check_queue_acl.py"
 
 # Reload config
 systemctl restart pbs
@@ -79,6 +91,7 @@ echo "
 ## Automatic Host Provisioning
 */3 * * * * source /etc/environment;  /apps/python/latest/bin/python3 /apps/soca/cluster_manager/dispatcher.py -c /apps/soca/cluster_manager/settings/queue_mapping.yml -t compute
 */3 * * * * source /etc/environment;  /apps/python/latest/bin/python3 /apps/soca/cluster_manager/dispatcher.py -c /apps/soca/cluster_manager/settings/queue_mapping.yml -t desktop
+*/3 * * * * source /etc/environment;  /apps/python/latest/bin/python3 /apps/soca/cluster_manager/dispatcher.py -c /apps/soca/cluster_manager/settings/queue_mapping.yml -t test
 
 # Add/Remove DCV hosts and configure ALB
 */5 * * * * source /etc/environment; /apps/python/latest/bin/python3 /apps/soca/cluster_manager/dcv_alb_manager.py >> /apps/soca/cluster_manager/dcv_alb_manager.py.log 2>&1
