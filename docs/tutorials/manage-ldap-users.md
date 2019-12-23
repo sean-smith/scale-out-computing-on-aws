@@ -111,6 +111,6 @@ delete: memberUid
 memberUid:: anotheruser # you get the memberUid by running a simple ldapsearch first
 ```
 
-# Give users permissions to submit job
+## Give users permissions to submit job
 
 By default, users can submit job to any queue, however you [can set up ACL at queue level if needed](../../tutorials/manage-queue-acls/)

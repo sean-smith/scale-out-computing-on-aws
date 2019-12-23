@@ -216,7 +216,7 @@ Resources:
       "BaseOS": "${BaseOS}",
       "S3InstallFolder": "${S3InstallFolder}",
       "SchedulerPublicIP": "${SchedulerPublicIP}",
-      "SolutionMetricLambda": "${SolutionMetricLambda.Arn}"
+      "SolutionMetricLambda": "${SolutionMetricLambda.Arn}",
       "BaseLDAP": "DC=soca,dc=local"
       }'
 
