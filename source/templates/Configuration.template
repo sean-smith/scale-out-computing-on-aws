@@ -217,7 +217,8 @@ Resources:
       "S3InstallFolder": "${S3InstallFolder}",
       "SchedulerPublicIP": "${SchedulerPublicIP}",
       "SolutionMetricLambda": "${SolutionMetricLambda.Arn}",
-      "BaseLDAP": "DC=soca,dc=local"
+      "LdapBase": "DC=soca,dc=local",
+      "LdapHost": "${SchedulerPrivateDnsName}"
       }'
 
       Tags:
@@ -227,7 +228,7 @@ Resources:
           Value: !Ref ClusterId
 
 
-  UpdateIAMRole:
+  ReadSecretsManagerValue:
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: AccesClusterConfiguration

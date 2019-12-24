@@ -8,6 +8,11 @@ if [ $# -lt 1 ]
     exit 0
 fi
 
+# Install SSM
+yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+systemctl enable amazon-ssm-agent
+systemctl restart amazon-ssm-agent
+
 SCHEDULER_HOSTNAME=$1
 AWS=$(which aws)
 
@@ -192,11 +197,6 @@ sss_cache -E
 authconfig --enablesssd --enablesssdauth --enableldap --enableldaptls --enableldapauth --ldapserver=ldap://$SCHEDULER_HOSTNAME --ldapbasedn=$LDAP_BASE --enablelocauthorize --enablemkhomedir --enablecachecreds --updateall
 
 echo "sudoers: files sss" >> /etc/nsswitch.conf
-
-# Install SSM
-yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-systemctl enable amazon-ssm-agent
-systemctl restart amazon-ssm-agent
 
 # Disable SELINUX & firewalld
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config

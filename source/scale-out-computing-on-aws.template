@@ -71,7 +71,6 @@ Parameters:
     "Default": "amazonlinux2"
     "Description": IMPORTANT CENTOS USERS > You MUST subscribe to https://aws.amazon.com/marketplace/pp/B00O7WM7QW first if using CentOS
 
-
   VpcCidr:
     Type: String
     Default: 110.0.0.0/16
