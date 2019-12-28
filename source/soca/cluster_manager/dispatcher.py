@@ -292,6 +292,7 @@ if __name__ == "__main__":
     aligo_configuration = configuration.get_aligo_configuration()
     queue_parameter_values = {}
     queues = False
+    queues_only_parameters = ["allowed_users", "excluded_users"]
     # Retrieve Default Queue parameters
     stream_resource_mapping = open('/apps/soca/cluster_manager/settings/queue_mapping.yml', "r")
     docs = yaml.load_all(stream_resource_mapping, Loader=yaml.FullLoader)
@@ -301,7 +302,11 @@ if __name__ == "__main__":
                 if type == queue_type:
                     queues = info['queues']
                     for parameter_key, parameter_value in info.items():
-                        queue_parameter_values[parameter_key] = parameter_value
+                        if parameter_key in queues_only_parameters:
+                            # specific queue resources which are not job resources
+                            pass
+                        else:
+                            queue_parameter_values[parameter_key] = parameter_value
         stream_resource_mapping.close()
 
     # Generate FlexLM mapping

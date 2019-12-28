@@ -163,6 +163,11 @@ You now have access to a secure shell directly within your browser
 
 ![](imgs/session-3.png)
 
+## Enable Termination Protection
+
+This step is optional yet higly recommended. AWS CloudFormation allows you to protect a stack from being accidently deleted. If you attempt to delete a stack with termination protection enabled, the deletion fails and the stack, including its status, will remain unchanged.
+To enable "Termination Protect" select your Primary template and click "Stack Action" button then "Edit Termination Protection". Choose "Enabled" and click Save. Choose "Disabled" if you want to be able to delete the stack again.
+
 ## Important Services
 
 !!!note 

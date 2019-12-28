@@ -14,6 +14,7 @@ mkdir -p /apps/soca
 tar -xvf /root/soca.tar.gz -C /apps/soca --no-same-owner
 
 mkdir -p /apps/soca/cluster_manager/logs
+chmod +x /apps/soca/cluster_manager/aligoqstat.py
 
 # Generate default queue_mapping file based on default AMI choosen by customer
 cat <<EOT >> /apps/soca/cluster_manager/settings/queue_mapping.yml

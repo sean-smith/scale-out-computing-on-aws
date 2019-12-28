@@ -70,6 +70,7 @@ if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
     then
         /usr/sbin/update-motd --disable
 fi
+echo export "SOCA_CONFIGURATION="''' + params['ClusterId'] + '''"" >> /etc/environment
 echo export "SOCA_BASE_OS="''' + params['BaseOS'] + '''"" >> /etc/environment
 echo export "SOCA_JOB_QUEUE="''' + params['JobQueue'] + '''"" >> /etc/environment
 echo export "SOCA_JOB_OWNER="''' + params['JobOwner'] + '''"" >> /etc/environment

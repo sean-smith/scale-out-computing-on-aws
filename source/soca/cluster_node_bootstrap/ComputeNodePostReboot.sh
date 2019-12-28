@@ -55,7 +55,7 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
         echo "GET_FSX_ARN: " $FSX_ARN
         FSX_ID=$(echo $FSX_ARN | cut -d/ -f2)
         echo "GET_FSX_ID: " $FSX_ID
-
+        echo "export SOCA_FSX_LUSTRE_ID="$FSX_ID" >> /etc/environment"
         ## UPDATE FSX_DNS VALUE MANUALLY IF YOU ARE USING A PERMANENT FSX
         FSX_DNS=$FSX_ID".fsx."$AWS_DEFAULT_REGION".amazonaws.com"
 
