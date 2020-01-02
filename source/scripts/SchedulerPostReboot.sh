@@ -166,6 +166,25 @@ fi
 chmod +x /apps/soca/cluster_web_ui/socawebui.sh
 /apps/soca/cluster_web_ui/socawebui.sh start
 
+# When using custom AMI, the scheduler is fully operational even before SecretManager is ready. LDAP_Manager has a dependency on SecretManager so we have to wait a little bit (or create the user manually once secretmanager is available)
+MAX_ATTEMPT=5
+CURRENT_ATTEMPT=0
+# Create default LDAP user
+until $(/apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin  >> /dev/null 2>&1)
+do
+  echo "Unable to add new LDAP user as command failed (secret manager not ready?) Waiting 3mn ..."
+  if [[ $CURRENT_ATTEMPT -ge $MAX_ATTEMPT ]];
+  then
+    echo "Unable to create LDAP user after 5 attempts, try to run the command manually: /apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin"
+    break
+  fi
+  sleep 180
+  ((CURRENT_ATTEMPT=CURRENT_ATTEMPT+1))
+done
+
+
+
+
 # Cluster is ready
 echo -e "
    _____  ____   ______ ___
@@ -177,8 +196,6 @@ Cluster: $SOCA_CONFIGURATION
 > source /etc/environment to load SOCA paths
 " > /etc/motd
 
-# Create default LDAP user
-/apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin
 
 # Clean directories
 rm -rf /root/pbspro-18.1.4*

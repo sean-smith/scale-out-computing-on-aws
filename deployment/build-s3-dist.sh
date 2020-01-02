@@ -53,6 +53,10 @@ echo "cp ../source/scale-out-computing-on-aws.template $template_dist_dir/"
 cp ../source/scale-out-computing-on-aws.template $template_dist_dir/
 echo "cp ../source/install-with-existing-resources.template $template_dist_dir/"
 cp ../source/install-with-existing-resources.template $template_dist_dir/
+echo "cp ../source/README.txt $template_dist_dir/"
+cp ../source/README.txt $template_dist_dir/
+
+
 echo "Updating code source bucket in template with $1-reference"
 replace="s/%%BUCKET_NAME%%/$1-reference/g"
 echo "sed -i '' -e $replace $template_dist_dir/scale-out-computing-on-aws.template"
