@@ -1,5 +1,5 @@
 ---
-title: Prepare compute node AMI to provision capacity faster
+title: Import custom AMI to provision capacity faster
 ---
 
 By default, SOCA provision a vanilla AMI and install all required packages in ~3 to 5 minutes. 
@@ -34,6 +34,9 @@ Launch a new EC2 instance using the `SOCA_INSTALL_AMI` image
 
 ### Step 3: Pre-configure your AMI
 
+!!!info "Important"
+    Step 3 is only required if you want to reduce the time required for your compute node to boot. You can skip this section if you just want to install your customization on your AMI and let SOCA handles PBS/Gnome/System packages installation. 
+
 #### 3.1 Pre-Install system packages
 You can pre-install the packages listed on [https://github.com/awslabs/scale-out-computing-on-aws/blob/master/source/scripts/config.cfg](https://github.com/awslabs/scale-out-computing-on-aws/blob/master/source/scripts/config.cfg). You will need to run `yum install` for:
 
@@ -46,7 +49,7 @@ You can pre-install the packages listed on [https://github.com/awslabs/scale-out
     - Copy the content of the `config.cfg` on your filesystem (say `/root/config.cfg`)
     - Run `source /root/config.cfg`
     - Run the following commands:
-        - `yum install -y $(echo ${SYSTEM_PKGS[*]}`
+        - `yum install -y $(echo ${SYSTEM_PKGS[*]})`
         - `yum install -y $(echo ${SCHEDULER_PKGS[*]})`
         - `yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})`
         - `yum install -y $(echo ${SSSD_PKGS[*]})`
@@ -84,6 +87,61 @@ chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
 
 !!!note "Installation Path"
     Make sure to install pbspro under `/opt/pbs`
+    
+#### 3.3: (Optional) Pre-Install Gnome
+
+- If you are using `RHEL`, run `yum groupinstall "Server with GUI" -y`
+
+- If you are using `Centos`, run `yum groupinstall "GNOME Desktop" -y`
+
+- If you are using `Amazon Linux`, run `yum install -y $(echo ${DCV_AMAZONLINUX_PKGS[*]})`
+
+#### 3.4: Reboot your EC2 machine
+
+#### 3.5: Make sure you do not have any libvirt of firewalld/iptables
+
+Post reboot, some distribution may automatically start libvirt or firewall. If that's the case you must delete them otherwise PBS won't be able to contact the master scheduler.
+To find if you have a running libvirt, run `ifconfig` and check if you have `virbr0` interface such as:
+
+~~~bash hl_lines="20 21 22 23 24 25 26 27"
+ifconfig
+ens5: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 9001
+        inet 10.10.2.19  netmask 255.255.255.0  broadcast 10.10.2.255
+        inet6 fe80::8b1:6aff:fe8a:5ad8  prefixlen 64  scopeid 0x20<link>
+        ether 0a:b1:6a:8a:5a:d8  txqueuelen 1000  (Ethernet)
+        RX packets 81  bytes 11842 (11.5 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 92  bytes 12853 (12.5 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 8  bytes 601 (601.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 8  bytes 601 (601.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+virbr0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        inet 192.168.122.1  netmask 255.255.255.0  broadcast 192.168.122.255
+        ether 52:54:00:ea:5a:b9  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+~~~
+
+If that's the case, disable `libvirt` by running
+~~~
+/bin/systemctl disable libvirtd.service
+ip link set virbr0 down
+brctl delbr virbr0
+~~~
+
+Then, make sure you do not have iptables (`iptables -L`) running. If needed, disable `firewalld` by running `/bin/systemctl disable firewalld`
+
+   
 
 ### Step 4: Create your AMI
 Once you are done, go back to EC2 console, locate your instance and click "Actions > Image > Create Image"

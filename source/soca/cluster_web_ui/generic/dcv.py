@@ -1,4 +1,3 @@
-import os
 import base64
 import glob
 import json
@@ -77,8 +76,10 @@ echo ''' + params[
         'session_password_b64'] + ''' | base64 --decode | /usr/libexec/dcvsimpleextauth.py add-user --user ''' + session_owner + ''' --session ''' + session_id + ''' --auth-dir ''' + parameters.get_parameter(
         'dcv', 'auth_dir') + '''
 
-# Disable Gnome Lock Screen 
-/usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+# Uncomment if you want to disable Gnome Lock Screen (require webui restart)
+# GSETTINGS=$(which gsettings)
+# $GSETTINGS set org.gnome.desktop.lockdown disable-lock-screen true
+# $GSETTINGS set org.gnome.desktop.session idle-delay 0
 
 # Keep job open
 while true

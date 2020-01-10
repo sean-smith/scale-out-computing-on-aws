@@ -139,7 +139,7 @@ def fair_share_score(queued_jobs, running_jobs, queue):
             user_score[q_job_data['get_job_owner']] = user_score[q_job_data['get_job_owner']] + job_bonus_score
 
     # Remove user with no queued job
-    for user, score in user_score.items():
+    for user, score in list(user_score.items()): # cast to list as we change the size of the dict on the fly w/ py3
         if [i['get_job_owner'] for i in queued_jobs if i['get_job_owner'] == user]:
             pass
         else:
