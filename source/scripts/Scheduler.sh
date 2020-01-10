@@ -361,7 +361,8 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
       pyopenssl==19.0.0 \
       flask_wtf==0.14.2 \
       PyYAML==5.2 \
-      troposphere
+      python-jose==3.1.0 \
+      troposphere==2.5.3
 
 # PBS hooks still run on python2 env, so some packages are required
 
