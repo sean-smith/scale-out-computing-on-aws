@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for non-EBS optimized instances such as t2
 - Users now have the ability to retain EBS disks associated to a simulation for debugging purposes
 - Supports for Session Manager
-- Moving default ElasticSeach instance to m5.large
+- Moving default ElasticSeach instance to m5.large to support encryption at rest
 - Other various improvements
 
 ## [1.0.0] - 2019-11-20

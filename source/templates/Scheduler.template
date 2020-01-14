@@ -79,6 +79,8 @@ Resources:
           Value: !Sub ${ClusterId}
         - Key: soca:NodeType
           Value: scheduler
+        - Key: soca:BackupPlan
+          Value: !Sub ${ClusterId}
 
       UserData:
           "Fn::Base64": !Sub |

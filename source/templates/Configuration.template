@@ -244,3 +244,64 @@ Resources:
         - !Ref SchedulerIAMRole
 
 
+  ## Create AWS Backup
+  SOCABackupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - backup.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup
+        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores
+
+  SOCABackupVault:
+    DependsOn: SOCABackupRole
+    Type: AWS::Backup::BackupVault
+    Properties:
+      BackupVaultName: !Sub Vault-${ClusterId}
+      BackupVaultTags: {
+        "soca:ClusterId": !Ref ClusterId
+      }
+
+  SOCABackupPlan:
+    DependsOn: SOCABackupVault
+    Type: AWS::Backup::BackupPlan
+    Properties:
+      BackupPlan:
+        BackupPlanName: !Sub Backup-${ClusterId}
+        BackupPlanRule:
+          -
+            Lifecycle:
+              DeleteAfterDays: 30
+            RecoveryPointTags: {
+              "soca:ClusterId": !Ref ClusterId
+            }
+            RuleName: "SOCADailyBackup"
+            ScheduleExpression: "cron(0 5 * * ? *)" # 5 AM UTC Adjust as needed
+            TargetBackupVault: !Ref SOCABackupVault
+
+      BackupPlanTags: {
+        "soca:ClusterId": !Ref ClusterId
+      }
+
+  SOCABackupSelection:
+    DependsOn: SOCABackupPlan
+    Type: AWS::Backup::BackupSelection
+    Properties:
+      BackupPlanId: !Ref SOCABackupPlan
+      BackupSelection:
+        SelectionName: !Sub "Tag-${ClusterId}"
+        IamRoleArn: !GetAtt SOCABackupRole.Arn
+        ListOfTags:
+          - ConditionType: "STRINGEQUALS"
+            ConditionKey: "soca:BackupPlan"
+            ConditionValue: !Sub ${ClusterId}
+
+
