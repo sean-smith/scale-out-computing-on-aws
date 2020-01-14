@@ -156,7 +156,7 @@ def logpush(message, status='info'):
 
 
 def get_jobs_infos(queue):
-    command = [system_cmds['aligoqstat'], '-f', 'json', '-u', 'all',  '-q', queue]
+    command = [system_cmds['python'], system_cmds['aligoqstat'], '-f', 'json', '-u', 'all',  '-q', queue]
     output = run_command(command, "check_output")
     try:
         return json.loads(output)
@@ -276,25 +276,32 @@ if __name__ == "__main__":
     arg = parser.parse_args()
     queue_type = (arg.type)
 
+    if not "SOCA_CONFIGURATION" in os.environ:
+        print("SOCA_CONFIGURATION not found, make sure to source /etc/environment first")
+        sys.exit(1)
+
+    aligo_configuration = configuration.get_aligo_configuration()
+
+
     # Begin Pre-requisite
     system_cmds = {
         'qstat': '/opt/pbs/bin/qstat',
         'qmgr': '/opt/pbs/bin/qmgr',
         'qalter': '/opt/pbs/bin/qalter',
         'qdel': '/opt/pbs/bin/qdel',
-        'aligoqstat': '/apps/soca/cluster_manager/aligoqstat.py'
+        'aligoqstat': '/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/aligoqstat.py',
+        'python': '/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/python/latest/bin/python3'
     }
 
     # AWS Clients
     ses = boto3.client('ses')
     ec2 = boto3.client('ec2')
     cloudformation = boto3.client('cloudformation')
-    aligo_configuration = configuration.get_aligo_configuration()
     queue_parameter_values = {}
     queues = False
     queues_only_parameters = ["allowed_users", "excluded_users"]
     # Retrieve Default Queue parameters
-    stream_resource_mapping = open('/apps/soca/cluster_manager/settings/queue_mapping.yml', "r")
+    stream_resource_mapping = open('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/queue_mapping.yml', "r")
     docs = yaml.load_all(stream_resource_mapping, Loader=yaml.FullLoader)
     for doc in docs:
         for items in doc.values():
@@ -310,7 +317,7 @@ if __name__ == "__main__":
         stream_resource_mapping.close()
 
     # Generate FlexLM mapping
-    stream_flexlm_mapping = open('/apps/soca/cluster_manager/settings/licenses_mapping.yml', "r")
+    stream_flexlm_mapping = open('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/licenses_mapping.yml', "r")
     docs = yaml.load_all(stream_flexlm_mapping, Loader=yaml.FullLoader)
     custom_flexlm_resources = {}
     for doc in docs:
@@ -330,7 +337,7 @@ if __name__ == "__main__":
         exit(1)
 
     for queue_name in queues:
-        log_file = logging.FileHandler('/apps/soca/cluster_manager/logs/' + queue_name + '.log','a')
+        log_file = logging.FileHandler('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/logs/' + queue_name + '.log','a')
         formatter = logging.Formatter('[%(asctime)s] [%(lineno)d] [%(levelname)s] [%(message)s]')
         log_file.setFormatter(formatter)
         logger = logging.getLogger('tcpserver')

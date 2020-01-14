@@ -10,14 +10,14 @@ crontab -r
 systemctl stop pbs
 
 # Begin USER Customization
-cp /apps/soca/cluster_node_bootstrap/ComputeNodeUserCustomization.sh /root
+cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh /root
 /bin/bash /root/ComputeNodeUserCustomization.sh >> /root/ComputeNodeUserCustomization.log 2>&1
 # End USER Customization
 
 # Begin DCV Customization
 if [[ "$SOCA_JOB_QUEUE" == "desktop" ]]; then
     echo "Installing DCV"
-    cp /apps/soca/cluster_node_bootstrap/ComputeNodeInstallDCV.sh /root
+    cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeInstallDCV.sh /root
     /bin/bash /root/ComputeNodeInstallDCV.sh >> /root/ComputeNodeInstallDCV.log 2>&1
     sleep 30
 fi

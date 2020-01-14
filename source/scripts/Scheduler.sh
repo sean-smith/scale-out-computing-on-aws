@@ -13,6 +13,8 @@ yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/li
 systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
 
+
+mkdir -p /apps/soca/$SOCA_CONFIGURATION
 EFS_DATA=$1
 EFS_APPS=$2
 SERVER_IP=$(hostname -I)
@@ -40,12 +42,12 @@ echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=
 mount -a
 
 # Install Python if needed
-PYTHON_INSTALLED_VERS=$(/apps/python/latest/bin/python3 --version | awk {'print $NF'})
+PYTHON_INSTALLED_VERS=$(/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 --version | awk {'print $NF'})
 if [[ "$PYTHON_INSTALLED_VERS" != "$PYTHON_VERSION" ]]
 then
     echo "Python not detected, installing"
-    mkdir -p /apps/python/installer
-    cd /apps/python/installer
+    mkdir -p /apps/soca/$SOCA_CONFIGURATION/python/installer
+    cd /apps/soca/$SOCA_CONFIGURATION/python/installer
     wget $PYTHON_URL
     if [[ $(md5sum $PYTHON_TGZ | awk '{print $1}') != $PYTHON_HASH ]];  then
         echo -e "FATAL ERROR: Checksum for Python failed. File may be compromised." > /etc/motd
@@ -53,10 +55,10 @@ then
     fi
     tar xvf $PYTHON_TGZ
     cd Python-$PYTHON_VERSION
-    ./configure LDFLAGS="-L/usr/lib64/openssl" CPPFLAGS="-I/usr/include/openssl" --prefix=/apps/python/$PYTHON_VERSION
+    ./configure LDFLAGS="-L/usr/lib64/openssl" CPPFLAGS="-I/usr/include/openssl" --prefix=/apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION
     make
     make install
-    ln -sf /apps/python/$PYTHON_VERSION /apps/python/latest
+    ln -sf /apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION /apps/soca/$SOCA_CONFIGURATION/python/latest
 else
     echo "Python already installed and at correct version."
 fi
@@ -347,7 +349,7 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
 
 # Install Python required libraries
 # Source environment to reload path for Python3
-/apps/python/$PYTHON_VERSION/bin/pip3 install awscli==1.16.151 \
+/apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION/bin/pip3 install awscli==1.16.151 \
       boto3==1.9.141 \
       pytz==2019.1 \
       prettytable==0.7.2 \

@@ -12,6 +12,7 @@ CONTRIBUTING.md:50
 docs/install-soca-cluster.md:15
 docs/tutorials/job-start-stop-email-notification.md:102
 docs/tutorials/job-licenses-flexlm.md:74
+docs/tutorials/integrate-cognito-sso.md:19
 
 # False Positive
 source/soca/cluster_web_ui/static/vendor/jquery/jquery.js:7476

@@ -109,10 +109,10 @@ echo "''' + params['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,ws
 echo "''' + params['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 mount -a 
     
-cp /apps/soca/cluster_node_bootstrap/ComputeNodePostReboot.sh /root
+cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodePostReboot.sh /root
 echo "@reboot /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
 $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-cp /apps/soca/cluster_node_bootstrap/ComputeNode.sh /root
+cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
 /bin/bash /root/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1'''
 
         ltd.EbsOptimized = True

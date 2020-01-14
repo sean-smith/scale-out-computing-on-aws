@@ -10,6 +10,8 @@
 # > https://github.com/stelligent/cfn_nag
 #
 
+# update cfn-nag to latest version
+gem install cfn-nag
 CFN_NAG_SCAN=$(which cfn_nag_scan)
 CWD=$(dirname "${BASH_SOURCE[0]}")
 VIPERLIGHT=$(which viperlight)
@@ -21,7 +23,4 @@ for template in $(ls $CWD/../source/templates);
     do
        $CFN_NAG_SCAN  -i $CWD/../source/templates/$template --fail-on-warnings || ec2=$?
 done
-
-if [ "$ec2" -ne "0" ]; then echo 'ERROR-2'; else echo 'SUCCESS-2'; ec2=0; fi
-
 

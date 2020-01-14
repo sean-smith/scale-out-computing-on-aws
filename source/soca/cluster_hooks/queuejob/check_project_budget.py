@@ -45,7 +45,7 @@ job_project = None if j.project is None else str(j.project) # <class 'pbs.v1._ba
 
 # User Variables
 aws_account_id = '<YOUR_AWS_ACCOUNT_ID>>'
-budget_config_file = '/apps/soca/cluster_manager/settings/project_cost_manager.txt'  # Link to example
+budget_config_file = '/apps/soca/<YOUR_SOCA_CLUSTER_ID>/cluster_manager/settings/project_cost_manager.txt'  # Link to example
 user_must_belong_to_project = True  # Change if you don't want to restrict project to a list of users
 allow_job_no_project = False  # Change if you do not want to enforce project at job submission
 allow_user_multiple_projects = True  # Change if you want to restrict a user to one project

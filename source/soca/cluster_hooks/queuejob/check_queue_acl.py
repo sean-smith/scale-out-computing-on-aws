@@ -34,7 +34,7 @@ j = e.job
 job_owner = str(e.requestor)
 job_queue = "normal" if str(j.queue) == "" else str(j.queue)
 pbs.logmsg(pbs.LOG_DEBUG, 'queue_acl: job_queue  ' + str(j.queue))
-queue_settings_file = "/apps/soca/cluster_manager/settings/queue_mapping.yml"
+queue_settings_file = "/apps/soca/%SOCA_CONFIGURATION/cluster_manager/settings/queue_mapping.yml"
 reader = open(queue_settings_file, "r")
 
 try:

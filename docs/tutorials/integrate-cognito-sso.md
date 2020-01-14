@@ -20,13 +20,13 @@ Additionally, [read this link ](https://docs.aws.amazon.com/cognito/latest/devel
 - 2: Mary wants to access the web UI of SOCA (we assume she already has an active account on SOCA. If not, [refer to this page to learn how to manage user account on SOCA](../tutorials/manage-ldap-users/))
     + 2.1: She can access the application by entering her SOCA LDAP username/password
     + 2.2: She can be automatically logged in using Amazon Cognito
-- 3: Assuming SSO is enabled, SOCA will forward the user request to Mary's Corporate LDAP to determine if she is a valid user. **This is the authentication part.**
-- 4: Mary's Corporate LDAP will validate her account (e.g based on Kerberos ticket) and will return a SAML token. **This is the authorization part.**
-- 5: Based on the authorization results, SOCA will automatically logs Mary in reject her request
+- 3: Assuming SSO is enabled, SOCA will forward the access request Cognito which will use Mary's Corporate LDAP as a Federated identity to determine if she is a valid user. **This is the authentication part.**
+- 4: Mary's Corporate LDAP will check her account (e.g based on Kerberos ticket) and return a SAML token. **This is the authorization part.**
+- 5: Based on the authorization results, SOCA will automatically logs Mary in or reject her request
 
 **What if Mary does not have an account on SOCA?**
 
-Assuming a user has a valid credential on corporate LDAP/AD but not on SOCA, Cognito will reject the request and redirect the user to the default login portal
+Assuming a user has a valid credential on corporate LDAP/AD but not on SOCA, Cognito will redirect the user to the default SOCA login portal.
 
 **How do you determine if a user has an account on SOCA?**
 
@@ -40,7 +40,7 @@ For example, if the email returned by your corporate LDAP for a given user is `m
 ### Create your Cognito User Pool
 
 !!!info
-    This setup is different for each customers, refer fo the official AWS Documentaton for Cognito if needed.
+    This setup is different for each customer, refer fo the official AWS Documentaton for Cognito if needed.
 
 First, you need to configure your [Cognito User Pool with your existing SAML provider](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html). You can leave most settings by default as we won't be using any user password, custom login UI etc..
 This step is optional if you already have a User Pool configured.
@@ -51,7 +51,7 @@ Once your User Pool is created, go to `Federation > Identity Provider` and choos
  
 ![](../imgs/cognito-2.png)
 
-Here are some extra links if you need more documentation related to SAML:
+SAML integration vary based on your own corporate settings, reach out to your local IT if needed. Here are some extra links if you need more documentation related to SAML:
 
    - [SAML Authentication Flow](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-saml-idp-authentication.html)
    - [Adding SAML Identity Providers to a User Pool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-saml-idp.html) 
