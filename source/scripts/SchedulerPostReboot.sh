@@ -74,7 +74,7 @@ sleep 60
 
 ## Update PBS Hooks with the current script location
 #%SOCA_CONFIGURATION
-sed -i "s/%SOCA_CONFIGURATION/soca-testnew/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_acl.py
+sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_acl.py
 
 # Create Default PBS hooks
 qmgr -c "create hook soca_aws_infos event=execjob_begin"
