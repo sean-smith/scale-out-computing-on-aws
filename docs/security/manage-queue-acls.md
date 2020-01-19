@@ -12,7 +12,7 @@ These parameters can be configured as:
 
 ## Restrict queue for some users
 
-Considering `/apps/soca/cluster_manager/settings/queue_mapping.yml`
+Considering `/apps/soca/<CLUSTER_ID>cluster_manager/settings/queue_mapping.yml`
 ```
 queue_type:
   compute:
@@ -166,10 +166,10 @@ excluded_users: ["cn=mynewgroup,ou=Group,dc=soca,dc=local"]
 Scheduler hooks are located on /var/spool/pbs/server_logs/
 
 ## Code
-The hook file can be found under `/apps/soca/cluster_hooks/queuejob/check_queue_acl.py` on your Scale-Out Computing on AWS cluster)
+The hook file can be found under `/apps/soca/cluster_hooks/<CLUSTER_ID>/queuejob/check_queue_config.py` on your Scale-Out Computing on AWS cluster)
 
 ## Disable the hook
 You can disable the hook by running the following command on the scheduler host (as root):
 ~~~bash
-user@host: qmgr -c "delete hook check_queue_acl event=runjob"
+user@host: qmgr -c "delete hook check_queue_config event=queuejob"
 ~~~

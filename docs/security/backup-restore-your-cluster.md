@@ -25,7 +25,7 @@ A "Backup Plan" is where you define all your backup strategy such as backup freq
 
 By default, Scale-Out Computing on AWS creates one backup rule with the following parameters:
 
-   - Backup will start every day at 5AM UTC time (blue section)
+   - Backup will start every day between 5AM and 6AM UTC (blue section)
    - Backup will expire after 1 month (orange section)
    - Backup is stored on the encrypted vault created by SOCA (purple section)
 
@@ -64,12 +64,17 @@ On the left sidebar, click "Protected Resources" then choose the resource you wa
 
 ![](../imgs/backup-plan-8.png)
 
-This will open a new window with additional information about this resource (either EFS or EC2). Select the latest entry under "Recovery Points" you want to restore from the "Backups" section then click "Restore"
+This will open a new window with additional information about this resource (either EFS or EC2). Select the latest entry you want to restore from the "Backups" section then click "Restore"
 
 ![](../imgs/backup-plan-9.png)
 
 This will open a regular EC2 launch instance or EFS wizard. Specify the parameters (VPC, Subnet, Security Group, IAM role ...) you want to use and click "Restore Backup"
 
+### How to delete a backup ?
+
+Select your vault, choose which recovery point you want to remove under the "Backups" section then click "Delete".
+
+![](../imgs/backup-plan-10.png)
 
 
 ### Check the status of the backup jobs
@@ -78,6 +83,11 @@ On the left sidebar, check "Jobs" to verify if your backup jobs are running corr
 
 ![](../imgs/backup-plan-5.png)
 
+
+### What happen if you delete your Cloudformation stack?
+
+Your backup vault won't be deleted if you have active backups in it. In case of accidental termination of your primary cloudformation template, you will still be able to recover your data by restoring the EFS and/or EC2.
+To delete your AWS Backup entry, you first need to manually remove all backups present in your vault.
 
 
 

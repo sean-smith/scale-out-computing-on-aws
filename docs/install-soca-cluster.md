@@ -71,6 +71,11 @@ Your install template is located under `<S3_BUCKET_NAME>/<BUILD_ID>/scale-out-co
 
 ![](imgs/install-5.png)
 
+!!! info "Want to use your existing AWS resources?"
+    Refer to `install-with-existing-resources.template` if you want to use Scale-Out Computing on AWS with your existing resources.
+    
+    [Check out the web installer](https://install.soca.dev) to verify your setup
+
 ## Install Scale-Out Computing on AWS
 
 Open CloudFormation console and select "Create Stack". Copy the URL of your install template and click "Next".
@@ -208,3 +213,4 @@ When enabled, the following information is collected and sent to AWS:
 ## What's next ?
 
 Learn [how to access your cluster](/access-soca-cluster/), [how to submit your first job](/tutorials/launch-your-first-job/) or even [how to change your Scale-Out Computing on AWS DNS](/security/update-soca-dns-ssl-certificate/) to match your personal domain name.
+

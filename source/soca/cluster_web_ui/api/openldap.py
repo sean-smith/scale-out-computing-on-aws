@@ -1,18 +1,21 @@
-import ldap
-import generic.parameters as parameters
+import os
 import subprocess
-from flask import session, redirect, request
+
+import generic.parameters as parameters
+import ldap
+from flask import session
+
 
 def create_new_user(username, password, sudoers, email):
     if sudoers is None:
-        create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '-e', email]
+        create_user_cmd = ['/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/python/latest/bin/python3', '/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '-e', email]
     else:
-        create_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '-e', email, '--admin']
+        create_user_cmd = ['/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/python/latest/bin/python3', '/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/ldap_manager.py', 'add-user', '-u', username, '-p', password, '-e', email, '--admin']
     create_new_user_exit_code = subprocess.call(create_user_cmd)
     return {'cmd': ' '.join(create_user_cmd), 'exit_code': create_new_user_exit_code}
 
 def delete_user(username):
-    delete_user_cmd = ['/apps/python/latest/bin/python3', '/apps/soca/cluster_manager/ldap_manager.py', 'delete-user',
+    delete_user_cmd = ['/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/python/latest/bin/python3', '/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/ldap_manager.py', 'delete-user',
                        '-u', username]
     delete_user_cmd_exit_code = subprocess.call(delete_user_cmd)
     return {'cmd': ' '.join(delete_user_cmd), 'exit_code': delete_user_cmd_exit_code}

@@ -46,8 +46,12 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - elasticloadbalancing:CreateRule
               - elasticloadbalancing:DeleteRule
+            Resource:  !Sub "arn:${AWS::Partition}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/soca*/*"
+
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:CreateRule
             Resource: !Ref HTTPSLoadBalancerListener
 
           - Effect: Allow

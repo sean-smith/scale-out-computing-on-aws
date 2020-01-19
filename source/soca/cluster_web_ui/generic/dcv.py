@@ -16,15 +16,19 @@ import yaml
 def run_command(cmd, type):
     try:
         if type == "check_output":
-            command = subprocess.check_output(cmd)
+            command = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         elif type == "call":
             command = subprocess.call(cmd)
         else:
             print("Command not Defined")
             exit(1)
-        return command
+        return {"success": True,
+                "output": command
+                }
     except subprocess.CalledProcessError as e:
-        return ""
+        return {"success": False,
+                "output":  str(e.output)
+                }
 
 
 def build_dcv_connect_client(user, session_number):
@@ -47,8 +51,7 @@ authToken=''' + session_data['session_password'] + '''
 
 def build_qsub(session_owner, session_number, walltime, instance_type):
     session_id = str(uuid.uuid4())
-    command_dcv_create = parameters.get_parameter('dcv',
-                                                  'bin') + " create-session --user  " + session_owner + " --owner " + session_owner + " " + session_id
+    command_dcv_create = parameters.get_parameter('dcv', 'bin') + " create-session --user  " + session_owner + " --owner " + session_owner + " " + session_id
     session_password = ''.join(
         random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(80))
     params = {'pbs_job_name': 'Desktop' + str(session_number),
@@ -60,7 +63,7 @@ def build_qsub(session_owner, session_number, walltime, instance_type):
               'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
               'walltime': walltime}
 
-    qsub_command = '''<<eof
+    qsub_command = '''<<EOF
 #PBS -N ''' + params['pbs_job_name'] + '''
 #PBS -q ''' + params['pbs_queue'] + '''
 #PBS -P ''' + params['pbs_project'] + '''
@@ -84,37 +87,38 @@ echo ''' + params[
 # Keep job open
 while true
     do
-        session_keepalive=`/usr/bin/dcv list-sessions | grep ''' + session_id + ''' | wc -l`
+        session_keepalive=$(/usr/bin/dcv list-sessions | grep ''' + session_id + ''' | wc -l)
         if [ $session_keepalive -ne 1 ]
             then
                 exit 0
         fi
         sleep 3600
     done
-eof
+EOF
 '''
-    yaml_config = parameters.get_parameter('dcv', 'session_location') + '/dcv_' + session_owner + '_' + str(
-        session_number) + '.yml'
+    yaml_config = parameters.get_parameter('dcv', 'session_location') + '/dcv_' + session_owner + '_' + str(session_number) + '.yml'
     if path.exists(yaml_config):
         print(yaml_config + ' already exist.')
         return False
-
     launch_job_session = run_command(['su', session_owner, '-c', '/opt/pbs/bin/qsub ' + qsub_command], "check_output")
-    job_id = ((launch_job_session.decode('utf-8')).rstrip().lstrip()).split('.')[0]
-    dcv_session_data = dict(
-        job_id=job_id,
-        host='tbd',
-        state='pending',
-        session_id=session_id,
-        session_password=session_password,
-        session_number=int(session_number)
-    )
+    if launch_job_session["success"] is True:
+        job_id = ((launch_job_session["output"].decode('utf-8')).rstrip().lstrip()).split("\n")[-1].split('.')[0]
+        dcv_session_data = dict(
+            job_id=job_id,
+            host='tbd',
+            state='pending',
+            session_id=session_id,
+            session_password=session_password,
+            session_number=int(session_number)
+        )
 
-    with open(yaml_config, 'w') as outfile:
-        yaml.dump(dcv_session_data, outfile, default_flow_style=False)
+        with open(yaml_config, 'w') as outfile:
+            yaml.dump(dcv_session_data, outfile, default_flow_style=False)
 
-    os.chmod(yaml_config, 0o700)
-    return True
+        os.chmod(yaml_config, 0o700)
+        return True
+    else:
+        return str(launch_job_session["output"])
 
 
 def check_user_session(user):
@@ -133,9 +137,8 @@ def check_user_session(user):
                 session_job_id = session_info['job_id']
                 print(session_job_id + ' detected')
                 try:
-                    check_job_status = json.loads(
-                        run_command([parameters.get_parameter('pbs', 'qstat'), '-f', session_job_id, '-F', 'json'],
-                                    'check_output').decode('utf-8'))
+                    check_job_cmd = run_command([parameters.get_parameter('pbs', 'qstat'), '-f', session_job_id, '-F', 'json'], 'check_output')
+                    check_job_status = json.loads(check_job_cmd["output"].decode('utf-8'))
                     for job, job_data in check_job_status['Jobs'].items():
                         if 'exec_host' in job_data.keys():
                             exec_host = job_data['exec_host'].split('/')[0]

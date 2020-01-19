@@ -74,13 +74,13 @@ sleep 60
 
 ## Update PBS Hooks with the current script location
 #%SOCA_CONFIGURATION
-sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_acl.py
+sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_config.py
 
 # Create Default PBS hooks
 qmgr -c "create hook soca_aws_infos event=execjob_begin"
 qmgr -c "import hook soca_aws_infos application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/execjob_begin/soca_aws_infos.py"
 qmgr -c "create hook check_queue_acl event=queuejob"
-qmgr -c "import hook check_queue_acl application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_acl.py"
+qmgr -c "import hook check_queue_acl application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_config.py"
 
 # Reload config
 systemctl restart pbs
@@ -175,19 +175,21 @@ chmod +x /apps/soca/$SOCA_CONFIGURATION/cluster_web_ui/socawebui.sh
 MAX_ATTEMPT=5
 CURRENT_ATTEMPT=0
 # Create default LDAP user
-until $(/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/$SOCA_CONFIGURATION/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin  >> /dev/null 2>&1)
+
+sanitized_username="$3"
+sanitized_password="$4"
+
+until `/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/$SOCA_CONFIGURATION/cluster_manager/ldap_manager.py add-user -u $sanitized_username -p $sanitized_password --admin >> /root/LDAPOUTPUT 2>&1`
 do
   echo "Unable to add new LDAP user as command failed (secret manager not ready?) Waiting 3mn ..."
   if [[ $CURRENT_ATTEMPT -ge $MAX_ATTEMPT ]];
   then
-    echo "Unable to create LDAP user after 5 attempts, try to run the command manually: /apps/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u "$3" -p "$4" --admin"
+    echo "Unable to create LDAP user after 5 attempts, try to run the command manually: /apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/cluster_manager/ldap_manager.py add-user -u '$3' -p '$4' --admin"
     break
   fi
   sleep 180
   ((CURRENT_ATTEMPT=CURRENT_ATTEMPT+1))
 done
-
-
 
 
 # Cluster is ready

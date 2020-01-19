@@ -79,6 +79,9 @@ Scale-Out Computing on AWS includes two unlimited EFS storage (/apps and /data).
 ## Centralized user-management
 Customers [can create unlimited LDAP users and groups](tutorials/manage-ldap-users/). By default Scale-Out Computing on AWS includes a default LDAP account provisioned during installation as well as a "Sudoers" LDAP group which manage SUDO permission on the cluster.
 
+## Automatic backup
+Scale-Out Computing on AWS [automatically backup your data](security/backup-restore-your-cluster/) with no additional effort required on your side.
+
 ## Support for network licenses
 Scale-Out Computing on AWS [includes a FlexLM-enabled script which calculate the number of licenses](tutorials/job-licenses-flexlm) for a given features and only start the job/provision the capacity when enough licenses are available. 
 
@@ -103,3 +106,7 @@ Each user is given a score which vary based on:
 - Type of instance
 
 Job that belong to the user with the highest score will start next 
+
+## And more ...
+
+Refer to the various sections (tutorial/security/analytics ...) to learn more about this solution

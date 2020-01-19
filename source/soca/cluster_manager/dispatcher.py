@@ -457,40 +457,40 @@ if __name__ == "__main__":
                                     can_run = False
                         except:
                             logpush('One required PBS resource has not been specified on the JSON input for ' + job_id + ': ' + str(res) +' . Please update custom_flexlm_resources on ' +str(arg.config))
-                            exit(1)
-
-                    for queue_param in queue_parameter_values.keys():
-                        if queue_param not in job_parameter_values.keys():
-                            job_parameter_values[queue_param] = queue_parameter_values[queue_param]
-
-                    # Checking for required parameters
-                    if 'instance_type' not in job_parameter_values.keys():
-                        logpush('No instance type detected either on the queue_mapping.yml or at job submission. Exiting ...')
-                        exit(1)
-
-                    if 'instance_ami' not in job_parameter_values.keys():
-                        logpush('No instance_ami type detected either on the queue_mapping.yml .. defaulting to base os')
-                        job_parameter_values['instance_ami'] = aligo_configuration['CustomAMI']
-
-                    # Append new resource to job resource for better tracking
-                    alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['select', 'ncpus', 'ngpus', 'place','nodect', 'queues', 'compute_node', 'stack_id'])
-                    run_command([system_cmds['qalter']] + alter_job_res.split() + [str(job_id)], "call")
-
-
-                    desired_capacity = int(job_required_resource['nodect'])
-                    cpus_count_pattern = re.search(r'[.](\d+)', job_parameter_values['instance_type'])
-                    if cpus_count_pattern:
-                        cpu_per_system = int(cpus_count_pattern.group(1)) * 2
-                    else:
-                        cpu_per_system = '2'
-
-                    # Prevent job to start if PPN requested > CPUs per system
-                    if 'ppn' in job_required_resource.keys():
-                        if job_required_resource['ppn'] > cpu_per_system:
-                            logpush('Ignoring Job ' + job_id + ' as the PPN specified (' + str(job_required_resource['ppn']) + ') is higher than the number of cpu per system : ' + str(cpu_per_system), 'error')
                             can_run = False
 
                     if can_run is True:
+                        for queue_param in queue_parameter_values.keys():
+                            if queue_param not in job_parameter_values.keys():
+                                job_parameter_values[queue_param] = queue_parameter_values[queue_param]
+
+                        # Checking for required parameters
+                        if 'instance_type' not in job_parameter_values.keys():
+                            logpush('No instance type detected either on the queue_mapping.yml or at job submission. Exiting ...')
+                            exit(1)
+
+                        if 'instance_ami' not in job_parameter_values.keys():
+                            logpush('No instance_ami type detected either on the queue_mapping.yml .. defaulting to base os')
+                            job_parameter_values['instance_ami'] = aligo_configuration['CustomAMI']
+
+                        # Append new resource to job resource for better tracking
+                        alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['select', 'ncpus', 'ngpus', 'place','nodect', 'queues', 'compute_node', 'stack_id'])
+                        run_command([system_cmds['qalter']] + alter_job_res.split() + [str(job_id)], "call")
+
+
+                        desired_capacity = int(job_required_resource['nodect'])
+                        cpus_count_pattern = re.search(r'[.](\d+)', job_parameter_values['instance_type'])
+                        if cpus_count_pattern:
+                            cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+                        else:
+                            cpu_per_system = '2'
+
+                        # Prevent job to start if PPN requested > CPUs per system
+                        if 'ppn' in job_required_resource.keys():
+                            if job_required_resource['ppn'] > cpu_per_system:
+                                logpush('Ignoring Job ' + job_id + ' as the PPN specified (' + str(job_required_resource['ppn']) + ') is higher than the number of cpu per system : ' + str(cpu_per_system), 'error')
+                                can_run = False
+
                         logpush('job_' + job_id + ' can run, doing dry run test with following parameters: ' + job_parameter_values['instance_type'] + ' *  ' +str(desired_capacity))
                         if can_launch_capacity(job_parameter_values['instance_type'], desired_capacity, job_parameter_values['instance_ami']) is True:
                             try:

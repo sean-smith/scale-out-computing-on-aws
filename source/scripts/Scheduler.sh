@@ -367,7 +367,6 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
       troposphere==2.5.3
 
 # PBS hooks still run on python2 env, so some packages are required
-
 EASY_INSTALL=$(which easy_install-2.7)
 $EASY_INSTALL yaml python-ldap boto3
 
