@@ -1,10 +1,11 @@
 '''
 This hook reject the job if the user is not allowed to use the queue
 Doc: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
-create hook check_queue_acl event=queuejob
-import hook check_queue_acl application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_queue_acl.py
+create hook check_queue_config event=queuejob
+import hook check_queue_config application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_queue_config.py
 
-Note: If you make any change to this file, you MUST re-execute the import command
+Note: If you make any change to this file, you MUST re-execute the import command.
+If you are installing this file manually, make sure to replace %SOCA_CONFIGURATION path below
 --
 
 "allowed_users" / "excluded_users" must be:

@@ -179,7 +179,7 @@ CURRENT_ATTEMPT=0
 sanitized_username="$3"
 sanitized_password="$4"
 
-until `/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/$SOCA_CONFIGURATION/cluster_manager/ldap_manager.py add-user -u $sanitized_username -p $sanitized_password --admin >> /root/LDAPOUTPUT 2>&1`
+until `/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/$SOCA_CONFIGURATION/cluster_manager/ldap_manager.py add-user -u $sanitized_username -p $sanitized_password --admin >> /dev/null 2>&1`
 do
   echo "Unable to add new LDAP user as command failed (secret manager not ready?) Waiting 3mn ..."
   if [[ $CURRENT_ATTEMPT -ge $MAX_ATTEMPT ]];

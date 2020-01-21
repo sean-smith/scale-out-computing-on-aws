@@ -37,6 +37,34 @@ def get_all_users():
     return all_ldap_users
 
 
+def verify_sudo_permissions(username):
+    ldap_host = parameters.get_parameter('ldap', 'host')
+    base_dn = parameters.get_parameter('ldap', 'base_dn')
+    user_dn = 'uid={},ou=people,{}'.format(username, base_dn)
+    con = ldap.initialize('ldap://{}'.format(ldap_host))
+    try:
+        # Check if user has sudo permissions
+        sudoers_search_base = "ou=Sudoers,dc=soca,dc=local"
+        sudoers_search_scope = ldap.SCOPE_SUBTREE
+        sudoers_filter = 'cn=' + username
+        is_sudo = con.search_s(sudoers_search_base, sudoers_search_scope, sudoers_filter)
+        if is_sudo.__len__() > 0:
+            return {'success': True,
+                    'message': username + ' is a valid SUDO user'}
+        else:
+            return {'success': False,
+                    'message': username + ' is not a SUDO user'}
+
+
+    except ldap.INVALID_CREDENTIALS:
+        return {'success': False,
+                'message': 'Invalid credentials.'}
+
+    except ldap.SERVER_DOWN:
+        return {'success': False,
+                'message': 'LDAP server is down.'}
+
+
 def validate_ldap(username, password):
     ldap_host = parameters.get_parameter('ldap', 'host')
     base_dn = parameters.get_parameter('ldap', 'base_dn')

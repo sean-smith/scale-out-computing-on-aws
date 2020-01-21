@@ -97,6 +97,8 @@ cognito_root_url="<YOUR_WEB_URL>"
 cognito_callback_url="<YOUR_CALLBACK_URL>"
 ~~~
 
+!!!warning "Important"
+    Make sure to use double quotes for all variables (eg. enable_sso="true" and not enable_sso='true')
 
 ### Restart the Web UI
 

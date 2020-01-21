@@ -61,7 +61,7 @@ def sso_authorization(code):
             # Valid user, create session
             session['username'] = username
             # verify sudo permission
-            if openldap.verify_sudo_permission(username) is True:
+            if openldap.verify_sudo_permissions(username)["success"] is True:
                 session["sudoers"] = True
             else:
                 session["sudoers"] = False

@@ -1,10 +1,8 @@
-#!/apps/python/latest/bin/python3
-
 '''
 This hook output resource_user.instance_type_used to the current EC2 instance type to the accounting logs
 
 create hook soca_aws_infos event=execjob_begin
-import hook soca_aws_infos application/x-python default /apps/soca/cluster_hooks/execjob_begin/soca_aws_infos.py
+import hook soca_aws_infos application/x-python default /apps/soca/<cLUSTER_ID>/cluster_hooks/execjob_begin/soca_aws_infos.py
 '''
 
 import re
