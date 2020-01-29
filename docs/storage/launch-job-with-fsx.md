@@ -142,7 +142,7 @@ if [[ $SOCA_AWS_FSX_LUSTRE_BUCKET != 'false' ]]; then
 
 ## Troubleshooting and most common errors
 
-Like any other parameter, FSx options can be debugged using `/apps/soca/cluster_manager/logs/<QUEUE_NAME>.log`
+Like any other parameter, FSx options can be debugged using `/apps/soca/<CLUSTER_ID>/cluster_manager/logs/<QUEUE_NAME>.log`
 
 ~~~bash
 [Error while trying to create ASG: Scale-Out Computing on AWS does not have access to this bucket. 

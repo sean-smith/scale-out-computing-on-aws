@@ -86,38 +86,38 @@ Parameters:
     "Description": IMPORTANT CENTOS USERS > You MUST subscribe to https://aws.amazon.com/marketplace/pp/B00O7WM7QW first if using CentOS
 
   VpcId:
-    Type: String
+    Type: AWS::EC2::VPC::Id
     Description: VPC Id (must start with vpc-xxx)
     AllowedPattern: (vpc-[a-zA-Z0-9]*)
 
   PrivateSubnet1:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
     Description: Private Subnet (must start with subnet-xxxx)
     AllowedPattern: (subnet-[a-zA-Z0-9]*)
 
   PrivateSubnet2:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
     Description: Private Subnet (must start with subnet-xxxx)
     AllowedPattern: (subnet-[a-zA-Z0-9]*)
 
   PrivateSubnet3:
-    Type: String
+    Type: AWS::EC2::Subnet::Id
     Description: Private Subnet (must start with subnet-xxxx)
     AllowedPattern: (subnet-[a-zA-Z0-9]*)
 
   PublicSubnet1:
-    Type: String
-    Description: Private Subnet (must start with subnet-xxxx)
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet (must start with subnet-xxxx)
     AllowedPattern: (subnet-[a-zA-Z0-9]*)
 
   PublicSubnet2:
-    Type: String
-    Description: Private Subnet (must start with subnet-xxxx)
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet (must start with subnet-xxxx)
     AllowedPattern: (subnet-[a-zA-Z0-9]*)
 
   PublicSubnet3:
-    Type: String
-    Description: Private Subnet (must start with subnet-xxxx)
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet (must start with subnet-xxxx)
     AllowedPattern: (subnet-[a-zA-Z0-9]*)
 
   EFSAppsDns:
@@ -143,7 +143,7 @@ Parameters:
     Type: String
     Default: %%BUCKET_NAME%%
     Description: Name of your S3 Bucket where you uploaded your install files
-    AllowedPattern: '(?=^.{3,63}$)(?!^(\\d+\\.)+\\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$)'
+    AllowedPattern: '(?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)'
     ConstraintDescription: You must specify the bucket NAME only (no s3:// or https://bucket.s3.amazonaws.com)
 
   S3InstallFolder:
@@ -152,10 +152,10 @@ Parameters:
     Description: Name of the S3 folder where you uploaded SOCA
 
   SecurityGroupIdScheduler:
-    Type: String
+    Type: AWS::EC2::SecurityGroup::Id
 
   SecurityGroupIdCompute:
-    Type: String
+    Type: AWS::EC2::SecurityGroup::Id
 
   UserName:
     Type: String

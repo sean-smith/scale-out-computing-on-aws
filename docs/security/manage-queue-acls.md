@@ -31,7 +31,7 @@ In this example, `user1` can submit a job to "normal" queue but not on "high" or
 ~~~console
 # Job submission does not work on "high" queue because user1 is on the excluded_users list pattern
 qsub -q high -- /bin/sleep 60
-qsub: user1 is not authorized to use submit this job on the queue high. Contact your HPC admin and update /apps/soca/cluster_manager/settings/queue_mapping.yml
+qsub: user1 is not authorized to use submit this job on the queue high. Contact your HPC admin and update /apps/soca/<CLUSTER_ID>/cluster_manager/settings/queue_mapping.yml
 
 # Job submission is ok on "normal" queue
 qsub -q normal -- /bin/sleep 60

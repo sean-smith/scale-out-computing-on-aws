@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added integration for AWS Cognito
 - Added integration for Troposphere
 - Added support for ACLs at queue level
-- Ignore installation if Python/PBSPro is already configured on the AMI
+- Ignore installation if PBSPro is already configured on the AMI
 - Default IP during installation to 0.0.0.0/0
 - Fixed bug when stack name only use uppercase
 - ComputeNode bootstrap scripts are now loaded from EFS
