@@ -105,6 +105,9 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
 
     # Mount
     mount -a
+
+    # Make sure /fsx top level can be accessed by any user (ACL still apply at folder level)
+    chmod -R 777 /fsx
 fi
 
 # Disable HyperThreading

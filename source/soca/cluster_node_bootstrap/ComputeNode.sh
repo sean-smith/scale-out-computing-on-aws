@@ -34,7 +34,8 @@ yum install -y $(echo ${SSSD_PKGS[*]})
 
 # Configure Scratch Directory if specified by the user
 mkdir /scratch/
-chmod 777 /scratch/
+chmod 777 /scratch
+
 if [[ $SOCA_SCRATCH_SIZE -ne 0 ]];
 then
     LIST_ALL_DISKS=$(lsblk --list | grep disk | awk '{print $1}')
@@ -102,6 +103,7 @@ else
 	    fi
     fi
 fi
+
 
 # Install PBSPro if needed
 cd ~
