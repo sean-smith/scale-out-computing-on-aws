@@ -94,6 +94,9 @@ Parameters:
   SolutionMetricsRoleArn:
     Type: String
 
+  DefaultMetricCollection:
+    Type: String
+
 Resources:
   SolutionMetricLambda:
     Type: AWS::Lambda::Function
@@ -218,7 +221,8 @@ Resources:
       "SchedulerPublicIP": "${SchedulerPublicIP}",
       "SolutionMetricLambda": "${SolutionMetricLambda.Arn}",
       "LdapBase": "DC=soca,dc=local",
-      "LdapHost": "${SchedulerPrivateDnsName}"
+      "LdapHost": "${SchedulerPrivateDnsName}",
+      "DefaultMetricCollection": "${DefaultMetricCollection}"
       }'
 
       Tags:
@@ -258,8 +262,181 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForBackup
         - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores
+
+
+  AWSBackupServiceRolePolicyForBackup:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AWSBackupServiceRolePolicyForBackup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - storagegateway:CreateSnapshot
+              - storagegateway:ListTagsForResource
+            Resource: arn:aws:storagegateway:*:*:gateway/*/volume/*
+          - Effect: Allow
+            Action:
+              - ec2:CopySnapshot
+            Resource: arn:aws:ec2:*::snapshot/*
+          - Effect: Allow
+            Action:
+              - ec2:CopyImage
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - ec2:CreateTags
+              - ec2:DeleteSnapshot
+            Resource: arn:aws:ec2:*::snapshot/*
+          - Effect: Allow
+            Action:
+              - ec2:CreateImage
+              - ec2:DeregisterImage
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - ec2:CreateTags
+            Resource: arn:aws:ec2:*:*:image/*
+          - Effect: Allow
+            Action:
+              - ec2:DescribeSnapshots
+              - ec2:DescribeTags
+              - ec2:DescribeImages
+              - ec2:DescribeInstances
+              - ec2:DescribeInstanceAttribute
+              - ec2:DescribeInstanceCreditSpecifications
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeElasticGpus
+              - ec2:DescribeSpotInstanceRequests
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - backup:DescribeBackupVault
+              - backup:CopyIntoBackupVault
+            Resource: arn:aws:backup:*:*:backup-vault:*
+          - Action:
+              - elasticfilesystem:Backup
+              - elasticfilesystem:DescribeTags
+            Resource: arn:aws:elasticfilesystem:*:*:file-system/*
+            Effect: Allow
+          - Effect: Allow
+            Action:
+              - ec2:CreateSnapshot
+              - ec2:DeleteSnapshot
+              - ec2:DescribeVolumes
+              - ec2:DescribeSnapshots
+            Resource:
+              - arn:aws:ec2:*::snapshot/*
+              - arn:aws:ec2:*:*:volume/*
+          - Action: kms:DescribeKey
+            Effect: Allow
+            Resource: '*'
+          - Action: kms:CreateGrant
+            Effect: Allow
+            Resource: '*'
+            Condition:
+              Bool:
+                kms:GrantIsForAWSResource: 'true'
+          - Action:
+              - kms:GenerateDataKeyWithoutPlaintext
+            Effect: Allow
+            Resource: arn:aws:kms:*:*:key/*
+            Condition:
+              StringLike:
+                kms:ViaService:
+                  - ec2.*.amazonaws.com
+          - Action:
+              - tag:GetResources
+            Resource: '*'
+            Effect: Allow
+
+      Roles:
+        - !Ref SOCABackupRole
+
+  AWSBackupServiceRolePolicyForRestores:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AWSBackupServiceRolePolicyForRestores
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:CreateVolume
+              - ec2:DeleteVolume
+            Resource:
+              - !Sub "arn:${AWS::Partition}:ec2:*::snapshot/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+          - Effect: Allow
+            Action:
+              - ec2:DescribeSnapshots
+              - ec2:DescribeVolumes
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - storagegateway:DeleteVolume
+              - storagegateway:DescribeCachediSCSIVolumes
+              - storagegateway:DescribeStorediSCSIVolumes
+            Resource: !Sub "arn:${AWS::Partition}:storagegateway:${AWS::Region}:${AWS::AccountId}:gateway/*/volume/*"
+          - Effect: Allow
+            Action:
+              - storagegateway:DescribeGatewayInformation
+              - storagegateway:CreateStorediSCSIVolume
+              - storagegateway:CreateCachediSCSIVolume
+            Resource: !Sub "arn:${AWS::Partition}:storagegateway:${AWS::Region}:${AWS::AccountId}:gateway/*"
+          - Effect: Allow
+            Action:
+              - storagegateway:ListVolumes
+            Resource: !Sub "arn:${AWS::Partition}:storagegateway:${AWS::Region}:${AWS::AccountId}:*"
+          - Effect: Allow
+            Action:
+              - elasticfilesystem:Restore
+              - elasticfilesystem:CreateFilesystem
+              - elasticfilesystem:DescribeFilesystems
+              - elasticfilesystem:DeleteFilesystem
+            Resource: !Join [ "", [ "arn:", !Ref "AWS::Partition", ":fsx:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":file-system/*"] ]
+          - Action: kms:DescribeKey
+            Effect: Allow
+            Resource: '*'
+          - Action:
+              - kms:Decrypt
+              - kms:Encrypt
+              - kms:GenerateDataKey
+              - kms:ReEncryptTo
+              - kms:ReEncryptFrom
+            Effect: Allow
+            Resource: '*'
+            Condition:
+              StringLike:
+                kms:ViaService:
+                  - ec2.*.amazonaws.com
+                  - elasticfilesystem.*.amazonaws.com
+          - Action: kms:CreateGrant
+            Effect: Allow
+            Resource: '*'
+            Condition:
+              Bool:
+                kms:GrantIsForAWSResource: 'true'
+          - Action:
+              - ec2:RunInstances
+            Effect: Allow
+            Resource: '*'
+            Condition:
+              "ForAllValues:ArnEqualsIfExists":
+                "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
+
+          - Action:
+              - ec2:TerminateInstances
+            Effect: Allow
+            Resource: arn:aws:ec2:*:*:instance/*
+            Condition:
+              "ForAllValues:ArnEqualsIfExists":
+                "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
+      Roles:
+        - !Ref SOCABackupRole
+
 
   SOCABackupVault:
     DependsOn: SOCABackupRole
@@ -279,7 +456,7 @@ Resources:
         BackupPlanRule:
           -
             Lifecycle:
-              DeleteAfterDays: 30
+              DeleteAfterDays: 7
             RecoveryPointTags: {
               "soca:ClusterId": !Ref ClusterId
             }

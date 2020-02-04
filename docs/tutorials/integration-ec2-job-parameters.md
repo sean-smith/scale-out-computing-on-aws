@@ -210,6 +210,16 @@ Below is a list of parameters you can specify when you request your simulation t
     - Placement group is enabled by default as long as the number of nodes provisioned is greated than 1
 
 
+## Others
+
+#### anonymous_metrics
+
+*Default to the value specified during SOCA installation*
+
+- Description: [Send anonymous operational metrics to AWS](https://docs.aws.amazon.com/solutions/latest/scale-out-computing-on-aws/appendix-d.html)
+- Allowed Value: `yes` `true` (case insensitive) 
+- Example: `-l anonymous_metrics=True`
+
 
 ## How to use custom parameters
 

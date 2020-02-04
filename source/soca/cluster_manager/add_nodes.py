@@ -52,6 +52,10 @@ def check_config(**kwargs):
     if kwargs['job_id'] is None and kwargs['keep_forever'] is None:
         error = return_message('--job_id or --keep_forever must be specified')
 
+    # Ensure anonymous metric is either True or False.
+    if kwargs['anonymous_metrics'] not in [True, False]:
+        kwargs['anonymous_metrics'] = True
+
     if not isinstance(int(kwargs['desired_capacity']), int):
         return_message('Desired Capacity must be an int')
 
@@ -174,7 +178,8 @@ def return_message(message, success=False):
 def main(**kwargs):
     try:
         # Create default value for optional parameters if needed
-        optional_job_parameters = {'base_os': False,
+        optional_job_parameters = {'anonymous_metrics': aligo_configuration["DefaultMetricCollection"],
+                                   'base_os': False,
                                    'efa_support': False,
                                    'fsx_lustre_bucket': False,
                                    'fsx_lustre_dns': False,
@@ -187,7 +192,8 @@ def main(**kwargs):
                                    'spot_allocation_strategy': 'lowest-price',
                                    'spot_price': False,
                                    'subnet_id': False,
-                                   'scratch_iops': 0
+                                   'scratch_iops': 0,
+
                                    }
 
         for k, v in optional_job_parameters.items():
@@ -312,6 +318,11 @@ def main(**kwargs):
                 'Key': 'keep_forever',
                 'Default': False
             },
+            'MetricCollectionAnonymous': {
+                'Key': 'anonymous_metrics',
+                'Default': aligo_configuration["DefaultMetricCollection"]
+            },
+
             'PlacementGroup': {
                 'Key': 'placement_group',
                 'Default': True
