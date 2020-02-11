@@ -261,46 +261,47 @@ Resources:
                 - backup.amazonaws.com
             Action:
               - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores
-
 
   AWSBackupServiceRolePolicyForBackup:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: "ReadOnly API commands or only supports wildcard resources"
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: AWSBackupServiceRolePolicyForBackup
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
-            Action:
-              - storagegateway:CreateSnapshot
-              - storagegateway:ListTagsForResource
-            Resource: arn:aws:storagegateway:*:*:gateway/*/volume/*
-          - Effect: Allow
-            Action:
-              - ec2:CopySnapshot
-            Resource: arn:aws:ec2:*::snapshot/*
+
           - Effect: Allow
             Action:
               - ec2:CopyImage
-            Resource: '*'
-          - Effect: Allow
-            Action:
+              - ec2:CopySnapshot
+              - ec2:CreateImage
+              - ec2:CreateSnapshot
               - ec2:CreateTags
               - ec2:DeleteSnapshot
-            Resource: arn:aws:ec2:*::snapshot/*
-          - Effect: Allow
-            Action:
-              - ec2:CreateImage
               - ec2:DeregisterImage
-            Resource: '*'
+            Resource:
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:subnet/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:key-pair/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:instance/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*::snapshot/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:launch-template/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:security-group/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:placement-group/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:network-interface/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*::image/*"
+            Condition:
+              "ForAllValues:ArnEqualsIfExists":
+                "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
+
           - Effect: Allow
             Action:
-              - ec2:CreateTags
-            Resource: arn:aws:ec2:*:*:image/*
-          - Effect: Allow
-            Action:
+              - backup:DescribeBackupVault
               - ec2:DescribeSnapshots
               - ec2:DescribeTags
               - ec2:DescribeImages
@@ -309,53 +310,53 @@ Resources:
               - ec2:DescribeInstanceCreditSpecifications
               - ec2:DescribeNetworkInterfaces
               - ec2:DescribeElasticGpus
+              - ec2:DescribeVolumes
               - ec2:DescribeSpotInstanceRequests
+              - elasticfilesystem:DescribeTags
+              - kms:DescribeKey
+              - tag:GetResources
+              - ec2:CopyImage
+              - ec2:CreateImage
+              - ec2:DeregisterImage
             Resource: '*'
+
           - Effect: Allow
             Action:
-              - backup:DescribeBackupVault
               - backup:CopyIntoBackupVault
-            Resource: arn:aws:backup:*:*:backup-vault:*
+              - backup:DescribeBackupVault
+            Resource: !Sub "arn:${AWS::Partition}:backup:${AWS::Region}:${AWS::AccountId}:backup-vault/*"
+
           - Action:
               - elasticfilesystem:Backup
-              - elasticfilesystem:DescribeTags
-            Resource: arn:aws:elasticfilesystem:*:*:file-system/*
+            Resource: !Sub "arn:${AWS::Partition}:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
             Effect: Allow
-          - Effect: Allow
-            Action:
-              - ec2:CreateSnapshot
-              - ec2:DeleteSnapshot
-              - ec2:DescribeVolumes
-              - ec2:DescribeSnapshots
-            Resource:
-              - arn:aws:ec2:*::snapshot/*
-              - arn:aws:ec2:*:*:volume/*
-          - Action: kms:DescribeKey
-            Effect: Allow
-            Resource: '*'
+
           - Action: kms:CreateGrant
             Effect: Allow
             Resource: '*'
             Condition:
               Bool:
                 kms:GrantIsForAWSResource: 'true'
+
           - Action:
               - kms:GenerateDataKeyWithoutPlaintext
             Effect: Allow
-            Resource: arn:aws:kms:*:*:key/*
+            Resource: !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*"
             Condition:
               StringLike:
                 kms:ViaService:
                   - ec2.*.amazonaws.com
-          - Action:
-              - tag:GetResources
-            Resource: '*'
-            Effect: Allow
 
       Roles:
         - !Ref SOCABackupRole
 
   AWSBackupServiceRolePolicyForRestores:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: "ReadOnly API commands or only supports wildcard resources"
+
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: AWSBackupServiceRolePolicyForRestores
@@ -366,40 +367,35 @@ Resources:
             Action:
               - ec2:CreateVolume
               - ec2:DeleteVolume
+              - ec2:RunInstances
+              - ec2:TerminateInstances
             Resource:
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:subnet/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:key-pair/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:instance/*"
               - !Sub "arn:${AWS::Partition}:ec2:*::snapshot/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:launch-template/*"
               - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:security-group/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:placement-group/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:network-interface/*"
+              - !Sub "arn:${AWS::Partition}:ec2:*::image/*"
           - Effect: Allow
             Action:
               - ec2:DescribeSnapshots
               - ec2:DescribeVolumes
+              - elasticfilesystem:DescribeFilesystems
+              - kms:DescribeKey
+              - elasticfilesystem:CreateFilesystem
+              - iam:PassRole
             Resource: '*'
-          - Effect: Allow
-            Action:
-              - storagegateway:DeleteVolume
-              - storagegateway:DescribeCachediSCSIVolumes
-              - storagegateway:DescribeStorediSCSIVolumes
-            Resource: !Sub "arn:${AWS::Partition}:storagegateway:${AWS::Region}:${AWS::AccountId}:gateway/*/volume/*"
-          - Effect: Allow
-            Action:
-              - storagegateway:DescribeGatewayInformation
-              - storagegateway:CreateStorediSCSIVolume
-              - storagegateway:CreateCachediSCSIVolume
-            Resource: !Sub "arn:${AWS::Partition}:storagegateway:${AWS::Region}:${AWS::AccountId}:gateway/*"
-          - Effect: Allow
-            Action:
-              - storagegateway:ListVolumes
-            Resource: !Sub "arn:${AWS::Partition}:storagegateway:${AWS::Region}:${AWS::AccountId}:*"
+
           - Effect: Allow
             Action:
               - elasticfilesystem:Restore
-              - elasticfilesystem:CreateFilesystem
-              - elasticfilesystem:DescribeFilesystems
               - elasticfilesystem:DeleteFilesystem
-            Resource: !Join [ "", [ "arn:", !Ref "AWS::Partition", ":fsx:", !Ref "AWS::Region", ":", !Ref  "AWS::AccountId", ":file-system/*"] ]
-          - Action: kms:DescribeKey
-            Effect: Allow
-            Resource: '*'
+            Resource: !Sub "arn:${AWS::Partition}:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
+
           - Action:
               - kms:Decrypt
               - kms:Encrypt
@@ -413,27 +409,13 @@ Resources:
                 kms:ViaService:
                   - ec2.*.amazonaws.com
                   - elasticfilesystem.*.amazonaws.com
+
           - Action: kms:CreateGrant
             Effect: Allow
             Resource: '*'
             Condition:
               Bool:
                 kms:GrantIsForAWSResource: 'true'
-          - Action:
-              - ec2:RunInstances
-            Effect: Allow
-            Resource: '*'
-            Condition:
-              "ForAllValues:ArnEqualsIfExists":
-                "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
-
-          - Action:
-              - ec2:TerminateInstances
-            Effect: Allow
-            Resource: arn:aws:ec2:*:*:instance/*
-            Condition:
-              "ForAllValues:ArnEqualsIfExists":
-                "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
       Roles:
         - !Ref SOCABackupRole
 
@@ -443,9 +425,7 @@ Resources:
     Type: AWS::Backup::BackupVault
     Properties:
       BackupVaultName: !Sub Vault-${ClusterId}
-      BackupVaultTags: {
-        "soca:ClusterId": !Ref ClusterId
-      }
+      BackupVaultTags: { "soca:ClusterId": !Ref ClusterId }
 
   SOCABackupPlan:
     DependsOn: SOCABackupVault
@@ -457,17 +437,13 @@ Resources:
           -
             Lifecycle:
               DeleteAfterDays: 7
-            RecoveryPointTags: {
-              "soca:ClusterId": !Ref ClusterId
-            }
+            RecoveryPointTags: { "soca:ClusterId": !Ref ClusterId }
             RuleName: "SOCADailyBackup"
             ScheduleExpression: "cron(0 5 * * ? *)" # 5 AM UTC Adjust as needed
             StartWindowMinutes: 60 # start backup within 60 minutes after @ScheduleExpression
             TargetBackupVault: !Ref SOCABackupVault
 
-      BackupPlanTags: {
-        "soca:ClusterId": !Ref ClusterId
-      }
+      BackupPlanTags: { "soca:ClusterId": !Ref ClusterId }
 
   SOCABackupSelection:
     DependsOn: SOCABackupPlan
