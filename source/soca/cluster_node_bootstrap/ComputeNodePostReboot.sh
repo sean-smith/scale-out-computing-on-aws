@@ -106,7 +106,7 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
     # Mount
     mount -a
 
-    # Make sure /fsx top level can be accessed by any user (ACL still apply at folder level)
+    # Make sure /fsx is accessible
     chmod -R 777 /fsx
 fi
 
@@ -119,6 +119,9 @@ then
             echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
         done
 fi
+
+#  Make Scratch Readable by everyone. ACL still applies at folder level
+chmod 777 /scratch
 
 # Post-Boot routine completed, starting PBS
 systemctl start pbs

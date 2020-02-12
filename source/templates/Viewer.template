@@ -169,9 +169,16 @@ Resources:
       ClusterId: !Sub ${ClusterId}
 
   HTTPSLoadBalancerListener:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W55
+            reason: "Using AWS recommended policy"
+
     DependsOn: RetrieveACMCertificateArn
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
+      SslPolicy: ELBSecurityPolicy-2016-08
       Certificates:
         - CertificateArn: !GetAtt RetrieveACMCertificateArn.ACMCertificateArn
       LoadBalancerArn: !Ref LoadBalancer
@@ -182,6 +189,11 @@ Resources:
           TargetGroupArn: !Ref TargetGroupSocaWebUI
 
   HTTPLoadBalancerListener:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W56
+            reason: "HTTP listener is just there to do HTTPS redirect"
     DependsOn: LoadBalancer
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:

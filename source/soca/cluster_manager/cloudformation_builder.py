@@ -70,18 +70,18 @@ if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
     then
         /usr/sbin/update-motd --disable
 fi
-echo export "SOCA_CONFIGURATION="''' + params['ClusterId'] + '''"" >> /etc/environment
-echo export "SOCA_BASE_OS="''' + params['BaseOS'] + '''"" >> /etc/environment
-echo export "SOCA_JOB_QUEUE="''' + params['JobQueue'] + '''"" >> /etc/environment
-echo export "SOCA_JOB_OWNER="''' + params['JobOwner'] + '''"" >> /etc/environment
-echo export "SOCA_JOB_NAME="''' + params['JobName'] + '''"" >> /etc/environment
-echo export "SOCA_JOB_PROJECT="''' + params['JobProject'] + '''"" >> /etc/environment
-echo export "SOCA_VERSION="''' + params['Version'] + '''"" >> /etc/environment
+echo export "SOCA_CONFIGURATION="''' + str(params['ClusterId']) + '''"" >> /etc/environment
+echo export "SOCA_BASE_OS="''' + str(params['BaseOS']) + '''"" >> /etc/environment
+echo export "SOCA_JOB_QUEUE="''' + str(params['JobQueue']) + '''"" >> /etc/environment
+echo export "SOCA_JOB_OWNER="''' + str(params['JobOwner']) + '''"" >> /etc/environment
+echo export "SOCA_JOB_NAME="''' + str(params['JobName']) + '''"" >> /etc/environment
+echo export "SOCA_JOB_PROJECT="''' + str(params['JobProject']) + '''"" >> /etc/environment
+echo export "SOCA_VERSION="''' + str(params['Version']) + '''"" >> /etc/environment
 echo export "SOCA_JOB_EFA="''' + str(params['Efa']).lower() + '''"" >> /etc/environment
-echo export "SOCA_JOB_ID="''' + params['JobId'] + '''"" >> /etc/environment
+echo export "SOCA_JOB_ID="''' + str(params['JobId']) + '''"" >> /etc/environment
 echo export "SOCA_SCRATCH_SIZE=''' + str(params['ScratchSize']) + '''" >> /etc/environment
-echo export "SOCA_INSTALL_BUCKET="''' + params['S3Bucket'] + '''"" >> /etc/environment
-echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + params['S3InstallFolder'] + '''"" >> /etc/environment
+echo export "SOCA_INSTALL_BUCKET="''' + str(params['S3Bucket']) + '''"" >> /etc/environment
+echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + str(params['S3InstallFolder']) + '''"" >> /etc/environment
 echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
 echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
 echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
@@ -161,7 +161,7 @@ cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
 
         # Begin Launch Template Resource
         lt = LaunchTemplate("NodeLaunchTemplate")
-        lt.LaunchTemplateName = params["ClusterId"] + "-" + params["JobId"]
+        lt.LaunchTemplateName = params["ClusterId"] + "-" + str(params["JobId"])
         lt.LaunchTemplateData = ltd
         t.add_resource(lt)
         # End Launch Template Resource
@@ -212,7 +212,7 @@ cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
                 _soca_StackId=Ref("AWS::StackName"),
                 _soca_JobOwner=params["JobOwner"],
                 _soca_JobProject=params["JobProject"],
-                _soca_KeepForever=params["KeepForever"],
+                _soca_KeepForever=str(params["KeepForever"]).lower(),
                 _soca_FSx="true",
                 _soca_ClusterId=params["ClusterId"],
             )
@@ -241,15 +241,15 @@ cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
             asg.PlacementGroup = Ref(pg)
 
         asg.Tags = Tags(
-            Name=params["ClusterId"]+"-compute-job-" + params["JobId"],
-            _soca_JobId=params["JobId"],
-            _soca_JobName=params["JobName"],
-            _soca_JobQueue=params["JobQueue"],
+            Name=str(params["ClusterId"])+"-compute-job-" + str(params["JobId"]),
+            _soca_JobId=str(params["JobId"]),
+            _soca_JobName=str(params["JobName"]),
+            _soca_JobQueue=str(params["JobQueue"]),
             _soca_StackId=Ref("AWS::StackName"),
-            _soca_JobOwner=params["JobOwner"],
-            _soca_JobProject=params["JobProject"],
-            _soca_KeepForever=params["KeepForever"],
-            _soca_ClusterId=params["ClusterId"],
+            _soca_JobOwner=str(params["JobOwner"]),
+            _soca_JobProject=str(params["JobProject"]),
+            _soca_KeepForever=str(params["KeepForever"]).lower(),
+            _soca_ClusterId=str(params["ClusterId"]),
             _soca_NodeType="soca-compute-node")
         t.add_resource(asg)
         # End AutoScalingGroup Resource

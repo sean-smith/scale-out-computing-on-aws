@@ -27,8 +27,8 @@ def can_launch_capacity(instance_type, count, image_id,subnet_id):
                 ImageId=image_id,
                 InstanceType=instance,
                 SubnetId=subnet_id,
-                MaxCount=count,
-                MinCount=count,
+                MaxCount=int(count),
+                MinCount=int(count),
                 DryRun=True)
 
         except Exception as e:
@@ -45,12 +45,16 @@ def check_config(**kwargs):
     for k, v in kwargs.items():
         if str(v).lower() in ['true', 'yes']:
             kwargs[k] = True
-        if str(v) in ['false', 'no']:
+        if str(v).lower() in ['false', 'no']:
             kwargs[k] = False
 
      ## Must convert true,True into bool() and false/False
     if kwargs['job_id'] is None and kwargs['keep_forever'] is None:
         error = return_message('--job_id or --keep_forever must be specified')
+
+    # Ensure jobId is not None when using keep_forever
+    if kwargs['job_id'] is None and kwargs['keep_forever'] is not None:
+        kwargs['job_id'] = kwargs['stack_uuid']
 
     # Ensure anonymous metric is either True or False.
     if kwargs['anonymous_metrics'] not in [True, False]:
@@ -123,6 +127,7 @@ def check_config(**kwargs):
         else:
             kwargs['core_count'] = 1
 
+
     # Validate Spot Allocation Strategy
     if kwargs['spot_allocation_strategy'] is not False:
         spot_allocation_strategy_allowed = ['lowest-price', 'capacity-optimized']
@@ -193,7 +198,7 @@ def main(**kwargs):
                                    'spot_price': False,
                                    'subnet_id': False,
                                    'scratch_iops': 0,
-
+                                   'stack_uuid': str(uuid.uuid4())
                                    }
 
         for k, v in optional_job_parameters.items():
@@ -201,7 +206,6 @@ def main(**kwargs):
                 kwargs[k] = v
 
         required_job_parameters = []
-
         # Validate Job parameters
         try:
             params = check_config(**kwargs)
@@ -216,9 +220,9 @@ def main(**kwargs):
 
         # Force Tag if they don't exist. DO NOT DELETE them or host won't be able to be registered by nodes_manager.py
         tags = params['tags']
+
         if params['keep_forever'] is True:
-            unique_id = str(uuid.uuid4())
-            cfn_stack_name = aligo_configuration['ClusterId'] + '-keepforever-' + params['queue'] + '-' + unique_id
+            cfn_stack_name = aligo_configuration['ClusterId'] + '-keepforever-' + params['queue'] + '-' + params['stack_uuid']
             tags['soca:KeepForever'] = 'true'
         else:
             cfn_stack_name = aligo_configuration['ClusterId'] + '-job-' + str(params['job_id'])
@@ -377,7 +381,7 @@ def main(**kwargs):
             },
             'StackUUID': {
                 'Key': None,
-                'Default': str(uuid.uuid4())
+                'Default': params['stack_uuid']
             },
             'SubnetId': {
                 'Key': 'subnet_id',
@@ -468,14 +472,14 @@ if __name__ == "__main__":
     parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
     parser.add_argument('--instance_ami', nargs='?', help="AMI to use")
     parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
-    parser.add_argument('--job_project', nargs='?', default=False,mhelp="Job Owner for which the capacity is being provisioned")
+    parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--placement_group', help="Enable or disable placement group")
-    parser.add_argument('--root_size', default=False, nargs='?', help="Size of Root partition in GB")
+    parser.add_argument('--root_size', default=10, nargs='?', help="Size of Root partition in GB")
     parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
-    parser.add_argument('--scratch_size', default=False, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--scratch_size', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--spot_allocation_count', default=False, nargs='?', help="When using mixed OD and SPOT, choose % of SPOT")
     parser.add_argument('--spot_allocation_strategy', default=False, nargs='?', help="lowest-cost or capacity-optimized")
-    parser.add_argument('--spot_price', nargs='?', help="Spot Price")
+    parser.add_argument('--spot_price', nargs='?', default=False, help="Spot Price")
     parser.add_argument('--keep_ebs', action='store_const', const=True, default=False, help="Do not delete EBS disk")
     parser.add_argument('--subnet_id', default=False, help='Launch capacity in a special subnet')
     parser.add_argument('--tags', nargs='?', help="Tags, format must be {'Key':'Value'}")

@@ -351,21 +351,43 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
 # Install Python required libraries
 # Source environment to reload path for Python3
 /apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION/bin/pip3 install awscli==1.16.151 \
-      boto3==1.9.141 \
-      pytz==2019.1 \
-      prettytable==0.7.2 \
-      python-ldap==3.2.0 \
-      cryptography==2.6.1 \
-      requests-aws4auth==0.9 \
-      elasticsearch==6.3.1 \
-      requests==2.6.0 \
-      flask==1.0.3 \
-      gunicorn==19.9.0 \
-      pyopenssl==19.0.0 \
-      flask_wtf==0.14.2 \
-      PyYAML==5.2 \
-      python-jose==3.1.0 \
-      troposphere==2.5.3
+    asn1crypto==1.3.0 \
+    boto3==1.9.141 \
+    botocore==1.12.141 \
+    cffi==1.14.0 \
+    cfn-flip==1.2.2 \
+    Click==7.0 \
+    colorama==0.3.9 \
+    cryptography==2.6.1 \
+    docutils==0.16 \
+    ecdsa==0.15 \
+    elasticsearch==6.3.1 \
+    Flask==1.0.3 \
+    Flask-WTF==0.14.3 \
+    gunicorn==19.9.0 \
+    itsdangerous==1.1.0 \
+    Jinja2==2.11.1 \
+    jmespath==0.9.4 \
+    MarkupSafe==1.1.1 \
+    prettytable==0.7.2 \
+    pyasn1==0.4.8 \
+    pyasn1-modules==0.2.8 \
+    pycparser==2.19 \
+    pyOpenSSL==19.0.0 \
+    python-dateutil==2.8.1 \
+    python-jose==3.1.0 \
+    python-ldap==3.2.0 \
+    pytz==2019.1 \
+    PyYAML==5.2 \
+    requests==2.6.0 \
+    requests-aws4auth==0.9 \
+    rsa==3.4.2 \
+    s3transfer==0.2.1 \
+    six==1.14.0 \
+    troposphere==2.5.3 \
+    urllib3==1.25.8 \
+    Werkzeug==1.0.0 \
+    WTForms==2.2.1
 
 # PBS hooks still run on python2 env, so some packages are required
 EASY_INSTALL=$(which easy_install-2.7)
