@@ -70,6 +70,9 @@ This will open a new window with additional information about this resource (eit
 
 This will open a regular EC2 launch instance or EFS wizard. Specify the parameters (VPC, Subnet, Security Group, IAM role ...) you want to use and click "Restore Backup"
 
+!!!info "Restore Role"
+    Make sure to use the `SOCA-Backup` IAM role created by SOCA during initial installation. If you want to use the default role created by AWS Backup, make sure to add `iam:PassRole` permission.
+    
 ### How to delete a backup ?
 
 Select your vault, choose which recovery point you want to remove under the "Backups" section then click "Delete".

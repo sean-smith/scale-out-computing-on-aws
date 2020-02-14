@@ -146,7 +146,7 @@ cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
                     DeleteOnTermination="false" if params["KeepEbs"] is True else "true",
                     Encrypted=True))
         ]
-        if params["ScratchSize"] > 0:
+        if int(params["ScratchSize"]) > 0:
             ltd.BlockDeviceMappings.append(
                 BlockDeviceMapping(
                     DeviceName="/dev/xvdbx",

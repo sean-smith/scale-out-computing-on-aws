@@ -110,8 +110,8 @@ Parameters:
     MinLength: 5
     MaxLength: 50
     AllowedPattern: "^[A-Za-z]+[a-zA-Z0-9@!#!+_^{}\\[\\]()]*$"
-    Description: "5 characters minimum. Must start with a letter. Special chars accepted: !#@!+_^{}[]()"
-    ConstraintDescription: "5 characters minimum. Must start with a letter. Special chars accepted: !#@!+_^{}[]()"
+    Description: "5 characters minimum. Must start with a letter. Special chars accepted: !#@+_^{}[]()"
+    ConstraintDescription: "5 characters minimum. Must start with a letter. Special chars accepted: !#@+_^{}[]()"
 
 Mappings:
   Send:

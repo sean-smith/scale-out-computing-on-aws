@@ -95,7 +95,7 @@ else
             for dev in ${VOLUME_LIST[@]} ; do dd if=/dev/zero of=$dev bs=1M count=1 ; done
             echo yes | mdadm --create -f --verbose --level=0 --raid-devices=$VOLUME_COUNT /dev/$DEVICE_NAME ${VOLUME_LIST[@]}
             mkfs -t ext4 /dev/$DEVICE_NAME
-            echo "/dev/md/0_0 /scratch ext4 defaults 0 0" >> /etc/fstab
+            echo "/dev/$DEVICE_NAME /scratch ext4 defaults 0 0" >> /etc/fstab
         else
             echo "All volumes detected already have a partition or mount point and can't be used as scratch devices"
 	    fi
@@ -233,7 +233,7 @@ INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-t
 
 # If GPU instance, disable NOUVEAU drivers before installing DCV as this require a reboot
 # Rest of the DCV configuration is managed by ComputeNodeInstallDCV.sh
-if [[ "$INSTANCE_TYPE" == "g2" || "$INSTANCE_TYPE" == "g3" ]]
+if [[ "$INSTANCE_TYPE" == "g2" ]] || [[ "$INSTANCE_TYPE" == "g3" ]]
 then
     cat << EOF | sudo tee --append /etc/modprobe.d/blacklist.conf
 blacklist vga16fb

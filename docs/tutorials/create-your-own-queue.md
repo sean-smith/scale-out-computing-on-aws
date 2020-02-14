@@ -112,7 +112,7 @@ Run `python3 apps/soca/cluster_manager/add_nodes.py` and enable `--keep_forever`
 # Launch 1 c5.large always on
 python3 /apps/soca/<CLUSTER_ID>/cluster_manager/add_nodes.py --instance_type c5.large \
     --desired_capacity 1 \
-    --queue cpus \
+    --queue <queue_name> \
     --job_name instancealwayson \
     --job_owner mcrozes \
     --keep_forever

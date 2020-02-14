@@ -270,7 +270,7 @@ Resources:
             reason: "ReadOnly API commands or only supports wildcard resources"
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: AWSBackupServiceRolePolicyForBackup
+      PolicyName: SocaBackup
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -359,7 +359,7 @@ Resources:
 
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: AWSBackupServiceRolePolicyForRestores
+      PolicyName: SocaBackupRestore
       PolicyDocument:
         Version: '2012-10-17'
         Statement:

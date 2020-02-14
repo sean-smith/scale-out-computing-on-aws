@@ -470,7 +470,7 @@ if __name__ == "__main__":
     parser.add_argument('--fsx_lustre_bucket', default=False, help="Specify s3 bucket to mount for FSx")
     parser.add_argument('--fsx_lustre_dns', default=False, help="Mount existing FSx by providing the DNS")
     parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
-    parser.add_argument('--instance_ami', nargs='?', help="AMI to use")
+    parser.add_argument('--instance_ami', required=True, nargs='?', help="AMI to use")
     parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--placement_group', help="Enable or disable placement group")

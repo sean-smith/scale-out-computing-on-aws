@@ -47,7 +47,7 @@ DCVGLADMIN=$(which dcvgladmin)
 
 # Uninstall dcv-gl if not GPU instances
 # Note: NVIDIA-CUDA drivers must be installed first
-if [[ "$INSTANCE_TYPE" != "g2" || "$INSTANCE_TYPE" != "g3"  ]]
+if [[ "$INSTANCE_TYPE" != "g2" ]] || [[ "$INSTANCE_TYPE" != "g3"  ]]
 then
     $DCVGLADMIN disable
 fi
@@ -90,7 +90,7 @@ systemctl stop firewalld
 systemctl disable firewalld
 
 # Final reboot is needed to update GPU drivers if running on G2/G3
-if [[ "$INSTANCE_TYPE" == "g2" && "$INSTANCE_TYPE" == "g3"  ]]
+if [[ "$INSTANCE_TYPE" == "g2" ]] || [[ "$INSTANCE_TYPE" == "g3"  ]]
 then
     echo "@reboot $DCVGLADMIN enable >> /root/enable_dcvgladmin.log 2>&1" | crontab -
     reboot

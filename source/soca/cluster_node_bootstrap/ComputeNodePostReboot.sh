@@ -107,7 +107,7 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
     mount -a
 
     # Make sure /fsx is accessible
-    chmod -R 777 /fsx
+    chmod 777 /fsx
 fi
 
 # Disable HyperThreading
