@@ -54,6 +54,7 @@ def main(**params):
         asg_lt = asg_LaunchTemplate()
         ltd = LaunchTemplateData("NodeLaunchTemplateData")
         mip = MixedInstancesPolicy()
+        stack_name = Ref("AWS::StackName")
 
         # Begin LaunchTemplateData
         UserData = '''#!/bin/bash -xe
@@ -205,16 +206,16 @@ cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
             fsx_lustre.LustreConfiguration = fsx_lustre_configuration
             fsx_lustre.Tags = base_Tags(
                 # False disable PropagateAtLaunch
-                Name=params["ClusterId"]+"-compute-job-" + params["JobId"],
-                _soca_JobId=params["JobId"],
-                _soca_JobName=params["JobName"],
-                _soca_JobQueue=params["JobQueue"],
-                _soca_StackId=Ref("AWS::StackName"),
-                _soca_JobOwner=params["JobOwner"],
-                _soca_JobProject=params["JobProject"],
+                Name=str(params["ClusterId"]+"-compute-job-" + params["JobId"]),
+                _soca_JobId=str(params["JobId"]),
+                _soca_JobName=str(params["JobName"]),
+                _soca_JobQueue=str(params["JobQueue"]),
+                _soca_StackId=stack_name,
+                _soca_JobOwner=str(params["JobOwner"]),
+                _soca_JobProject=str(params["JobProject"]),
                 _soca_KeepForever=str(params["KeepForever"]).lower(),
                 _soca_FSx="true",
-                _soca_ClusterId=params["ClusterId"],
+                _soca_ClusterId=str(params["ClusterId"]),
             )
             t.add_resource(fsx_lustre)
         # End FSx For Lustre
@@ -245,7 +246,7 @@ cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
             _soca_JobId=str(params["JobId"]),
             _soca_JobName=str(params["JobName"]),
             _soca_JobQueue=str(params["JobQueue"]),
-            _soca_StackId=Ref("AWS::StackName"),
+            _soca_StackId=stack_name,
             _soca_JobOwner=str(params["JobOwner"]),
             _soca_JobProject=str(params["JobProject"]),
             _soca_KeepForever=str(params["KeepForever"]).lower(),

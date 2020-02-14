@@ -253,7 +253,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Principal:
@@ -262,7 +262,8 @@ Resources:
             Action:
               - sts:AssumeRole
 
-  AWSBackupServiceRolePolicyForBackup:
+  SocaBackupIamRole:
+    DependsOn: SOCABackupRole
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -272,7 +273,7 @@ Resources:
     Properties:
       PolicyName: SocaBackup
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
 
           - Effect: Allow
@@ -350,7 +351,8 @@ Resources:
       Roles:
         - !Ref SOCABackupRole
 
-  AWSBackupServiceRolePolicyForRestores:
+  SOCABackupRestoreIamRole:
+    DependsOn: SOCABackupRole
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -361,7 +363,7 @@ Resources:
     Properties:
       PolicyName: SocaBackupRestore
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action:

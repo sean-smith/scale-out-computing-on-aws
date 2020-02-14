@@ -87,13 +87,13 @@ def check_config(**kwargs):
             try:
                 s3.get_bucket_acl(Bucket=kwargs['fsx_lustre_bucket'].split('s3://')[-1])
             except exceptions.ClientError:
-                error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre_bucket'] + '). Refer to the documentation to update IAM policy')
+                error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre_bucket'] + '). Refer to the documentation to update IAM policy.')
 
             if kwargs['fsx_lustre_size'] is False:
                 kwargs['fsx_lustre_size'] = 1200
             else:
                 fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
-                if kwargs['fsx_lustre_size'] not in fsx_lustre_capacity_allowed:
+                if int(kwargs['fsx_lustre_size']) not in fsx_lustre_capacity_allowed:
                     error = return_message('fsx_lustre_size must be: ' + ','.join(str(x) for x in fsx_lustre_capacity_allowed))
     else:
         # Prevent case where fsx_lustre_dns and fsx_lustre_bucket are both configured.
