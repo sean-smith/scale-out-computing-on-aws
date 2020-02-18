@@ -356,6 +356,11 @@ echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
 EASY_INSTALL=$(which easy_install-2.7)
 $EASY_INSTALL yaml python-ldap boto3
 
+# Configure NTP
+yum remove -y ntp
+yum install -y chrony
+systemctl enable chronyd
+
 # Reboot to ensure SELINUX is disabled
 # Note: Upon reboot, SchedulerPostReboot.sh script will be executed and will finalize scheduler configuration
 reboot

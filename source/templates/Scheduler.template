@@ -141,7 +141,7 @@ Resources:
 
             # Tag Network Adapter for the Scheduler
             ENI_IDS=$(aws ec2 describe-network-interfaces --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query "NetworkInterfaces[*].[NetworkInterfaceId]" --out text | tr "\n" " ")
-            $AWS ec2 create-tags --resources $ENI_IDS --region $AWS_REGION --tags Key=Name,Value="${ClusterId} Network Adapter" "Key=soca:ClusterId,Value=${ClusterId}"
+            $AWS ec2 create-tags --resources $ENI_IDS --region $AWS_REGION --tags Key=Name,Value="${ClusterId} Scheduler Network Adapter" "Key=soca:ClusterId,Value=${ClusterId}"
 
             echo "@reboot /bin/aws s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/SchedulerPostReboot.sh /root && /bin/bash /root/SchedulerPostReboot.sh ${S3Bucket} ${S3InstallFolder} ${UserName} '${UserPassword}' >> /root/PostRebootConfig.log 2>&1" | crontab -
             AWS=$(which aws)

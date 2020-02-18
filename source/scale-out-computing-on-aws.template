@@ -223,7 +223,7 @@ Resources:
           - Effect: Allow
             Principal:
               Service:
-                - !Sub "lambda.${AWS::URLSuffix}"
+                - lambda.amazonaws.com
             Action:
               - sts:AssumeRole
       Policies:

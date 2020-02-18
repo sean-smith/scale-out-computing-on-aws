@@ -440,14 +440,15 @@ Resources:
             Lifecycle:
               DeleteAfterDays: 7
             RecoveryPointTags: { "soca:ClusterId": !Ref ClusterId,
-                                 "Name": !Sub "${ClusterId}-Backup"}
+                                 "Name": !Sub "${ClusterId}-Backup"
+            }
             RuleName: "SOCADailyBackup"
             ScheduleExpression: "cron(0 5 * * ? *)" # 5 AM UTC Adjust as needed
             StartWindowMinutes: 60 # start backup within 60 minutes after @ScheduleExpression
             TargetBackupVault: !Ref SOCABackupVault
 
-      BackupPlanTags: { "soca:ClusterId": !Ref ClusterId,
-                         }
+      BackupPlanTags: { "soca:ClusterId": !Ref ClusterId
+      }
 
   SOCABackupSelection:
     DependsOn: SOCABackupPlan

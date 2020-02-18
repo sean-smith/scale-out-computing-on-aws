@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2020-02-01
+## [2.0.0] - 2020-02-01
 - Added support for MixedInstancePolicy and InstanceDistribution
 - Added support for non-EBS optimized instances such as t2
 - Added integration for AWS Session Manager
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web UI now display the reason when a DCV job can't be submitted
 - Scheduler Root EBS is now tagged with cluster ID 
 - Scheduler Network Interface is now tagged with cluster ID 
+- Scheduler and Compute hosts are now sync with Chrony
 
 ## [1.0.0] - 2019-11-20
 - Release Candidate
