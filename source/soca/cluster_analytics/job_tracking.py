@@ -162,12 +162,14 @@ if __name__ == "__main__":
     json_output = []
     output = {}
 
-    # days_to_check = 1 --> Check today & yesterday logs. You can adjust this as needed
-    days_to_check = 1
-    date_to_check = [(datetime.datetime.now() - datetime.timedelta(days_to_check)).strftime('%Y%m%d'),
-                     datetime.datetime.now().strftime('%Y%m%d')]
+    # DAY_TO_INGEST = 2 --> Check today & yesterday logs. You can adjust this as needed
+    DAY_TO_INGEST = 2
+    FROM = datetime.datetime.now()
+    date_to_check = [FROM - datetime.timedelta(days=x) for x in range(DAY_TO_INGEST)]
+
     for day in date_to_check:
-        response = read_file(accounting_log_path+day)
+        scheduler_log_format = day.strftime('%Y%m%d')
+        response = read_file(accounting_log_path+scheduler_log_format)
         try:
             for line in response.splitlines():
                 try:

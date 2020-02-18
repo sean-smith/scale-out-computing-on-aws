@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SOCA libraries are now installed under /apps/soca/<CLUSTER_ID> location to support multi SOCA environments 
 - SOCA now prevent jobs to be submitted if .yaml configuration files are malformed
 - Web UI now display the reason when a DCV job can't be submitted
+- Scheduler Root EBS is now tagged with cluster ID 
+- Scheduler Network Interface is now tagged with cluster ID 
 
 ## [1.0.0] - 2019-11-20
 - Release Candidate

@@ -215,10 +215,12 @@ Resources:
                   - ec2:CreateTags
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:network-interface/*"
 
               - Effect: Allow
                 Action:
                   - ec2:DescribeVolumes
+                  - ec2:DescribeNetworkInterfaces
                   - fsx:DescribeFileSystems # For FSX
                   - tag:GetResources # For FSX detection
                   - tag:GetTagValues # For FSX detection
@@ -273,10 +275,12 @@ Resources:
                   - ec2:DescribeInstanceAttribute
                   - ec2:DescribeSpotInstanceRequests
                   - ec2:DescribeVpcClassicLink
+                  - ec2:DescribeVolumes
                   - ec2:DescribePlacementGroups
                   - ec2:DescribeKeyPairs
                   - ec2:DescribeLaunchTemplates
                   - ec2:DescribeLaunchTemplateVersions
+                  - ec2:DescribeNetworkInterfaces
                   - fsx:DescribeFileSystems
                   - autoscaling:DescribeAutoScalingGroups
                   - autoscaling:DescribeScalingActivities
@@ -301,6 +305,13 @@ Resources:
                 Condition:
                   StringLikeIfExists:
                     "autoscaling:LaunchConfigurationName": !Sub "${ClusterId}*"
+
+              - Effect: Allow
+                Action:
+                  - ec2:CreateTags
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:volume/*"
+                  - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:network-interface/*"
 
               - Effect: Allow
                 Action:
