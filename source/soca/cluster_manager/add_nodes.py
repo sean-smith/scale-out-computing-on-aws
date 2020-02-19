@@ -463,7 +463,7 @@ if __name__ == "__main__":
     # Const
     parser.add_argument('--efa_support', action='store_const', const=True, help="Support for EFA")
     parser.add_argument('--ht_support', action='store_const', const=True, help="Enable Hyper Threading")
-    parser.add_argument('--keep_forever', action='store_const', const=True, help="Wheter or not capacity will stay forever")
+    parser.add_argument('--keep_forever', action='store_const', const=True, help="Whether or not capacity will stay forever")
 
     # Optional
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
@@ -477,7 +477,7 @@ if __name__ == "__main__":
     parser.add_argument('--root_size', default=10, nargs='?', help="Size of Root partition in GB")
     parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--scratch_size', default=0, nargs='?', help="Size of /scratch in GB")
-    parser.add_argument('--spot_allocation_count', default=False, nargs='?', help="When using mixed OD and SPOT, choose % of SPOT")
+    parser.add_argument('--spot_allocation_count', default=False, nargs='?', help="When using mixed OD and SPOT, choose %% of SPOT")
     parser.add_argument('--spot_allocation_strategy', default=False, nargs='?', help="lowest-cost or capacity-optimized")
     parser.add_argument('--spot_price', nargs='?', default=False, help="Spot Price")
     parser.add_argument('--keep_ebs', action='store_const', const=True, default=False, help="Do not delete EBS disk")
