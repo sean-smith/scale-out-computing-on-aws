@@ -97,7 +97,14 @@ Below is a list of parameters you can specify when you request your simulation t
 - Description: Reference to a subnet ID to use
 - Default: If not specified, value default to one of the three private subnets created during installation
 - Examples:
-    - `-l subnet_id=sub-abcde123`
+    - `-l subnet_id=sub-123`: Will provision capacity on sub-123 subnet
+    - `-l subnet_id=sub-123+sub-456+sub-789`: + separated list of private subnets. Specifying more than 1 subnet is useful when requesting large number of instances
+
+!!!note 
+    If you specify more than 1 subnet and have `placement_group` set to True, SOCA will automatically provision capacity and placement group on the first subnet from the list
+
+!!!note 
+    Capacity provisioning is limited to private subnets.
 
 ## Storage
 
@@ -204,7 +211,7 @@ Below is a list of parameters you can specify when you request your simulation t
 
 - Description: Disable placement group
 - Allowed Value: `yes` `true` (case insensitive) 
-- Example: `-l placement_group=Frue`: Instances will not use placement groups
+- Example: `-l placement_group=True`: Instances will not use placement groups
 
 !!!info
     - Placement group is enabled by default as long as the number of nodes provisioned is greated than 1

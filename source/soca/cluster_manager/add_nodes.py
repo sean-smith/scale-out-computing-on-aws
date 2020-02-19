@@ -43,9 +43,9 @@ def check_config(**kwargs):
     error = False
     # Convert str to bool when possible
     for k, v in kwargs.items():
-        if str(v).lower() in ['true', 'yes']:
+        if str(v).lower() in ['true', 'yes', 'y', 'on']:
             kwargs[k] = True
-        if str(v).lower() in ['false', 'no']:
+        if str(v).lower() in ['false', 'no', 'n', 'off']:
             kwargs[k] = False
 
      ## Must convert true,True into bool() and false/False
@@ -104,19 +104,43 @@ def check_config(**kwargs):
                             aligo_configuration['PrivateSubnet3']]
 
     if kwargs['subnet_id'] is False:
-        kwargs['subnet_id'] = random.choice(soca_private_subnets)
+        kwargs['subnet_id'] = [random.choice(soca_private_subnets)]
     else:
-        if kwargs['subnet_id'] not in soca_private_subnets:
-            error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
+        kwargs['subnet_id'] = kwargs['subnet_id'].split('+')
+        for subnet in kwargs['subnet_id']:
+            if subnet not in soca_private_subnets:
+                error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
+
+    # Handle placement group logic
+    if 'placement_group' not in kwargs.keys():
+        pg_user_defined = False
+        # Default PG to True if not present
+        kwargs['placement_group'] = True
+    else:
+        pg_user_defined = True
+        if kwargs['placement_group'] not in [True, False]:
+            kwargs['placement_group'] = False
+            error = return_message('Incorrect placement_group. Must be True or False')
 
     if int(kwargs['desired_capacity']) > 1:
-        if 'placement_group' not in kwargs.keys():
-            kwargs['placement_group'] = True
+        if kwargs['subnet_id'].__len__() > 1 and pg_user_defined is True and kwargs['placement_group'] is True:
+            # more than 1 subnet specified but placement group is also configured, default to the first subnet and enable PG
+            kwargs['subnet_id'] = [kwargs['subnet_id'][0]]
         else:
-            if kwargs['placement_group'] is not False:
-                kwargs['placement_group'] = True
+            if kwargs['subnet_id'].__len__() > 1 and pg_user_defined is False:
+                kwargs['placement_group'] = False
     else:
-        kwargs['placement_group'] = False
+        if int(kwargs['desired_capacity']) == 1:
+            kwargs['placement_group'] = False
+        else:
+            # default to user specified value
+            pass
+
+
+    if kwargs['subnet_id'].__len__() > 1:
+        if kwargs['placement_group'] is True:
+            # if placement group is True and more than 1 subnet is defined, force default to 1 subnet
+            kwargs['subnet_id'] = [kwargs['subnet_id'][0]]
 
     cpus_count_pattern = re.search(r'[.](\d+)', kwargs['instance_type'])
     if cpus_count_pattern:
@@ -141,6 +165,10 @@ def check_config(**kwargs):
                 error = return_message('spot_allocation_count (' + str(kwargs['spot_allocation_count']) + ') must be an lower or equal to the number of nodes provisioned for this simulation (' + str(kwargs['desired_capacity']) + ')')
         else:
             error = return_message('spot_allocation_count (' + str(kwargs['spot_allocation_count']) + ') must be an integer')
+
+    # Validate ht_support
+    if kwargs['ht_support'] not in [True, False]:
+        error = return_message('ht_support (' + str(kwargs['ht_support']) + ') must be either True or False')
 
     # Validate Base OS
     if kwargs['base_os'] is not False:
@@ -389,7 +417,7 @@ def main(**kwargs):
             },
             'ThreadsPerCore': {
                 'Key': 'ht_support',
-                'Default': 1
+                'Default': False
             },
             'Version': {
                 'Key': None,
@@ -424,7 +452,7 @@ def main(**kwargs):
         can_launch = can_launch_capacity(cfn_stack_parameters['InstanceType'],
                                          cfn_stack_parameters['DesiredCapacity'],
                                          cfn_stack_parameters['ImageId'],
-                                         cfn_stack_parameters['SubnetId'])
+                                         cfn_stack_parameters['SubnetId'][0])
 
         if can_launch is True:
             try:
