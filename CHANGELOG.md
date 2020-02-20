@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scheduler Root EBS is now tagged with cluster ID 
 - Scheduler Network Interface is now tagged with cluster ID 
 - Scheduler and Compute hosts are now sync with Chrony
+- Customers can now provision large number of EC2 hosts accross multiple subnets using a single API call 
+- Smart detection of Placement Group requirement when using more than 1 subnet
+- Added retry mechanism for some AWS API calls which throttled when provisioning > 1000 nodes in a single API call
 
 ## [1.0.0] - 2019-11-20
 - Release Candidate

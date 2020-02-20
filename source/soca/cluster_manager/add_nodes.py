@@ -489,9 +489,9 @@ if __name__ == "__main__":
     parser.add_argument('--queue', nargs='?', required=True, help="Queue to map the capacity")
 
     # Const
-    parser.add_argument('--efa_support', action='store_const', const=True, help="Support for EFA")
-    parser.add_argument('--ht_support', action='store_const', const=True, help="Enable Hyper Threading")
-    parser.add_argument('--keep_forever', action='store_const', const=True, help="Whether or not capacity will stay forever")
+    parser.add_argument('--efa_support', help="Support for EFA")
+    parser.add_argument('--ht_support', help="Enable Hyper Threading")
+    parser.add_argument('--keep_forever', help="Whether or not capacity will stay forever")
 
     # Optional
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
