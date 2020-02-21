@@ -466,7 +466,6 @@ Resources:
             Action:
               - sts:AssumeRole
 
-      RoleName: !Sub ${ClusterId}-LambdaACMIamRole
       Policies:
         - PolicyName: !Sub ${ClusterId}-LambdaACMIamRole-Policy
           PolicyDocument:
