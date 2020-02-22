@@ -3,22 +3,16 @@
 source /etc/environment
 source /root/config.cfg
 AWS=$(which aws)
-echo "BEGIN"  >> /root/ComputeNodeUserCustomization.log 2>&1
+echo "BEGIN PostReboot setup"
 
 # Make sure system is clean and PBS is stopped
 crontab -r
 systemctl stop pbs
 
-# Begin USER Customization
-cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh /root
-/bin/bash /root/ComputeNodeUserCustomization.sh >> /root/ComputeNodeUserCustomization.log 2>&1
-# End USER Customization
-
 # Begin DCV Customization
 if [[ "$SOCA_JOB_QUEUE" == "desktop" ]]; then
     echo "Installing DCV"
-    cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeInstallDCV.sh /root
-    /bin/bash /root/ComputeNodeInstallDCV.sh >> /root/ComputeNodeInstallDCV.log 2>&1
+    /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeInstallDCV.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeInstallDCV.log 2>&1
     sleep 30
 fi
 # End DCV Customization
@@ -141,6 +135,11 @@ while [[ $? -ne 0 ]] && [[ $LOOP_ENI_TAG -lt 5 ]]
     ((LOOP_ENI_TAG++))
     $AWS ec2 create-tags --resources $ENI_IDS --region $AWS_REGION --tags Key=Name,Value="ENI for $SOCA_JOB_ID" Key=soca:JobOwner,Value="$SOCA_JOB_OWNER" Key=soca:JobProject,Value="$SOCA_JOB_PROJECT" Key=Name,Value="soca-job-$SOCA_JOB_ID"  Key=soca:JobId,Value="$SOCA_JOB_ID" Key=soca:JobQueue,Value="$SOCA_JOB_QUEUE" Key=soca:ClusterId,Value="$SOCA_CONFIGURATION"
 done
+
+
+# Begin USER Customization
+/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $$SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1
+# End USER Customization
 
 # Post-Boot routine completed, starting PBS
 systemctl start pbs

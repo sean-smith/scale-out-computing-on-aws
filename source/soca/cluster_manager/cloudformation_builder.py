@@ -87,8 +87,10 @@ echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + str(params['S3InstallFolder']) + 
 echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
 echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
 echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
+echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(params['ClusterId']) + '''/cluster_node_bootstrap/logs/''' + str(params['JobId']) + '''/$(hostname -s)"" >> /etc/environment
 echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
 echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
+
            
 source /etc/environment
 AWS=$(which aws)
@@ -137,11 +139,11 @@ dumpdir /var/run/chrony
 """ > /etc/chrony.conf
 systemctl enable chronyd
 
-cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodePostReboot.sh /root
-echo "@reboot /bin/bash /root/ComputeNodePostReboot.sh >> /root/ComputeNodePostInstall.log 2>&1" | crontab -
+# Prepare  Log folder
+mkdir -p $SOCA_HOST_SYSTEM_LOG
+echo "@reboot /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodePostReboot.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostInstall.log 2>&1" | crontab -
 $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-cp /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh /root
-/bin/bash /root/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> /root/ComputeNode.sh.log 2>&1'''
+/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> $SOCA_HOST_SYSTEM_LOG/ComputeNode.sh.log 2>&1'''
 
         ltd.EbsOptimized = True
         for instance in instances_list:
