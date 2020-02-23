@@ -1,0 +1,4 @@
+TLS_CACERTDIR /etc/openldap/cacerts
+SASL_NOCANON    on
+URI ldap://{{ SCHEDULER_HOSTNAME }}
+BASE {{ LDAP_BASE }}

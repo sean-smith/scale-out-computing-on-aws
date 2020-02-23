@@ -1,0 +1,37 @@
+# SOCA - Compute Node Bootstrap
+# Configure Compute Node required packages and libraries
+
+- hosts: localhost
+  tasks:
+    - name: Install Centos7/Amazon Linux packages
+      shell: |
+        source /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/config.cfg
+        yum install -y $(echo ${SYSTEM_PKGS[*]})
+        yum install -y $(echo ${SCHEDULER_PKGS[*]})
+        yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})
+        yum install -y $(echo ${SSSD_PKGS[*]})
+      args:
+        executable: /bin/bash
+      when: (lookup("env", "SOCA_BASE_OS") == "centos7") or
+            (lookup("env", "SOCA_BASE_OS") == "amazonlinux2")
+
+    - name: Install RHEL7 Linux packages
+      shell: |
+        source /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/config.cfg
+        yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
+        yum install -y $(echo ${SCHEDULER_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
+        yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})
+        yum install -y $(echo ${SSSD_PKGS[*]})
+      args:
+       executable: /bin/bash
+      when: (lookup("env", "SOCA_BASE_OS") == "rhel7")
+
+    - name: List installed packages (RHEL/Centos/ALI)
+      shell: rpm -qa
+      register: list_installed_pkgs
+      when: (lookup("env", "SOCA_BASE_OS") == "centos7") or
+            (lookup("env", "SOCA_BASE_OS") == "amazonlinux2") or
+            (lookup("env", "SOCA_BASE_OS") == "rhel7")
+
+    - debug:
+        msg: "{{ list_installed_pkgs.stdout_lines }}"

@@ -112,6 +112,7 @@ Resources:
               $EASY_INSTALL pip
               PIP=$(which pip2.7)
               $PIP install awscli
+              yum install -y nfs-utils # enforce install of nfs-utils
             fi
 
             # Disable automatic motd update if using ALI
@@ -143,12 +144,21 @@ Resources:
             ENI_IDS=$(aws ec2 describe-network-interfaces --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query "NetworkInterfaces[*].[NetworkInterfaceId]" --out text | tr "\n" " ")
             $AWS ec2 create-tags --resources $ENI_IDS --region $AWS_REGION --tags Key=Name,Value="${ClusterId} Scheduler Network Adapter" "Key=soca:ClusterId,Value=${ClusterId}"
 
+            # Mount EFS
+            mkdir -p /apps
+            mkdir -p /data
+
+            echo "${EFSDataDns}:/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+            echo "${EFSAppsDns}:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+            mount -a
+            mkdir -p /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/
+
             echo "@reboot /bin/aws s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/SchedulerPostReboot.sh /root && /bin/bash /root/SchedulerPostReboot.sh ${S3Bucket} ${S3InstallFolder} ${UserName} '${UserPassword}' >> /root/PostRebootConfig.log 2>&1" | crontab -
             AWS=$(which aws)
-            $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/config.cfg /root/
+            $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/config.cfg /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/
             $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/requirements.txt /root/
             $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/Scheduler.sh /root/
-            /bin/bash /root/Scheduler.sh ${EFSDataDns} ${EFSAppsDns}
+            /bin/bash /root/Scheduler.sh
 
 
   EIPScheduler:

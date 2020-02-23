@@ -1,0 +1,22 @@
+# Playbook is called by ComputeNode.sh
+# Make sure to source /etc/environment and config.cfg before running ansible-playbook
+
+# Install required system package
+- import_playbook: tasks/system_packages.yml
+
+# Install and configure the scheduler
+- import_playbook: tasks/install_scheduler.yml
+
+# Install and configure LDAP
+- import_playbook: tasks/install_directory_service.yml
+
+# Install and configure SSSD
+- import_playbook: tasks/install_sssd.yml
+
+# Install and configure /scratch partition
+- import_playbook: tasks/configure_scratch.yml
+
+# Configure Host
+- import_playbook: tasks/configure_host.yml
+
+# Specify a Crontab to be executed post-reboot

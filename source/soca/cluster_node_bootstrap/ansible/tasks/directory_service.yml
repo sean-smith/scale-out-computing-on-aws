@@ -1,0 +1,44 @@
+# SOCA - Compute Node Bootstrap
+# Configure Directory Services
+
+- hosts: localhost
+  vars:
+    LDAP_BASE: "{{ lookup('env','LDAP_BASE') }}"
+    SCHEDULER_HOSTNAME:  "{{ lookup('env','SCHEDULER_HOSTNAME') }}"
+
+  tasks:
+    - name: Create /etc/sssd/sssd.conf
+      template:
+        src: ../templates/etc/sssd/sssd.conf.j2
+        dest: /etc/sssd/sssd.conf
+        mode: 600
+        owner: sssd
+        group: sssd
+        backup: true
+
+    - name: Create /etc/openldap/ldap.conf
+      template:
+        src: ../templates/etc/openldap/ldap.conf.j2
+        dest: /etc/openldap/ldap.conf
+        mode: 644
+        backup: true
+
+    - name: Start sssd
+      systemd:
+        name: sssd
+        enabled: yes
+
+    - name: Create /etc/nsswitch.conf
+      template:
+        src: ../templates/etc/nsswitch.conf.j2
+        dest: /etc/nsswitch.conf
+        mode: 644
+        backup: true
+
+    - name: Configure authconfig
+      shell: |
+        authconfig --disablesssd --disablesssdauth --disableldap --disableldapauth --disablekrb5 --disablekrb5kdcdns --disablekrb5realmdns --disablewinbind --disablewinbindauth --disablewinbindkrb5 --disableldaptls --disablerfc2307bis --updateall
+        sss_cache -E
+        authconfig --enablesssd --enablesssdauth --enableldap --enableldaptls --enableldapauth --ldapserver=ldap://{{SCHEDULER_HOSTNAME}} --ldapbasedn={{LDAP_BASE}} --enablelocauthorize --enablemkhomedir --enablecachecreds --updateall
+      args:
+        executable: /bin/bash

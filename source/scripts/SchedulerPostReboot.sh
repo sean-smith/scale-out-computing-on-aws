@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 source /etc/environment
-source /root/config.cfg
+source /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/config.cfg
 
 # First flush the current crontab to prevent this script to run on the next reboot
 crontab -r

@@ -1,0 +1,31 @@
+#
+# Make sure to source /etc/environment and config.cfg before running ansible-playbook
+#
+
+# Install SSM agent
+- import_playbook: ssm_agent.yml
+
+# Install required system package
+- import_playbook: system_packages.yml
+
+# Install and configure the scheduler
+- import_playbook: install_scheduler.yml
+
+# Install and configure LDAP
+- import_playbook: install_directory_service.yml
+
+# Install and configure SSSD
+- import_playbook: install_sssd.yml
+
+# Install and configure /scratch partition
+- import_playbook: configure_scratch.yml
+
+# Configure Host
+- import_playbook: configure_host.yml
+
+# Specify a Crontab to be executed post-reboot
+- name: Execute ComputeNodePostReboot.sh script
+  cron:
+    name: "Finalize configuration of the compute node"
+    special_time: reboot
+    job: "/bin/bash ComputeNodePostReboot.sh"
