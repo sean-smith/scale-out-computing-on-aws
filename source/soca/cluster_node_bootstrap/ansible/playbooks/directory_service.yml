@@ -24,6 +24,14 @@
         mode: 644
         backup: true
 
+    - name: Upload LDAP certificate
+      shell: |
+        echo | openssl s_client -connect {{ SCHEDULER_HOSTNAME | quote }}:389 -starttls ldap > /root/open_ssl_ldap
+        mkdir /etc/openldap/cacerts/
+        cat /root/open_ssl_ldap | openssl x509 > /etc/openldap/cacerts/openldap-server.pem
+      args:
+        executable: /bin/bash
+
     - name: Start sssd
       systemd:
         name: sssd

@@ -1,0 +1,38 @@
+# SOCA - Compute Node Bootstrap
+# Install EFA driver
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    SOCA_JOB_EFA: "{{ lookup('env','SOCA_JOB_EFA') }}"
+    EFA_URL: "{{ lookup('env','EFA_URL') }}"
+    EFA_TGZ: "{{ lookup('env','EFA_TGZ') }}"
+    EFA_HASH: "{{ lookup('env','EFA_HASH') }}"
+
+  tasks:
+    - name: Expected EFA Download URL
+      debug:
+        msg: "{{ EFA_URL }}"
+
+    - name: Expected EFA Checksum hash (md5)
+      debug:
+        msg: "{{ EFA_HASH }}"
+
+    - name: Download EFA installer
+      get_url:
+         url: "{{ EFA_URL }}"
+         dest: /root/
+         checksum: "md5:{{ EFA_HASH }}"
+
+    - name: Extract EFA installer
+      unarchive:
+        src: "/root/{{ EFA_TGZ }}"
+        dest: "/root/efa_installer"
+
+    - name: Compile and install PBSPro
+      shell: ./efa_installer.sh -y
+      args:
+        executable: /bin/bash
+        chdir: "/root/efa_installer"
+
+

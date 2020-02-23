@@ -16,6 +16,12 @@
         executable: /bin/bash
       register: pbs_version
 
+    - name: Generate unique id
+      shell: date +%s
+      args:
+        executable: /bin/bash
+      register: unique_id
+
     - name: Expected PBSPro Version
       debug:
         msg: "{{ pbs_version }}"
@@ -37,7 +43,7 @@
 
     - name: Create folder where installer will be extracted
       file:
-        path: /root/pbspro
+        path: "/root/pbspro{{ unique_id.stdout }}"
         state: directory
         mode: '0755'
       when: PBSPRO_VERSION != pbs_version.stdout
@@ -45,7 +51,7 @@
     - name: Extract PBSPro installer
       unarchive:
         src: "/root/{{ PBSPRO_TGZ }}"
-        dest: /root/pbspro
+        dest: "/root/pbspro{{ unique_id.stdout }}"
       when: PBSPRO_VERSION != pbs_version.stdout
 
     - name: Compile and install PBSPro
@@ -58,8 +64,25 @@
         chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
       args:
         executable: /bin/bash
-        chdir: "/root/pbspro/pbspro-{{ PBSPRO_VERSION }}"
+        chdir: "/root/pbspro{{ unique_id.stdout }}/pbspro-{{ PBSPRO_VERSION }}"
       when: PBSPRO_VERSION != pbs_version.stdout
 
-# to continue create a copy of /etc/pbs.conf
+    - name: Create /etc/pbs.conf (backup existing if needed)
+        template:
+          src: ../templates/etc/pbs.conf.j2
+          dest: /etc/pbs.conf
+          mode: 644
+          backup: true
+
+    - name: Create /var/spool/pbs/mom_priv/config (backup existing if needed)
+        template:
+          src: ../templates/var/spool/pbs/mom_priv/config.j2
+          dest: /var/spool/pbs/mom_priv/config
+          mode: 644
+          backup: true
+
+    - name: systemctl enable pbspro
+      systemd:
+        name: pbspro
+        enabled: yes
 
