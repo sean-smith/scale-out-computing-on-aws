@@ -1,12 +1,21 @@
 #!/bin/bash -xe
 
-source /etc/environment
-source /root/config.cfg
-
 if [ $# -lt 1 ]
   then
     exit 0
 fi
+
+set -a
+source /etc/environment
+source /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/config.cfg
+set +a
+export SCHEDULER_HOSTNAME=$1
+cd /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/ansible/
+ANSIBLE_PLAYBOOK=$(which ansible-playbook)
+$ANSIBLE_PLAYBOOK -i localhost compute_host_setup.yml
+
+
+
 
 # Install SSM
 yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
@@ -16,21 +25,7 @@ systemctl restart amazon-ssm-agent
 SCHEDULER_HOSTNAME=$1
 AWS=$(which aws)
 
-# Prepare PBS/System
-cd ~
 
-# Install System required libraries
-if [[ $SOCA_BASE_OS == "rhel7" ]];
-then
-    yum install -y $(echo ${SYSTEM_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
-    yum install -y $(echo ${SCHEDULER_PKGS[*]}) --enablerepo rhui-REGION-rhel-server-optional
-else
-    yum install -y $(echo ${SYSTEM_PKGS[*]})
-    yum install -y $(echo ${SCHEDULER_PKGS[*]})
-fi
-
-yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})
-yum install -y $(echo ${SSSD_PKGS[*]})
 
 # Configure Scratch Directory if specified by the user
 mkdir /scratch/
@@ -140,63 +135,12 @@ SERVER_HOSTNAME_ALT=$(echo $SERVER_HOSTNAME | cut -d. -f1)
 echo $SERVER_IP $SERVER_HOSTNAME $SERVER_HOSTNAME_ALT >> /etc/hosts
 
 
-# Configure Ldap
-echo "URI ldap://$SCHEDULER_HOSTNAME" >> /etc/openldap/ldap.conf
-echo "BASE $LDAP_BASE" >> /etc/openldap/ldap.conf
-
-echo -e "[domain/default]
-enumerate = True
-autofs_provider = ldap
-cache_credentials = True
-ldap_search_base = $LDAP_BASE
-id_provider = ldap
-auth_provider = ldap
-chpass_provider = ldap
-sudo_provider = ldap
-ldap_sudo_search_base = ou=Sudoers,$LDAP_BASE
-ldap_uri = ldap://$SCHEDULER_HOSTNAME
-ldap_id_use_start_tls = True
-use_fully_qualified_names = False
-ldap_tls_cacertdir = /etc/openldap/cacerts
-
-[sssd]
-services = nss, pam, autofs, sudo
-full_name_format = %2\$s\%1\$s
-domains = default
-
-[nss]
-homedir_substring = /data/home
-
-[pam]
-
-[sudo]
-ldap_sudo_full_refresh_interval=86400
-ldap_sudo_smart_refresh_interval=3600
-
-[autofs]
-
-[ssh]
-
-[pac]
-
-[ifp]
-
-[secrets]" > /etc/sssd/sssd.conf
-
-
-chmod 600 /etc/sssd/sssd.conf
-systemctl enable sssd
-systemctl restart sssd
 
 echo | openssl s_client -connect $SCHEDULER_HOSTNAME:389 -starttls ldap > /root/open_ssl_ldap
 mkdir /etc/openldap/cacerts/
 cat /root/open_ssl_ldap | openssl x509 > /etc/openldap/cacerts/openldap-server.pem
 
-authconfig --disablesssd --disablesssdauth --disableldap --disableldapauth --disablekrb5 --disablekrb5kdcdns --disablekrb5realmdns --disablewinbind --disablewinbindauth --disablewinbindkrb5 --disableldaptls --disablerfc2307bis --updateall
-sss_cache -E
-authconfig --enablesssd --enablesssdauth --enableldap --enableldaptls --enableldapauth --ldapserver=ldap://$SCHEDULER_HOSTNAME --ldapbasedn=$LDAP_BASE --enablelocauthorize --enablemkhomedir --enablecachecreds --updateall
 
-echo "sudoers: files sss" >> /etc/nsswitch.conf
 
 # Disable SELINUX & firewalld
 sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config

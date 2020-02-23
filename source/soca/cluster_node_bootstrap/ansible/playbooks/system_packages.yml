@@ -2,6 +2,7 @@
 # Configure Compute Node required packages and libraries
 
 - hosts: localhost
+  gather_facts: no
   tasks:
     - name: Install Centos7/Amazon Linux packages
       shell: |
@@ -12,8 +13,8 @@
         yum install -y $(echo ${SSSD_PKGS[*]})
       args:
         executable: /bin/bash
-      when: (lookup("env", "SOCA_BASE_OS") == "centos7") or
-            (lookup("env", "SOCA_BASE_OS") == "amazonlinux2")
+      when: lookup("env", "SOCA_BASE_OS") == "centos7" or
+            lookup("env", "SOCA_BASE_OS") == "amazonlinux2"
 
     - name: Install RHEL7 Linux packages
       shell: |
@@ -29,9 +30,9 @@
     - name: List installed packages (RHEL/Centos/ALI)
       shell: rpm -qa
       register: list_installed_pkgs
-      when: (lookup("env", "SOCA_BASE_OS") == "centos7") or
-            (lookup("env", "SOCA_BASE_OS") == "amazonlinux2") or
-            (lookup("env", "SOCA_BASE_OS") == "rhel7")
+      when: lookup("env", "SOCA_BASE_OS") == "centos7" or
+            lookup("env", "SOCA_BASE_OS") == "amazonlinux2" or
+            lookup("env", "SOCA_BASE_OS") == "rhel7"
 
     - debug:
         msg: "{{ list_installed_pkgs.stdout_lines }}"

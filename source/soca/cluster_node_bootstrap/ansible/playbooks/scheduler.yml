@@ -1,0 +1,65 @@
+# SOCA - Compute Node Bootstrap
+# Configure Directory Services
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    PBSPRO_URL: "{{ lookup('env','PBSPRO_URL') }}"
+    PBSPRO_HASH: "{{ lookup('env','PBSPRO_HASH') }}"
+    PBSPRO_TGZ: "{{ lookup('env','PBSPRO_TGZ') }}"
+    PBSPRO_VERSION: "{{ lookup('env','PBSPRO_VERSION') }}"
+
+  tasks:
+    - name: Retrieve current PBSPro version (if any)
+      shell: /opt/pbs/bin/qstat --version | awk {'print $NF'}
+      args:
+        executable: /bin/bash
+      register: pbs_version
+
+    - name: Expected PBSPro Version
+      debug:
+        msg: "{{ pbs_version }}"
+
+    - name: Expected PBSPro URL
+      debug:
+        msg: "{{ PBSPRO_URL }}"
+
+    - name: Expected PBSPro Checksum hash (md5)
+      debug:
+        msg: "{{ PBSPRO_HASH }}"
+
+    - name: Download PBSPro installer if not already installed
+      get_url:
+         url: "{{ PBSPRO_URL }}"
+         dest: /root/
+         checksum: "md5:{{ PBSPRO_HASH }}"
+      when: PBSPRO_VERSION != pbs_version.stdout
+
+    - name: Create folder where installer will be extracted
+      file:
+        path: /root/pbspro
+        state: directory
+        mode: '0755'
+      when: PBSPRO_VERSION != pbs_version.stdout
+
+    - name: Extract PBSPro installer
+      unarchive:
+        src: "/root/{{ PBSPRO_TGZ }}"
+        dest: /root/pbspro
+      when: PBSPRO_VERSION != pbs_version.stdout
+
+    - name: Compile and install PBSPro
+      shell: |
+        ./autogen.sh
+        ./configure --prefix=/opt/pbsdd
+        make -j6
+        make install -j6
+        /opt/pbs/libexec/pbs_postinstall
+        chmod 4755 /opt/pbs/sbin/pbs_iff /opt/pbs/sbin/pbs_rcp
+      args:
+        executable: /bin/bash
+        chdir: "/root/pbspro/pbspro-{{ PBSPRO_VERSION }}"
+      when: PBSPRO_VERSION != pbs_version.stdout
+
+# to continue create a copy of /etc/pbs.conf
+

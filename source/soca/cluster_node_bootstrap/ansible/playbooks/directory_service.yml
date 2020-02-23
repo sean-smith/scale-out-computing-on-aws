@@ -2,6 +2,7 @@
 # Configure Directory Services
 
 - hosts: localhost
+  gather_facts: no
   vars:
     LDAP_BASE: "{{ lookup('env','LDAP_BASE') }}"
     SCHEDULER_HOSTNAME:  "{{ lookup('env','SCHEDULER_HOSTNAME') }}"
@@ -39,6 +40,6 @@
       shell: |
         authconfig --disablesssd --disablesssdauth --disableldap --disableldapauth --disablekrb5 --disablekrb5kdcdns --disablekrb5realmdns --disablewinbind --disablewinbindauth --disablewinbindkrb5 --disableldaptls --disablerfc2307bis --updateall
         sss_cache -E
-        authconfig --enablesssd --enablesssdauth --enableldap --enableldaptls --enableldapauth --ldapserver=ldap://{{SCHEDULER_HOSTNAME}} --ldapbasedn={{LDAP_BASE}} --enablelocauthorize --enablemkhomedir --enablecachecreds --updateall
+        authconfig --enablesssd --enablesssdauth --enableldap --enableldaptls --enableldapauth --ldapserver=ldap://{{ SCHEDULER_HOSTNAME | quote }} --ldapbasedn={{ LDAP_BASE | quote }} --enablelocauthorize --enablemkhomedir --enablecachecreds --updateall
       args:
         executable: /bin/bash
