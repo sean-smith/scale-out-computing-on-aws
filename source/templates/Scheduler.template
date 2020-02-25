@@ -95,25 +95,11 @@ Resources:
             Once cluster is ready to use, this message will be replaced automatically and you will be able to SSH.
             *********************************************************' > /etc/nologin
 
-            if [ "${BaseOS}" == "amazonlinux2" ] || [ "${BaseOS}" == "rhel7" ];
-              then
-                usermod --shell /usr/sbin/nologin ec2-user
-            fi
-
-            if [ "${BaseOS}" == "centos7" ];
-              then
-                usermod --shell /usr/sbin/nologin centos
-            fi
-
-            # Install awscli
-            if [ "${BaseOS}" == "centos7" ] || [ "${BaseOS}" == "rhel7" ];
-            then
-              EASY_INSTALL=$(which easy_install-2.7)
-              $EASY_INSTALL pip
-              PIP=$(which pip2.7)
-              $PIP install awscli
-              yum install -y nfs-utils # enforce install of nfs-utils
-            fi
+            # Install awscli, ansible and boto3 on system python
+            EASY_INSTALL=$(which easy_install-2.7)
+            $EASY_INSTALL pip
+            PIP=$(which pip2.7)
+            $PIP install awscli ansible boto3
 
             # Disable automatic motd update if using ALI
             if [ "${BaseOS}" == "amazonlinux2" ];
@@ -124,33 +110,19 @@ Resources:
             fi
 
             AWS=$(which aws)
-            echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
-            echo export "SOCA_CONFIGURATION=${ClusterId}" >> /etc/environment
             echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
+            echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
+            echo export "SOCA_CLUSTER_ID=${ClusterId}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET=${S3Bucket}" >> /etc/environment
             echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment
             echo export "SOCA_INSTALL_AMI=${ImageId}" >> /etc/environment
-            source /etc/environment
+            echo export "SOCA_EFS_APP=${EFSAppsDns}" >> /etc/environment
+            echo export "SOCA_EFS_DATA=${EFSDataDns}" >> /etc/environment
+            echo export "SOCA_HOST_TYPE=master" >> /etc/environment
 
-            # Tag EBS disks manually as CFN ASG does not support it
-            AWS_AVAIL_ZONE=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
-            AWS_REGION="`echo \"$AWS_AVAIL_ZONE\" | sed "s/[a-z]$//"`"
-            AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-            EBS_IDS=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query "Volumes[*].[VolumeId]" --out text | tr "\n" " ")
-            $AWS ec2 create-tags --resources $EBS_IDS --region $AWS_REGION --tags Key=Name,Value="${ClusterId} Root Disk" "Key=soca:ClusterId,Value=${ClusterId}"
-
-            # Tag Network Adapter for the Scheduler
-            ENI_IDS=$(aws ec2 describe-network-interfaces --filters Name=attachment.instance-id,Values="$AWS_INSTANCE_ID" --region $AWS_REGION --query "NetworkInterfaces[*].[NetworkInterfaceId]" --out text | tr "\n" " ")
-            $AWS ec2 create-tags --resources $ENI_IDS --region $AWS_REGION --tags Key=Name,Value="${ClusterId} Scheduler Network Adapter" "Key=soca:ClusterId,Value=${ClusterId}"
-
-            # Mount EFS
-            mkdir -p /apps
-            mkdir -p /data
-
-            echo "${EFSDataDns}:/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-            echo "${EFSAppsDns}:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
-            mount -a
+            SOCA_DEFAULT_USER_USERNAME =
+            SOCA_DEFAULT_USER_PASSWORD
             mkdir -p /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/
 
             echo "@reboot /bin/aws s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/SchedulerPostReboot.sh /root && /bin/bash /root/SchedulerPostReboot.sh ${S3Bucket} ${S3InstallFolder} ${UserName} '${UserPassword}' >> /root/PostRebootConfig.log 2>&1" | crontab -
@@ -159,6 +131,8 @@ Resources:
             $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/requirements.txt /root/
             $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/Scheduler.sh /root/
             /bin/bash /root/Scheduler.sh
+            ansible_playbook
+
 
 
   EIPScheduler:

@@ -1,0 +1,219 @@
+- hosts: localhost
+  vars:
+    SOCA_CLUSTER_ID: "{{ lookup('env','SOCA_CLUSTER_ID') }}"
+    SOCA_INSTALL_BUCKET: "{{ lookup('env','SOCA_INSTALL_BUCKET') }}"
+    SOCA_INSTALL_BUCKET_FOLDER: "{{ lookup('env','SOCA_INSTALL_BUCKET_FOLDER') }}"
+
+  tasks:
+    - name: Load all variables
+      include_vars:
+        file: ../common/vars/system_variables.yml
+        name: system
+    - debug:
+        msg:
+          - "{{ system }}"
+
+    - name: Install System libraries and packages
+      import_playbook: ../common/tasks/install_system_packages.yml
+
+    - name: Disable user to prevent SSH during SOCA installation [CentOS]
+      import_playbook: ../common/tasks/usermod.yml
+      vars:
+        shell: "/usr/sbin/nologin"
+        user: "centos"
+      when: ansible_distribution == "CentOS"
+
+    - name: Disable user to prevent SSH during SOCA installation [RHEL/ALI]
+      import_playbook: ../common/tasks/usermod.yml
+        vars:
+          shell: "/usr/sbin/nologin"
+          user: "ec2-user"
+        when: (ansible_distribution == "Red Hat Enterprise Linux") or
+              (ansible_distribution == "Amazon")
+
+    - name: Mount EFS
+      import_playbook: ../common/tasks/mount_efs
+
+    # TO ADD scheduler + python3 install
+
+
+
+    - name: Download a local copy of soca.tar.gz
+      aws_s3:
+        bucket: "{{ SOCA_INSTALL_BUCKET }}"
+        object: "{{SOCA_INSTALL_BUCKET }}/soca.tar.gz"
+        dest: "/root/soca.tar.gz"
+        mode: get
+
+    - name: Extract soca.tar.gz configuration files
+      unarchive:
+        src: "/root/soca.tar.gz"
+        dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}"
+        extra_opts: "--no-same-owner"
+
+    - name: Create log folder
+      file:
+        path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/logs"
+        state: directory
+        mode: "0755"
+
+    - name: Changing permission of aligoqstat.py, adding "+x"
+      file:
+        dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/aligoqstat.py"
+        mode: a+x
+
+    - name: Create queue mapping configuration
+      template:
+        - src: templates/queue_mapping.yml.j2
+        - dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/settings/queue_mapping.yml"
+
+    - name: Generate private key for local HTTPD cert
+      openssl_privatekey:
+        path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/cert.key"
+        size: 4096
+
+    - name: Generate 10 years self-signed certificate for local HTTPD
+      openssl_certificate:
+        path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/cert.crt"
+        privatekey_path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/cert.key"
+        provider: selfsigned
+        selfsigned_not_after: +3650d
+
+    - name: Update PBS Hooks with the actual value of SOCA_CLUSTER_ID
+      replace:
+        path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_hooks/queuejob/check_queue_config.py"
+        regexp: "(%SOCA_CONFIGURATION)"
+        replace: "{{ SOCA_CLUSTER_ID }}"
+
+    - name: Create PBS hooks
+      shell: |
+        qmgr -c "create hook soca_aws_infos event=execjob_begin"
+        qmgr -c "import hook soca_aws_infos application/x-python default /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_hooks/execjob_begin/soca_aws_infos.py"
+        qmgr -c "create hook check_queue_acl event=queuejob"
+        qmgr -c "import hook check_queue_acl application/x-python default /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_hooks/queuejob/check_queue_config.py"
+      args:
+        executable: "/bin/bash"
+
+
+    - name: Create ElasticSearch crontab - Ingest Node data
+      cron:
+        name: "Create ElasticSearch crontab - Ingest Node data"
+        minute: "*"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "source /etc/environment; /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_analytics/cluster_nodes_tracking.py >> /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_analytics/cluster_nodes_tracking.log 2>&1"
+
+    - name: Create ElasticSearch crontab - Ingest Job data
+      cron:
+        name: "Create ElasticSearch crontab - Ingest Job data"
+        special_time: "hourly"
+        job: "/etc/environment; /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_analytics/job_tracking.py >> /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_analytics/job_tracking.log 2>&1"
+
+    - name: Create Log Management (archive to S3) crontab
+      cron:
+        name: "Create Log Management (archive to S3) crontab"
+        special_time: "daily"
+        job: "source /etc/environment; /bin/bash /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_logs_management/send_logs_s3.sh >>/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_logs_management/send_logs_s3.log 2>&1"
+
+    - name: Create Nodes Manager crontab
+      cron:
+        name: "Create Nodes Manager crontab"
+        minute: "*"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "source /etc/environment;  /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3  /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/nodes_manager.py >> /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/nodes_manager.py.log 2>&1"
+
+    - name: Create Automatic Host Provisioning crontab - Compute queues
+      cron:
+        name: "Create Automatic Host Provisioning crontab - Compute queues"
+        minute: "*/3"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "source /etc/environment;  /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dispatcher.py -c /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/settings/queue_mapping.yml -t compute"
+
+    - name: Create Automatic Host Provisioning crontab - Desktop queues
+      cron:
+        name: "Create Automatic Host Provisioning crontab - Desktop queues"
+        minute: "*/3"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "source /etc/environment;  /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dispatcher.py -c /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/settings/queue_mapping.yml -t desktop"
+
+    - name: Create Automatic Host Provisioning crontab - Test queues
+      cron:
+        name: "Create Automatic Host Provisioning crontab - Test queues"
+        minute: "*/3"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "source /etc/environment;  /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dispatcher.py -c /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/settings/queue_mapping.yml -t test"
+
+    - name: Add/Remove DCV hosts to the ELB
+      cron:
+        name: "Add/Remove DCV hosts to the ELB"
+        minute: "*/5"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "source /etc/environment; /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dcv_alb_manager.py >> /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dcv_alb_manager.py.log 2>&1"
+
+
+    - name: Download SchedulerPostReboot.sh to the local EFS
+      aws_s3:
+        bucket: "{{ SOCA_INSTALL_BUCKET }}"
+        object: "{{SOCA_INSTALL_BUCKET }}/scripts/SchedulerPostReboot.sh"
+        dest: /root/SchedulerPostReboot.sh
+        mode: get
+
+    - name: Start PBSPro
+      systemd:
+        name: pbspro
+        enabled: yes
+
+    - name:  Allow user to SSH to master host [RHEL/ALI]
+        import_playbook: ../common/tasks/usermod.yml
+        vars:
+          shell: "/bin/bash"
+          user: "centos"
+        when: ansible_distribution == "CentOS"
+
+    - name: Allow user to SSH to master host [RHEL/ALI]
+      import_playbook: ../common/tasks/usermod.yml
+        vars:
+          shell: "/bin/bash"
+          user: "ec2-user"
+      when: (ansible_distribution == "Red Hat Enterprise Linux") or
+            (ansible_distribution == "Amazon")
+
+    - name: Changing permission of socawebui.sh, adding "+x"
+      file:
+        dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/socawebui.sh"
+        mode: a+x
+
+    - name: Start SOCA web UI
+      script: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/socawebui.sh start"
+
+    - name: Create default LDAP user specified during installation
+      script: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/ldap_manager.py add-user -u {{ SOCA_DEFAULT_USER_USERNAME }} -p {{ SOCA_DEFAULT_USER_PASSWORD }} --admin"
+      register: "create_ldap_user"
+      retries: 5
+      delay: 60
+      until: create_ldap_user.rc == 0
+      args:
+        executable: "/apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3"
+
+    - name: Update MOTD
+      template:
+        - src: templates/motd.j2
+        - dest: /etc/motd
+
