@@ -7,8 +7,7 @@ id_provider = ldap
 auth_provider = ldap
 chpass_provider = ldap
 sudo_provider = ldap
-ldap_sudo_search_base = ou=Sudoers,{{ LDAP_BASE }}
-ldap_uri = ldap://{{ SCHEDULER_HOSTNAME }}
+ldap_sudo_search_base = ou=Sudoers,{{ LDAP_BASE }}{{ SCHEDULER_HOSTNAME }}ami-01ed306a12b7d1c96
 ldap_id_use_start_tls = True
 use_fully_qualified_names = False
 ldap_tls_cacertdir = /etc/openldap/cacerts

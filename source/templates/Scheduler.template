@@ -87,13 +87,6 @@ Resources:
             #!/bin/bash -xe
 
             export PATH=$PATH:/usr/local/bin
-            # Deactivate shell to make sure users won't access the cluster if it's not ready
-            echo '
-            ************* SOCA FIRST TIME CONFIGURATION *************
-            Hold on, cluster is not ready yet.
-            Please wait ~30 minutes as SOCA is being installed.
-            Once cluster is ready to use, this message will be replaced automatically and you will be able to SSH.
-            *********************************************************' > /etc/nologin
 
             # Install awscli, ansible and boto3 on system python
             EASY_INSTALL=$(which easy_install-2.7)
@@ -101,15 +94,6 @@ Resources:
             PIP=$(which pip2.7)
             $PIP install awscli ansible boto3
 
-            # Disable automatic motd update if using ALI
-            if [ "${BaseOS}" == "amazonlinux2" ];
-            then
-              /usr/sbin/update-motd --disable
-              rm /etc/cron.d/update-motd
-              rm -f /etc/update-motd.d/*
-            fi
-
-            AWS=$(which aws)
             echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
             echo export "SOCA_BASE_OS=${BaseOS}" >> /etc/environment
             echo export "SOCA_CLUSTER_ID=${ClusterId}" >> /etc/environment
@@ -117,23 +101,18 @@ Resources:
             echo export "SOCA_INSTALL_BUCKET_FOLDER=${S3InstallFolder}" >> /etc/environment
             echo export "SOCA_VERSION=${Version}" >> /etc/environment
             echo export "SOCA_INSTALL_AMI=${ImageId}" >> /etc/environment
-            echo export "SOCA_EFS_APP=${EFSAppsDns}" >> /etc/environment
+            echo export "SOCA_EFS_APPS=${EFSAppsDns}" >> /etc/environment
             echo export "SOCA_EFS_DATA=${EFSDataDns}" >> /etc/environment
             echo export "SOCA_HOST_TYPE=master" >> /etc/environment
 
-            SOCA_DEFAULT_USER_USERNAME =
-            SOCA_DEFAULT_USER_PASSWORD
-            mkdir -p /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/
-
-            echo "@reboot /bin/aws s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/SchedulerPostReboot.sh /root && /bin/bash /root/SchedulerPostReboot.sh ${S3Bucket} ${S3InstallFolder} ${UserName} '${UserPassword}' >> /root/PostRebootConfig.log 2>&1" | crontab -
             AWS=$(which aws)
-            $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/config.cfg /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/
-            $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/requirements.txt /root/
-            $AWS s3 cp s3://${S3Bucket}/${S3InstallFolder}/scripts/Scheduler.sh /root/
-            /bin/bash /root/Scheduler.sh
-            ansible_playbook
+            # Copy Ansible roles (master) to local root for first setup.
+            $AWS s3 sync s3://${S3Bucket}/${S3InstallFolder}/scripts/ansible/roles/common/ /root/scripts/ansible/roles/common/
+            $AWS s3 sync s3://${S3Bucket}/${S3InstallFolder}/scripts/ansible/roles/master/ /root/scripts/ansible/roles/master/
 
-
+            # Start Ansible setup for the master host
+            ANSIBLE_PLAYBOOK=$(which ansible-playbook)
+            $ANSIBLE_PLAYBOOK /root/scripts/ansible/roles/master/tasks/main.yml --extra-var "SOCA_DEFAULT_USER_USERNAME='${UserName}' SOCA_DEFAULT_USER_PASSWORD='${UserPassword}'" >> /root/AnsibleMasterHostConfiguration.log 2>&1
 
   EIPScheduler:
     DependsOn: SchedulerEC2Host

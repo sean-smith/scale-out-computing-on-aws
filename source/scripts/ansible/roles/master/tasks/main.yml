@@ -5,74 +5,146 @@
     SOCA_INSTALL_BUCKET_FOLDER: "{{ lookup('env','SOCA_INSTALL_BUCKET_FOLDER') }}"
 
   tasks:
-    - name: Load all variables
+    - name: Load all system variables
       include_vars:
-        file: ../common/vars/system_variables.yml
+        file: ../../common/vars/system_variables.yml
         name: system
     - debug:
         msg:
-          - "{{ system }}"
+          - "Variables: {{ system }}"
+
+    - name: Get Host private ip
+      shell: hostname -i
+      args:
+        executable: /bin/bash
+      register: host_private_ip
+
+    - name: Get host short Hostname
+      shell: hostname -s
+      args:
+        executable: /bin/bash
+      register: host_short_hostname
+
+    - name: Get host full hostname
+      shell: hostname
+      args:
+        executable: /bin/bash
+      register: host_full_hostname
 
     - name: Install System libraries and packages
-      import_playbook: ../common/tasks/install_system_packages.yml
+      import_tasks: ../../common/tasks/install_system_packages.yml
 
-    - name: Disable user to prevent SSH during SOCA installation [CentOS]
-      import_playbook: ../common/tasks/usermod.yml
+    - name: Updating /etc/nologin message
+      template:
+        src: ../templates/etc/nologin.j2
+        dest: "/etc/nologin"
+
+    - name: Disable rotation of motd [ALI]
+      shell: |
+        /usr/sbin/update-motd --disable
+        rm /etc/cron.d/update-motd
+        rm -f /etc/update-motd.d/*
+      args:
+        executable: "/bin/bash"
+      when: ansible_distribution == "Amazon"
+
+    - name: Prevent user to SSH to the master host during SOCA installation [CentOS]
+      import_tasks: ../../common/tasks/usermod.yml
       vars:
         shell: "/usr/sbin/nologin"
         user: "centos"
       when: ansible_distribution == "CentOS"
 
-    - name: Disable user to prevent SSH during SOCA installation [RHEL/ALI]
-      import_playbook: ../common/tasks/usermod.yml
-        vars:
-          shell: "/usr/sbin/nologin"
-          user: "ec2-user"
-        when: (ansible_distribution == "Red Hat Enterprise Linux") or
-              (ansible_distribution == "Amazon")
+    - name: Prevent user to SSH to the master host during SOCA installation [RHEL/ALI]
+      import_tasks: ../../common/tasks/usermod.yml
+      vars:
+        shell: "/usr/sbin/nologin"
+        user: "ec2-user"
+      when: (ansible_distribution == "Red Hat Enterprise Linux") or
+            (ansible_distribution == "Amazon")
 
-    - name: Mount EFS
-      import_playbook: ../common/tasks/mount_efs
+    - name: Mount EFS filesystems
+      import_tasks: ../../common/tasks/mount_efs.yml
 
-    # TO ADD scheduler + python3 install
+    - name: Create /apps/soca/<CLUSTER_ID>
+      file:
+        path: "/apps/soca/{{ SOCA_CLUSTER_ID }}"
+        state: directory
+        mode: 0755
 
-
-
-    - name: Download a local copy of soca.tar.gz
+    - name: Download SOCA configuration from soca.tar.gz
       aws_s3:
         bucket: "{{ SOCA_INSTALL_BUCKET }}"
-        object: "{{SOCA_INSTALL_BUCKET }}/soca.tar.gz"
+        object: "{{ SOCA_INSTALL_BUCKET_FOLDER }}/soca.tar.gz"
         dest: "/root/soca.tar.gz"
         mode: get
 
-    - name: Extract soca.tar.gz configuration files
+    - name: Extract soca.tar.gz
       unarchive:
         src: "/root/soca.tar.gz"
         dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}"
+        creates: "yes" # do nothing if folder already exist to prevent override
         extra_opts: "--no-same-owner"
 
-    - name: Create log folder
+    - name: Install Python3
+      import_tasks: install_python.yml
+      vars:
+        PYTHON_URL: "{{ system.PYTHON_URL }}"
+        PYTHON_HASH: "{{ system.PYTHON_HASH }}"
+        PYTHON_TGZ:  "{{ system.PYTHON_TGZ }}"
+        PYTHON_VERSION: "{{ system.PYTHON_VERSION }}"
+
+    - name: Install PBSPro Scheduler
+      import_tasks: ../../common/tasks/install_scheduler.yml
+      vars:
+        host: "master"
+        PBSPRO_URL: "{{ system.PBSPRO_URL }}"
+        PBSPRO_HASH: "{{ system.PBSPRO_HASH }}"
+        PBSPRO_TGZ:  "{{ system.PBSPRO_TGZ }}"
+        PBSPRO_VERSION: "{{ system.PBSPRO_VERSION }}"
+        SERVER_HOSTNAME_ALT: "{{ host_short_hostname.stdout }}"
+
+    - name: Tag EBS volume associated to the master host
+      import_tasks: ../../common/tasks/tag_ebs_volumes.yml
+      vars:
+        host: "master"
+
+    - name: Copy Ansible playbook for compute nodes - common tasks
+      aws_s3:
+        bucket: "{{ SOCA_INSTALL_BUCKET }}"
+        object: "{{SOCA_INSTALL_BUCKET_FOLDER }}/scripts/ansible/roles/common/"
+        dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_node_bootstrap/ansible/roles/common/"
+        mode: get
+
+    - name: Copy Ansible playbook for compute node - compute node tasks
+      aws_s3:
+        bucket: "{{ SOCA_INSTALL_BUCKET }}"
+        object: "{{ SOCA_INSTALL_BUCKET_FOLDER }}/scripts/ansible/roles/compute_nodes/"
+        dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_node_bootstrap/ansible/roles/compute_nodes/"
+        mode: get
+
+    - name: Create SOCA queues log folder
       file:
         path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/logs"
         state: directory
         mode: "0755"
 
-    - name: Changing permission of aligoqstat.py, adding "+x"
+    - name: Changing permissions of aligoqstat.py, adding "+x"
       file:
         dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/aligoqstat.py"
         mode: a+x
 
-    - name: Create queue mapping configuration
+    - name: Create SOCA queue mapping configuration
       template:
-        - src: templates/queue_mapping.yml.j2
-        - dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/settings/queue_mapping.yml"
+        src: ../templates/apps/soca/cluster_id/cluster_manager/settings/queue_mapping.yml.j2
+        dest: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/settings/queue_mapping.yml"
 
     - name: Generate private key for local HTTPD cert
       openssl_privatekey:
         path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/cert.key"
         size: 4096
 
-    - name: Generate 10 years self-signed certificate for local HTTPD
+    - name: Generate 10 years self-signed certificate for local HTTPD (this is NOT the public endpoint)
       openssl_certificate:
         path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/cert.crt"
         privatekey_path: "/apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_web_ui/cert.key"
@@ -93,7 +165,6 @@
         qmgr -c "import hook check_queue_acl application/x-python default /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_hooks/queuejob/check_queue_config.py"
       args:
         executable: "/bin/bash"
-
 
     - name: Create ElasticSearch crontab - Ingest Node data
       cron:
@@ -167,31 +238,23 @@
         weekday: "*"
         job: "source /etc/environment; /apps/soca/{{ SOCA_CLUSTER_ID }}/python/latest/bin/python3 /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dcv_alb_manager.py >> /apps/soca/{{ SOCA_CLUSTER_ID }}/cluster_manager/dcv_alb_manager.py.log 2>&1"
 
-
-    - name: Download SchedulerPostReboot.sh to the local EFS
-      aws_s3:
-        bucket: "{{ SOCA_INSTALL_BUCKET }}"
-        object: "{{SOCA_INSTALL_BUCKET }}/scripts/SchedulerPostReboot.sh"
-        dest: /root/SchedulerPostReboot.sh
-        mode: get
-
     - name: Start PBSPro
       systemd:
         name: pbspro
         enabled: yes
 
     - name:  Allow user to SSH to master host [RHEL/ALI]
-        import_playbook: ../common/tasks/usermod.yml
-        vars:
-          shell: "/bin/bash"
-          user: "centos"
-        when: ansible_distribution == "CentOS"
+      import_tasks: ../../common/tasks/usermod.yml
+      vars:
+        shell: "/bin/bash"
+        user: "centos"
+      when: ansible_distribution == "CentOS"
 
     - name: Allow user to SSH to master host [RHEL/ALI]
-      import_playbook: ../common/tasks/usermod.yml
-        vars:
-          shell: "/bin/bash"
-          user: "ec2-user"
+      import_tasks: ../../common/tasks/usermod.yml
+      vars:
+        shell: "/bin/bash"
+        user: "ec2-user"
       when: (ansible_distribution == "Red Hat Enterprise Linux") or
             (ansible_distribution == "Amazon")
 
@@ -214,6 +277,6 @@
 
     - name: Update MOTD
       template:
-        - src: templates/motd.j2
-        - dest: /etc/motd
+        src: templates/etc/motd.j2
+        dest: /etc/motd
 

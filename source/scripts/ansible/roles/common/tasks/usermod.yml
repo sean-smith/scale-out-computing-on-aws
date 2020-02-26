@@ -1,0 +1,11 @@
+# ========
+# Enable or disable username
+# Maintainer: mcrozes@
+# ========
+
+- name: Configure specific shell for a given POSIX user
+  user:
+    name: "{{ user }}"
+    shell: "{{ shell }}"
+
+

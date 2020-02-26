@@ -1,0 +1,33 @@
+# ========
+# Configure EFS mounts for SOCA
+# Maintainer: mcrozes@
+# ========
+
+
+- name: Create /apps mountpoint
+  file:
+    path: /apps
+    state: directory
+    mode: 0755
+
+- name: Create /data mountpoint
+  file:
+    path: /data
+    state: directory
+    mode: 0755
+
+- name: Mount EFS /apps
+  mount:
+    name: /apps
+    src: "{{ lookup('env','SOCA_EFS_APPS') }}:/"
+    fstype: nfs
+    opts: "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
+    state: mounted
+
+- name: Mount EFS /data
+  mount:
+    name: /data
+    src: "{{ lookup('env','SOCA_EFS_DATA') }}:/"
+    fstype: nfs
+    opts: "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
+    state: mounted

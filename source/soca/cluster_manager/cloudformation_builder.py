@@ -65,7 +65,7 @@ if [[ "''' + params['BaseOS'] + '''" == "centos7" ]] || [[ "''' + params['BaseOS
         EASY_INSTALL=$(which easy_install-2.7)
         $EASY_INSTALL pip
         PIP=$(which pip2.7)
-        $PIP install awscli
+        $PIP install awscli ansible
         yum install -y nfs-utils # enforce install of nfs-utils
 fi
 if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
