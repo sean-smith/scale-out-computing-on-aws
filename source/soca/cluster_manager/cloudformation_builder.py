@@ -65,13 +65,15 @@ if [[ "''' + params['BaseOS'] + '''" == "centos7" ]] || [[ "''' + params['BaseOS
         EASY_INSTALL=$(which easy_install-2.7)
         $EASY_INSTALL pip
         PIP=$(which pip2.7)
-        $PIP install awscli ansible
+        $PIP install awscli
         yum install -y nfs-utils # enforce install of nfs-utils
 fi
 if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
     then
         /usr/sbin/update-motd --disable
 fi
+
+GET_INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type)
 echo export "SOCA_CONFIGURATION="''' + str(params['ClusterId']) + '''"" >> /etc/environment
 echo export "SOCA_BASE_OS="''' + str(params['BaseOS']) + '''"" >> /etc/environment
 echo export "SOCA_JOB_QUEUE="''' + str(params['JobQueue']) + '''"" >> /etc/environment
@@ -86,6 +88,7 @@ echo export "SOCA_INSTALL_BUCKET="''' + str(params['S3Bucket']) + '''"" >> /etc/
 echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + str(params['S3InstallFolder']) + '''"" >> /etc/environment
 echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
 echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
+echo export "SOCA_INSTANCE_TYPE=$GET_INSTANCE_TYPE" >> /etc/environment
 echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
 echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(params['ClusterId']) + '''/cluster_node_bootstrap/logs/''' + str(params['JobId']) + '''/$(hostname -s)"" >> /etc/environment
 echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
@@ -105,11 +108,6 @@ mkdir -p /data
 echo "''' + params['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 echo "''' + params['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 mount -a 
-
-SERVER_IP=$(hostname -I)
-SERVER_HOSTNAME=$(hostname)
-SERVER_HOSTNAME_ALT=$(echo $SERVER_HOSTNAME | cut -d. -f1)
-echo $SERVER_IP $SERVER_HOSTNAME $SERVER_HOSTNAME_ALT >> /etc/hosts
 
 # Configure NTP
 yum remove -y ntp

@@ -1,13 +1,22 @@
 #!/bin/bash -xe
 
 source /etc/environment
-source /apps/soca/$SOCA_CONFIGURATION/cluster_node_boostrap/config.cfg
+source /root/config.cfg
+
+if [ $# -lt 2 ]
+  then
+    exit 1
+fi
 
 # Install SSM
 yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
 systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
 
+
+mkdir -p /apps/soca/$SOCA_CONFIGURATION
+EFS_DATA=$1
+EFS_APPS=$2
 SERVER_IP=$(hostname -I)
 SERVER_HOSTNAME=$(hostname)
 SERVER_HOSTNAME_ALT=$(echo $SERVER_HOSTNAME | cut -d. -f1)
@@ -24,6 +33,13 @@ fi
 
 yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]})
 yum install -y $(echo ${SSSD_PKGS[*]})
+
+# Mount EFS
+mkdir /apps
+mkdir /data
+echo "$EFS_DATA:/ /data/ nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+echo "$EFS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+mount -a
 
 # Install Python if needed
 PYTHON_INSTALLED_VERS=$(/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 --version | awk {'print $NF'})

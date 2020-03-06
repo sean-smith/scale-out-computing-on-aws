@@ -1,4 +1,4 @@
-= Scale-Out Computing on AWS :palm_tree:
+= Scale-Out Computing on AWS - HPC made easy :palm_tree:
 :toc:
 
 == :rocket: How to install Scale-Out Computing on AWS

@@ -30,12 +30,49 @@ def find_users_in_ldap_group(group_dn):
     return list(filter(None, users_in_group.split('\n')))
 
 
+def is_allowed_instance_type(instance_type, allowed_instance_types, excluded_instance_types):
+    #A very basic sanity check on instance_type provided by user
+    if '.' in instance_type:
+        family = instance_type.split('.')[0]
+    else:
+        return False
+
+    all_instances_allowed = True if len(allowed_instance_types) == 0 else False
+    no_instances_excluded = True if len(excluded_instance_types) == 0 else False
+
+    if all_instances_allowed and no_instances_excluded:
+       return True
+
+    #check if on exclude list
+    for excluded_type in excluded_instance_types:
+        if instance_type == excluded_type:
+            return False
+        elif '.' not in excluded_type and family == excluded_type:
+            return False
+
+    #check if on allowed list
+    for allowed_type in allowed_instance_types:
+        if instance_type == allowed_type:
+            return True
+        elif '.' not in allowed_type and family == allowed_type:
+            return True
+
+    #if all instances are allowed default to true otherwise false
+    if all_instances_allowed:
+        return True
+    else:
+        return False
+
+      
 e = pbs.event()
 j = e.job
 job_owner = str(e.requestor)
 job_queue = "normal" if str(j.queue) == "" else str(j.queue)
 pbs.logmsg(pbs.LOG_DEBUG, 'queue_acl: job_queue  ' + str(j.queue))
-
+if 'instance_type' in j.Resource_List:
+    instance_type = j.Resource_List['instance_type']
+else:
+    instance_type = None
 
 # Validate license_mapping YAML is not malformed
 try:
@@ -66,6 +103,19 @@ for doc in docs.values():
                 e.reject("allowed_users (" + queue_settings_file + ") must be a list. Detected: " +str(type(v['allowed_users'])))
             if isinstance(v['excluded_users'], list) is not True:
                 e.reject("excluded_users (" + queue_settings_file + ") must be a list. Detected: " + str(type(v['excluded_users'])))
+            if isinstance(v['allowed_instance_types'], list) is not True:
+                e.reject("allowed_instance_types (" + queue_settings_file + ") must be a list. Detected: " +            str(type(v['allowed_instance_types'])))
+            if isinstance(v['excluded_instance_types'], list) is not True:
+                e.reject("excluded_instance_types (" + queue_settings_file + ") must be a list. Detected: " +           str(type(v['excluded_instance_types'])))
+
+            allowed_instance_types = v['allowed_instance_types']
+            excluded_instance_types = v['excluded_instance_types']
+
+            if instance_type:
+                 is_valid_instance = is_allowed_instance_type(instance_type, allowed_instance_types,                      excluded_instance_types)
+            else:
+                 #if no instance tpe in resource list default is used which is assumed to be valid.
+                 is_valid_instance = True
 
             if 'allowed_users' in v.keys():
                 for user in v['allowed_users']:
@@ -89,6 +139,11 @@ for doc in docs.values():
             else:
                 message = "excluded_users directive not detected on " + str(queue_settings_file)
                 e.reject(message)
+
+            if not is_valid_instance:
+                  message = instance_type + " is not allowed for queue " + job_queue + ". Contact your HPC admin and update " + queue_settings_file
+                  e.reject(message)
+
             if excluded_users.__len__() == 0 and allowed_users.__len__() == 0:
                 e.accept()
             else:
