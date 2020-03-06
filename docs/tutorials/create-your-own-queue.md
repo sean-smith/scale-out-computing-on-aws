@@ -106,7 +106,7 @@ Qmgr:exit
 
 #### Start provisioning some capacity
 
-Run `python3 apps/soca/cluster_manager/add_nodes.py` and enable `--keep_forever` flag
+Run `python3 apps/soca/cluster_manager/add_nodes.py` and enable `--keep_forever True` flag
 
 ~~~bash
 # Launch 1 c5.large always on
@@ -115,7 +115,7 @@ python3 /apps/soca/<CLUSTER_ID>/cluster_manager/add_nodes.py --instance_type c5.
     --queue <queue_name> \
     --job_name instancealwayson \
     --job_owner mcrozes \
-    --keep_forever
+    --keep_forever True
 
  IMPORTANT:
  You specified --keep-forever flag. This instance will be running 24/7 until you MANUALLY terminate the Cloudformation Stack                            

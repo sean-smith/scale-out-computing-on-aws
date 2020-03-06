@@ -167,8 +167,11 @@ def check_config(**kwargs):
             error = return_message('spot_allocation_count (' + str(kwargs['spot_allocation_count']) + ') must be an integer')
 
     # Validate ht_support
-    if kwargs['ht_support'] not in [True, False]:
-        error = return_message('ht_support (' + str(kwargs['ht_support']) + ') must be either True or False')
+    if kwargs['ht_support'] is None:
+        kwargs['ht_support'] = False
+    else:
+        if kwargs['ht_support'] not in [True, False]:
+            error = return_message('ht_support (' + str(kwargs['ht_support']) + ') must be either True or False')
 
     # Validate Base OS
     if kwargs['base_os'] is not False:
@@ -489,9 +492,9 @@ if __name__ == "__main__":
     parser.add_argument('--queue', nargs='?', required=True, help="Queue to map the capacity")
 
     # Const
-    parser.add_argument('--efa_support', help="Support for EFA")
-    parser.add_argument('--ht_support', help="Enable Hyper Threading")
-    parser.add_argument('--keep_forever', help="Whether or not capacity will stay forever")
+    parser.add_argument('--efa_support', default=False, help="Support for EFA")
+    parser.add_argument('--ht_support', default=False, help="Enable Hyper Threading")
+    parser.add_argument('--keep_forever', default=False, help="Whether or not capacity will stay forever")
 
     # Optional
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
@@ -501,7 +504,7 @@ if __name__ == "__main__":
     parser.add_argument('--instance_ami', required=True, nargs='?', help="AMI to use")
     parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
-    parser.add_argument('--placement_group', help="Enable or disable placement group")
+    parser.add_argument('--placement_group', default=True, help="Enable or disable placement group")
     parser.add_argument('--root_size', default=10, nargs='?', help="Size of Root partition in GB")
     parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--scratch_size', default=0, nargs='?', help="Size of /scratch in GB")
