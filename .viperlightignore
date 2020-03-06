@@ -18,7 +18,7 @@ docs/security/integrate-cognito-sso.md:19
 source/soca/cluster_web_ui/static/vendor/jquery/jquery.js:7476
 source/soca/cluster_web_ui/static/vendor/jquery/jquery.slim.js:6683
 source/soca/cluster_analytics/cluster_nodes_tracking.py:41
-source/soca/cluster_analytics/job_tracking.py:142
+source/soca/cluster_analytics/job_tracking.py:152
 source/soca/cluster_web_ui/app.py:108
 source/solution-for-scale-out-computing-on-aws.yml:166
 source/soca/cluster_web_ui/templates/common/horizontal_menu_bar.html:5

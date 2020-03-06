@@ -71,7 +71,8 @@ This will open a new window with additional information about this resource (eit
 This will open a regular EC2 launch instance or EFS wizard. Specify the parameters (VPC, Subnet, Security Group, IAM role ...) you want to use and click "Restore Backup"
 
 !!!info "Restore Role"
-    Make sure to use the `SOCA-Backup` IAM role created by SOCA during initial installation. If you want to use the default role created by AWS Backup, make sure to add `iam:PassRole` permission.
+    - By default, you can only apply `SchedulerIAMRole` or `ComputeNodeIAMRole` to the EC2 resource you are restoring. If you want to restore one EC2 instance with a different role, you must edit `iam:PassRole` policy of your `SOCA-Backup` role.
+    - Make sure to use the `SOCA-Backup` IAM role created by SOCA during initial installation. If you want to use the default role created by AWS Backup, make sure to add `iam:PassRole` permission.
     
 ### How to delete a backup ?
 

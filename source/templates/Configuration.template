@@ -99,6 +99,11 @@ Parameters:
 
 Resources:
   SolutionMetricLambda:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: "Lambda IAM role has permissions to write CloudWatch log and is defined on security template"
     Type: AWS::Lambda::Function
     Properties:
       Description: Send SOCA anonymous Metrics to AWS
@@ -389,8 +394,14 @@ Resources:
               - elasticfilesystem:DescribeFilesystems
               - kms:DescribeKey
               - elasticfilesystem:CreateFilesystem
-              - iam:PassRole
             Resource: '*'
+
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource:
+              - !Ref SchedulerIAMRoleArn
+              - !Ref ComputeNodeIAMRoleArn
 
           - Effect: Allow
             Action:
