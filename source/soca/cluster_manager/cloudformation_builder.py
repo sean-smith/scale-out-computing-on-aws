@@ -90,17 +90,18 @@ echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower(
 echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
 echo export "SOCA_INSTANCE_TYPE=$GET_INSTANCE_TYPE" >> /etc/environment
 echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
-echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(params['ClusterId']) + '''/cluster_node_bootstrap/logs/''' + str(params['JobId']) + '''/$(hostname -s)"" >> /etc/environment
+echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(
+            params['ClusterId']) + '''/cluster_node_bootstrap/logs/''' + str(params['JobId']) + '''/$(hostname -s)"" >> /etc/environment
 echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
 echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
 
-           
+
 source /etc/environment
 AWS=$(which aws)
-        
+
 # Give yum permission to the user on this specific machine
 echo "''' + params['JobOwner'] + ''' ALL=(ALL) /bin/yum" >> /etc/sudoers
-    
+
 mkdir -p /apps
 mkdir -p /data
 
@@ -146,7 +147,8 @@ systemctl enable chronyd
 mkdir -p $SOCA_HOST_SYSTEM_LOG
 echo "@reboot /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodePostReboot.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostInstall.log 2>&1" | crontab -
 $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> $SOCA_HOST_SYSTEM_LOG/ComputeNode.sh.log 2>&1'''
+/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh ''' + params[
+                       'SchedulerHostname'] + ''' >> $SOCA_HOST_SYSTEM_LOG/ComputeNode.sh.log 2>&1'''
 
         ltd.EbsOptimized = True
         for instance in instances_list:
@@ -165,7 +167,8 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             ltd.InstanceMarketOptions = InstanceMarketOptions(
                 MarketType="spot",
                 SpotOptions=SpotOptions(
-                    MaxPrice=Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(params["SpotPrice"])  # auto -> cap at OD price
+                    MaxPrice=Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(params["SpotPrice"])
+                    # auto -> cap at OD price
                 )
             )
         ltd.InstanceType = instances_list[0]
@@ -191,8 +194,8 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                     DeviceName="/dev/xvdbx",
                     Ebs=EBSBlockDevice(
                         VolumeSize=params["ScratchSize"],
-                        VolumeType="io1" if params["VolumeTypeIops"] > 0 else "gp2",
-                        Iops=params["VolumeTypeIops"] if params["VolumeTypeIops"] > 0 else Ref("AWS::NoValue"),
+                        VolumeType="io1" if int(params["VolumeTypeIops"]) > 0 else "gp2",
+                        Iops=params["VolumeTypeIops"] if int(params["VolumeTypeIops"]) > 0 else Ref("AWS::NoValue"),
                         DeleteOnTermination="false" if params["KeepEbs"] is True else "true",
                         Encrypted=True))
             )
@@ -205,7 +208,6 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         t.add_resource(lt)
         # End Launch Template Resource
 
-
         asg_lt.LaunchTemplateSpecification = LaunchTemplateSpecification(
             LaunchTemplateId=Ref(lt),
             Version=GetAtt(lt, "LatestVersionNumber")
@@ -214,18 +216,19 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         asg_lt.Overrides = []
         for instance in instances_list:
             asg_lt.Overrides.append(LaunchTemplateOverrides(
-                 InstanceType=instance))
+                InstanceType=instance))
 
         # Begin InstancesDistribution
         if params["SpotPrice"] is not False and \
-           params["SpotAllocationCount"] is not False and\
-           (params["DesiredCapacity"] - params["SpotAllocationCount"]) > 0:
+                params["SpotAllocationCount"] is not False and \
+                (params["DesiredCapacity"] - params["SpotAllocationCount"]) > 0:
             mip_usage = True
             idistribution = InstancesDistribution()
             idistribution.OnDemandAllocationStrategy = "prioritized"  # only supported value
             idistribution.OnDemandBaseCapacity = params["DesiredCapacity"] - params["SpotAllocationCount"]
             idistribution.OnDemandPercentageAboveBaseCapacity = "0"  # force the other instances to be SPOT
-            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(params["SpotPrice"])
+            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(
+                params["SpotPrice"])
             idistribution.SpotAllocationStrategy = params['SpotAllocationStrategy']
             mip.InstancesDistribution = idistribution
 
@@ -235,7 +238,8 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         if params["FSxLustreBucket"] is not False:
             fsx_lustre_configuration = LustreConfiguration()
             fsx_lustre_configuration.ImportPath = params["FSxLustreBucket"]
-            fsx_lustre_configuration.ExportPath = params['FSxLustreBucket'] + "/" + params["ClusterId"] + "-fsxoutput/job-" + params["JobId"] + "/"
+            fsx_lustre_configuration.ExportPath = params['FSxLustreBucket'] + "/" + params[
+                "ClusterId"] + "-fsxoutput/job-" + params["JobId"] + "/"
             fsx_lustre = FileSystem("FSxForLustre")
             fsx_lustre.FileSystemType = "LUSTRE"
             fsx_lustre.StorageCapacity = params["FSxLustreSize"]
@@ -244,7 +248,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             fsx_lustre.LustreConfiguration = fsx_lustre_configuration
             fsx_lustre.Tags = base_Tags(
                 # False disable PropagateAtLaunch
-                Name=str(params["ClusterId"]+"-compute-job-" + params["JobId"]),
+                Name=str(params["ClusterId"] + "-compute-job-" + params["JobId"]),
                 _soca_JobId=str(params["JobId"]),
                 _soca_JobName=str(params["JobName"]),
                 _soca_JobQueue=str(params["JobQueue"]),
@@ -281,7 +285,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             asg.PlacementGroup = Ref(pg)
 
         asg.Tags = Tags(
-            Name=str(params["ClusterId"])+"-compute-job-" + str(params["JobId"]),
+            Name=str(params["ClusterId"]) + "-compute-job-" + str(params["JobId"]),
             _soca_JobId=str(params["JobId"]),
             _soca_JobName=str(params["JobName"]),
             _soca_JobQueue=str(params["JobQueue"]),
@@ -324,4 +328,5 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         return {'success': False,
-                'output': 'cloudformation_builder.py: ' + (str(e) + ': error :' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))}
+                'output': 'cloudformation_builder.py: ' + (
+                            str(e) + ': error :' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))}

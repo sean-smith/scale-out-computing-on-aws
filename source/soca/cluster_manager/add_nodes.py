@@ -517,9 +517,8 @@ if __name__ == "__main__":
 
     arg = parser.parse_args()
     launch = main(**dict(arg._get_kwargs()))
-
     if launch['success'] is True:
-        if arg.keep_forever is True:
+        if (arg.keep_forever).lower() == 'true':
             print("""
             IMPORTANT:
             You specified --keep-forever flag. This instance will be running 24/7 until you MANUALLY terminate the Cloudformation Stack  
