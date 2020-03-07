@@ -166,10 +166,11 @@ excluded_users: ["cn=mynewgroup,ou=Group,dc=soca,dc=local"]
 Scheduler hooks are located on /var/spool/pbs/server_logs/
 
 ## Code
-The hook file can be found under `/apps/soca/cluster_hooks/<CLUSTER_ID>/queuejob/check_queue_config.py` on your Scale-Out Computing on AWS cluster)
+The hook file can be found under `/apps/soca/cluster_hooks/<CLUSTER_ID>/queuejob/check_queue_acls.py` on your Scale-Out Computing on AWS cluster)
 
 ## Disable the hook
 You can disable the hook by running the following command on the scheduler host (as root):
+
 ~~~bash
-user@host: qmgr -c "delete hook check_queue_config event=queuejob"
+user@host: qmgr -c "delete hook check_queue_acls event=queuejob"
 ~~~

@@ -1,5 +1,5 @@
 ---
-title: Manage EC2 instance types restriction at queue level
+title: Retrict provisioning of specific instance type
 ---
 
 You can manage the EC2 instance types allowed for each queue by configuring both  `allowed_instance_types` and `excluded_instance_types`.
@@ -54,7 +54,7 @@ qsub -q test -l instance_type=c5.4xlarge -- /bin/echo test
 16.ip-110-0-12-28
 ~~~
 
-!!!note "Instace types in `excluded_instance_types` will be blocked even if they appear in `allowed_instance_types`"
+!!!note "Instance types in `excluded_instance_types` will be blocked even if they appear in `allowed_instance_types`"
     If an instance type or family appears in both the `excluded_instance_types`list as well as `allowed_instance_types` for a queue, the `excluded_instance_types` setting takes priority.
 
 ## Block users from using specific EC2 instance types
@@ -88,4 +88,11 @@ qsub: g4dn.xlarge is not a valid instance type for the job queue test. Contact y
 Scheduler hooks are located on /var/spool/pbs/server_logs/
 
 ## Code
-The hook file can be found under `/apps/soca/cluster_hooks/<CLUSTER_ID>/queuejob/check_queue_config.py` on your Scale-Out Computing on AWS cluster)
+The hook file can be found under `/apps/soca/cluster_hooks/<CLUSTER_ID>/queuejob/check_queue_instance_types.py` on your Scale-Out Computing on AWS cluster)
+
+## Disable the hook
+You can disable the hook by running the following command on the scheduler host (as root):
+
+~~~bash
+user@host: qmgr -c "delete hook check_queue_instance_types event=queuejob"
+~~~

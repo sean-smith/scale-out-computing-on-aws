@@ -1,17 +1,13 @@
 '''
 This hook reject the job if the user is not allowed to use the queue
-Doc: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
-create hook check_queue_config event=queuejob
-import hook check_queue_config application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_queue_config.py
+Doc:
+> https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
+
+create hook check_queue_acls event=queuejob
+import hook check_queue_acls application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_queue_acls.py
 
 Note: If you make any change to this file, you MUST re-execute the import command.
 If you are installing this file manually, make sure to replace %SOCA_CONFIGURATION path below
---
-
-"allowed_users" / "excluded_users" must be:
- 1 - Be a list of username: allowed_users = ["user1","user2"]
- 2 - Be a list of OpenLDAP group: allowed_user=["DC=mygroup,OU=Group,DC=soca,DC=local"]
- 3 - Or both: allowed_users = ["user1", "DC=mygroup,OU=Group,DC=soca,DC=local", "user2"]
 '''
 
 import os
@@ -30,40 +26,6 @@ def find_users_in_ldap_group(group_dn):
     return list(filter(None, users_in_group.split('\n')))
 
 
-def is_allowed_instance_type(instance_type, allowed_instance_types, excluded_instance_types):
-    #A very basic sanity check on instance_type provided by user
-    if '.' in instance_type:
-        family = instance_type.split('.')[0]
-    else:
-        return False
-
-    all_instances_allowed = True if len(allowed_instance_types) == 0 else False
-    no_instances_excluded = True if len(excluded_instance_types) == 0 else False
-
-    if all_instances_allowed and no_instances_excluded:
-       return True
-
-    #check if on exclude list
-    for excluded_type in excluded_instance_types:
-        if instance_type == excluded_type:
-            return False
-        elif '.' not in excluded_type and family == excluded_type:
-            return False
-
-    #check if on allowed list
-    for allowed_type in allowed_instance_types:
-        if instance_type == allowed_type:
-            return True
-        elif '.' not in allowed_type and family == allowed_type:
-            return True
-
-    #if all instances are allowed default to true otherwise false
-    if all_instances_allowed:
-        return True
-    else:
-        return False
-
-      
 e = pbs.event()
 j = e.job
 job_owner = str(e.requestor)
@@ -99,24 +61,23 @@ for doc in docs.values():
         if job_queue in queues:
             allowed_users = []
             excluded_users = []
+
+            if 'allowed_users' not in v.keys():
+                e.reject("allowed_users is not specified on " + queue_settings_file + ". See https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/ for examples")
+
+            if 'excluded_users' not in v.keys():
+                e.reject("excluded_users is not specified on " + queue_settings_file + ". See https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/ for examples")
+
+            # ensure expected keys are valid lists
             if isinstance(v['allowed_users'], list) is not True:
                 e.reject("allowed_users (" + queue_settings_file + ") must be a list. Detected: " +str(type(v['allowed_users'])))
             if isinstance(v['excluded_users'], list) is not True:
                 e.reject("excluded_users (" + queue_settings_file + ") must be a list. Detected: " + str(type(v['excluded_users'])))
-            if isinstance(v['allowed_instance_types'], list) is not True:
-                e.reject("allowed_instance_types (" + queue_settings_file + ") must be a list. Detected: " +            str(type(v['allowed_instance_types'])))
-            if isinstance(v['excluded_instance_types'], list) is not True:
-                e.reject("excluded_instance_types (" + queue_settings_file + ") must be a list. Detected: " +           str(type(v['excluded_instance_types'])))
 
             allowed_instance_types = v['allowed_instance_types']
             excluded_instance_types = v['excluded_instance_types']
 
-            if instance_type:
-                 is_valid_instance = is_allowed_instance_type(instance_type, allowed_instance_types,                      excluded_instance_types)
-            else:
-                 #if no instance tpe in resource list default is used which is assumed to be valid.
-                 is_valid_instance = True
-
+            # Retrieve list of users that can submit job to the queue
             if 'allowed_users' in v.keys():
                 for user in v['allowed_users']:
                     if "cn=" in user.lower():
@@ -129,6 +90,7 @@ for doc in docs.values():
                 message = "allowed_users directive not detected on " + str(queue_settings_file)
                 e.reject(message)
 
+            # Retrieve list of users that cannot submit job to the queue
             if 'excluded_users' in v.keys():
                 for user in v['excluded_users']:
                     if "cn=" in user.lower():
@@ -140,14 +102,10 @@ for doc in docs.values():
                 message = "excluded_users directive not detected on " + str(queue_settings_file)
                 e.reject(message)
 
-            if not is_valid_instance:
-                  message = instance_type + " is not allowed for queue " + job_queue + ". Contact your HPC admin and update " + queue_settings_file
-                  e.reject(message)
-
+            # Then verify user is authorized to submit a job to the queue
             if excluded_users.__len__() == 0 and allowed_users.__len__() == 0:
                 e.accept()
             else:
-
                 if excluded_users[0] == "*" and job_owner not in allowed_users:
                     message = job_owner + " is not authorized to use submit this job on the queue " + job_queue + ". Contact your HPC admin and update " + queue_settings_file
                     e.reject(message)

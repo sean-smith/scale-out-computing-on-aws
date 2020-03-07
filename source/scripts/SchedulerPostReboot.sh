@@ -30,9 +30,11 @@ queue_type:
     # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
+    # List of parameters user can not override: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-restricted-parameters/
+    restricted_parameters: []
     # Default job parameters: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
-    instance_ami: "$SOCA_INSTALL_AMI"
-    instance_type: "c5.large"
+    instance_ami: "$SOCA_INSTALL_AMI" # Required
+    instance_type: "c5.large" # Required
     ht_support: "false"
     root_size: "10"
     #scratch_size: "100"
@@ -47,9 +49,11 @@ queue_type:
     # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
+    # List of parameters user can not override: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-restricted-parameters/
+    restricted_parameters: []
     # Default job parameters: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
-    instance_ami: "$SOCA_INSTALL_AMI"
-    instance_type: "c5.large"
+    instance_ami: "$SOCA_INSTALL_AMI" # Required
+    instance_type: "c5.large"  # Required
     ht_support: "false"
     root_size: "10"
     # .. Refer to the doc for more supported parameters
@@ -61,9 +65,11 @@ queue_type:
     # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
+    # List of parameters user can not override: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-restricted-parameters/
+    restricted_parameters: []
     # Default job parameters: https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
-    instance_ami: "$SOCA_INSTALL_AMI"
-    instance_type: "c5.large"
+    instance_ami: "$SOCA_INSTALL_AMI"  # Required
+    instance_type: "c5.large"  # Required
     ht_support: "false"
     root_size: "10"
     #spot_price: "auto"
@@ -82,14 +88,20 @@ sleep 60
 
 
 ## Update PBS Hooks with the current script location
-#%SOCA_CONFIGURATION
-sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_config.py
+sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_acls.py
+sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_instance_types.py
+sed -i "s/%SOCA_CONFIGURATION/$SOCA_CONFIGURATION/g" /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_restricted_parameters.py
 
 # Create Default PBS hooks
 qmgr -c "create hook soca_aws_infos event=execjob_begin"
 qmgr -c "import hook soca_aws_infos application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/execjob_begin/soca_aws_infos.py"
-qmgr -c "create hook check_queue_acl event=queuejob"
-qmgr -c "import hook check_queue_acl application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_config.py"
+qmgr -c "create hook check_queue_acls event=queuejob"
+qmgr -c "import hook check_queue_acls application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_acls.py"
+qmgr -c "create hook check_queue_instance_types event=queuejob"
+qmgr -c "import hook check_queue_instance_types application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_instance_types.py"
+qmgr -c "create hook check_queue_restricted_parameters event=queuejob"
+qmgr -c "import hook check_queue_restricted_parameters application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_restricted_parameters.py"
+
 
 # Reload config
 systemctl restart pbs
