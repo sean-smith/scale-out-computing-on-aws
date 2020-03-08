@@ -1,7 +1,7 @@
 '''
 This hook reject the job if the user is not allowed to use the queue
 Doc:
-> https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-instance-types/
+> https://awslabs.github.io/scale-out-computing-on- aws/tutorials/manage-queue-instance-types/
 
 create hook check_queue_instance_types event=queuejob
 import hook check_queue_instance_types application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_queue_instance_types.py
@@ -110,5 +110,5 @@ for doc in docs.values():
 
             # first, make sure the instance_type selection is valid (if any)
             if not is_valid_instance:
-                message = instance_type + " is not allowed for queue " + job_queue + ". Contact your HPC admin and update " + queue_settings_file
+                message = instance_type + " is not allowed for queue " + job_queue + ". Approved instance types/families are :" +','.join(allowed_instance_types) + " .Contact your HPC admin and update " + queue_settings_file
                 e.reject(message)
