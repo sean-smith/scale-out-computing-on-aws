@@ -1,6 +1,11 @@
 = Scale-Out Computing on AWS - HPC made easy :palm_tree:
 :toc:
 
+== :book: Documentation
+
+https://awslabs.github.io/scale-out-computing-on-aws/[https://awslabs.github.io/scale-out-computing-on-aws/]
+
+
 == :rocket: How to install Scale-Out Computing on AWS
 
 === 1-Click installer
@@ -31,10 +36,6 @@ python source/manual_build.py
 . Launch CloudFormation and use `scale-out-computing-on-aws.template` as base template
 
 Refer to https://awslabs.github.io/scale-out-computing-on-aws/install-soca-cluster/[https://awslabs.github.io/scale-out-computing-on-aws/install-soca-cluster/] for installation instructions.
-
-== :book: Documentation
-
-https://awslabs.github.io/scale-out-computing-on-aws/[https://awslabs.github.io/scale-out-computing-on-aws/]
 
 == :pencil2: File Structure
 Scale-Out Computing on AWS project consists in a collection of CloudFormation templates, Shell scripts and Python code.
