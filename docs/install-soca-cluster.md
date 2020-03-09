@@ -212,5 +212,5 @@ When enabled, the following information is collected and sent to AWS:
 
 ## What's next ?
 
-Learn [how to access your cluster](/access-soca-cluster/), [how to submit your first job](/tutorials/launch-your-first-job/) or even [how to change your Scale-Out Computing on AWS DNS](/security/update-soca-dns-ssl-certificate/) to match your personal domain name.
+Learn [how to access your cluster](access-soca-cluster.md), [how to submit your first job](tutorials/launch-your-first-job.md) or even [how to change your Scale-Out Computing on AWS DNS](security/update-soca-dns-ssl-certificate.md) to match your personal domain name.
 
