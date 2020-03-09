@@ -138,6 +138,7 @@ systemctl start pbs
 /opt/pbs/bin/qmgr -c "set server job_history_enable=1"
 /opt/pbs/bin/qmgr -c "set server job_history_duration = 00:01:00"
 /opt/pbs/bin/qmgr -c "set server scheduler_iteration = 30"
+/opt/pbs/bin/qmgr -c "set server max_concurrent_provision = 5000"
 
 # Default Queue Config
 /opt/pbs/bin/qmgr -c "create queue low"
