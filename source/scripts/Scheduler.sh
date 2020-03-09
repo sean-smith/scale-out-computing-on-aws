@@ -389,6 +389,12 @@ dumpdir /var/run/chrony
 """ > /etc/chrony.conf
 systemctl enable chronyd
 
+# Disable ulimit
+echo -e  "
+* hard memlock unlimited
+* soft memlock unlimited
+" > /etc/security/limits.conf
+
 # Reboot to ensure SELINUX is disabled
 # Note: Upon reboot, SchedulerPostReboot.sh script will be executed and will finalize scheduler configuration
 reboot

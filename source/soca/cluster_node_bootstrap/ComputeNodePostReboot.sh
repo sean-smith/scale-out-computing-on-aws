@@ -5,6 +5,9 @@ source /root/config.cfg
 AWS=$(which aws)
 echo "BEGIN PostReboot setup"
 
+# In case AMI already have PBS installed, force it to stop
+service pbs stop
+
 # Make sure system is clean and PBS is stopped
 crontab -r
 systemctl stop pbs

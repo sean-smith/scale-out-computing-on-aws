@@ -8,6 +8,9 @@ if [ $# -lt 1 ]
     exit 0
 fi
 
+# In case AMI already have PBS installed, force it to stop
+service pbs stop
+
 # Install SSM
 yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
 systemctl enable amazon-ssm-agent

@@ -5,7 +5,6 @@
 
 https://awslabs.github.io/scale-out-computing-on-aws/[https://awslabs.github.io/scale-out-computing-on-aws/]
 
-
 == :rocket: How to install Scale-Out Computing on AWS
 
 === 1-Click installer
