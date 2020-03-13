@@ -58,6 +58,8 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
 
         # Verify if DNS is ready
         CHECK_FSX_STATUS=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].Lifecycle --output text)
+        # Note: We can retrieve FSxL Mount Name even if FSx is not fully ready
+        GET_FSX_MOUNT_NAME=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].LustreConfiguration.MountName --output text)
         LOOP_COUNT=1
         echo "FSX_DNS: " $FSX_DNS
         while [[ "$CHECK_FSX_STATUS" != "AVAILABLE" ]] && [[ $LOOP_COUNT -lt 10 ]]
@@ -71,14 +73,14 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
 
         if [[ "$CHECK_FSX_STATUS" == "AVAILABLE" ]]; then
             echo "FSx is AVAILABLE"
-            echo "$FSX_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+            echo "$FSX_DNS@tcp:/$GET_FSX_MOUNT_NAME $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
         else
             echo "FSx is not available even after 10 minutes timeout, ignoring FSx mount ..."
         fi
     else
         # Using persistent FSX provided by customer
         echo "Detected existing FSx provided by customers " $SOCA_FSX_LUSTRE_DNS
-        echo "$SOCA_FSX_LUSTRE_DNS@tcp:/fsx $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
+        echo "$SOCA_FSX_LUSTRE_DNS@tcp:/$GET_FSX_MOUNT_NAME $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
     fi
 
     # Install Clients
