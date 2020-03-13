@@ -80,6 +80,8 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
     else
         # Using persistent FSX provided by customer
         echo "Detected existing FSx provided by customers " $SOCA_FSX_LUSTRE_DNS
+        FSX_ID=$(echo $SOCA_FSX_LUSTRE_DNS | cut -d. -f1)
+        GET_FSX_MOUNT_NAME=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].LustreConfiguration.MountName --output text)
         echo "$SOCA_FSX_LUSTRE_DNS@tcp:/$GET_FSX_MOUNT_NAME $FSX_MOUNTPOINT lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
     fi
 
