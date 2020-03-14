@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SOCA now prevent jobs to be submitted if .yaml configuration files are malformed
 - Scheduler Root EBS is now tagged with cluster ID 
 - Scheduler Network Interface is now tagged with cluster ID 
-- Scheduler and Compute hosts are now sync with Chrony
+- Scheduler and Compute hosts are now sync with Chrony (Amazon Time Sync)
 - Support for FSx for Lustre new Scratch2/Scratch1 and Persistent mode
 
 ### Changed
@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added retry mechanism for some AWS API calls which throttled when provisioning > 1000 nodes in a single API call
 - ALB Target Groups are now correctly deleted once the DCV sessions is terminated
 - SOCA version is now displayed on the web interface
+- Updated EFA version to 1.8.3
 
 ## [1.0.0] - 2019-11-20
 - Release Candidate
