@@ -3,7 +3,8 @@
 source /etc/environment
 source /root/config.cfg
 AWS=$(which aws)
-echo "BEGIN PostReboot setup"
+REQUIRE_REBOOT=0
+echo "SOCA > BEGIN PostReboot setup"
 
 # In case AMI already have PBS installed, force it to stop
 service pbs stop
@@ -98,21 +99,13 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
         while read kernel; do
             if [[ $kernel == *"3.10.0-957"* ]]; then
               grub2-reboot $KERNEL_COUNT
-              reboot
+              REQUIRE_REBOOT=1
            fi
            ((KERNEL_COUNT++))
         done < /root/kernel_list
     fi
 
-    # Mount
-    mount -a
-
-    # Make sure /fsx is accessible
-    chmod 777 /fsx
 fi
-
-#  Make Scratch Readable by everyone. ACL still applies at folder level
-chmod 777 /scratch
 
 # Tag EBS disks manually as CFN ASG does not support it
 AWS_AVAIL_ZONE=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
@@ -145,8 +138,20 @@ done
 
 
 # Begin USER Customization
-/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $$SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1
+/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1
 # End USER Customization
 
-# Post-Boot routine completed, starting PBS
-systemctl start pbs
+if [[ $REQUIRE_REBOOT -eq 1 ]];
+then
+    echo "@reboot chmod 777 $FSX_MOUNTPOINT" | crontab -
+    reboot
+else
+    # Mount
+    mount -a
+    echo "chmod FSX"
+    chmod 777 $FSX_MOUNTPOINT
+    # Post-Boot routine completed, starting PBS
+    systemctl start pbs
+fi
+
+

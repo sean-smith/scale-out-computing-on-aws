@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scheduler Root EBS is now tagged with cluster ID 
 - Scheduler Network Interface is now tagged with cluster ID 
 - Scheduler and Compute hosts are now sync with Chrony
+- Support for FSx for Lustre new Scratch2/Scratch1 and Persistent mode
 
 ### Changed
 

@@ -146,8 +146,7 @@ systemctl enable chronyd
 mkdir -p $SOCA_HOST_SYSTEM_LOG
 echo "@reboot /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodePostReboot.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostInstall.log 2>&1" | crontab -
 $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
-/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh ''' + params[
-                       'SchedulerHostname'] + ''' >> $SOCA_HOST_SYSTEM_LOG/ComputeNode.sh.log 2>&1'''
+/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh ''' + params['SchedulerHostname'] + ''' >> $SOCA_HOST_SYSTEM_LOG/ComputeNode.sh.log 2>&1'''
 
         ltd.EbsOptimized = True
         for instance in instances_list:
@@ -243,7 +242,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             fsx_lustre.FileSystemType = "LUSTRE"
             fsx_lustre.StorageCapacity = params["FSxLustreSize"]
             fsx_lustre.SecurityGroupIds = [params["SecurityGroupId"]]
-            fsx_lustre.SubnetIds = [params["SubnetId"]]
+            fsx_lustre.SubnetIds = params["SubnetId"]
             fsx_lustre.LustreConfiguration = fsx_lustre_configuration
             fsx_lustre.Tags = base_Tags(
                 # False disable PropagateAtLaunch
