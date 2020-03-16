@@ -221,6 +221,7 @@ Resources:
                 Action:
                   - ec2:DescribeVolumes
                   - ec2:DescribeNetworkInterfaces
+                  - fsx:CreateDataRepositoryTask
                   - fsx:DescribeFileSystems # For FSX
                   - tag:GetResources # For FSX detection
                   - tag:GetTagValues # For FSX detection
@@ -301,6 +302,7 @@ Resources:
                   - autoscaling:CreateAutoScalingGroup
                   - ec2:DeleteLaunchTemplate
                   - ec2:CreateLaunchTemplate
+                  - fsx:CreateDataRepositoryTask
                 Resource: "*"
                 Condition:
                   StringLikeIfExists:
