@@ -73,31 +73,57 @@ def check_config(**kwargs):
         except ValueError:
             error = return_message('Tags must be a valid dictionary')
 
-    if kwargs['fsx_lustre_dns'] is False:
-        if kwargs['fsx_lustre_bucket'] is False:
-            if kwargs['fsx_lustre_size'] is not False:
-                error = return_message('You must specify fsx_lustre_bucket parameter if you specify fsx_lustre_size')
-        else:
-            if kwargs['fsx_lustre_bucket'].startswith("s3://"):
-                # remove trailing / if exist
-                kwargs['fsx_lustre_bucket'] = kwargs['fsx_lustre_bucket'] if kwargs['fsx_lustre_bucket'][-1] != '/' else kwargs['fsx_lustre_bucket'][:-1]
-            else:
-                kwargs['fsx_lustre_bucket'] = "s3://" + kwargs['fsx_lustre_bucket']
+    # FSx Management
+    kwargs['fsx_lustre_configuration'] = {
+        'fsx_lustre': kwargs['fsx_lustre'],
+        's3_backend': False,
+        'existing_fsx': False,
+        'import_path': False,
+        'export_path': False,
+        'deployment_type': 'SCRATCH_1',  # limited to scratch1 for now
+        'per_unit_throughput': 200,  # will be used in future release
+        'capacity': 1200
+    }
 
-            try:
-                s3.get_bucket_acl(Bucket=kwargs['fsx_lustre_bucket'].split('s3://')[-1])
-            except exceptions.ClientError:
-                error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre_bucket'] + '). Refer to the documentation to update IAM policy.')
-
-            if kwargs['fsx_lustre_size'] is False:
-                kwargs['fsx_lustre_size'] = 1200
+    if kwargs['fsx_lustre'] is not False:
+        if kwargs['fsx_lustre'] is not True:
+            # when fsx_lustre is set to True, only create a FSx without S3 backend
+            if kwargs['fsx_lustre'].startswith("fs-"):
+                kwargs['fsx_lustre_configuration']['existing_fsx'] = kwargs['fsx_lustre']
             else:
-                fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
-                if int(kwargs['fsx_lustre_size']) not in fsx_lustre_capacity_allowed:
-                    error = return_message('fsx_lustre_size must be: ' + ','.join(str(x) for x in fsx_lustre_capacity_allowed))
-    else:
-        # Prevent case where fsx_lustre_dns and fsx_lustre_bucket are both configured.
-        kwargs['fsx_lustre_bucket'] = False
+                if kwargs['fsx_lustre'].startswith("s3://"):
+                    kwargs['fsx_lustre_configuration']['s3_backend'] = kwargs['fsx_lustre']
+                else:
+                    kwargs['fsx_lustre_configuration']['s3_backend'] = "s3://" + kwargs['fsx_lustre']
+
+                # Verify if SOCA has permissions to access S3 backend
+                try:
+                    s3.get_bucket_acl(Bucket=kwargs['fsx_lustre'].split('s3://')[-1])
+                except exceptions.ClientError:
+                    error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre_bucket'] + '). Refer to the documentation to update IAM policy.')
+
+                # Verify if user specified custom Import/Export path.
+                # Syntax is fsx_lustre=<bucket>+<export_path>+<import_path>
+                check_user_specified_path = kwargs['fsx_lustre'].split('+')
+                if check_user_specified_path.__len__() == 1:
+                    pass
+                elif check_user_specified_path.__len__() == 2:
+                    # import path default to bucket root if not specified
+                    kwargs['fsx_lustre_configuration']['export_path'] = check_user_specified_path[1]
+                    kwargs['fsx_lustre_configuration']['import_path'] = kwargs['fsx_lustre_configuration']['s3_backend']
+                elif check_user_specified_path.__len__() == 3:
+                    # When customers specified both import and export path
+                    kwargs['fsx_lustre_configuration']['export_path'] = check_user_specified_path[1]
+                    kwargs['fsx_lustre_configuration']['import_path'] = check_user_specified_path[2]
+                else:
+                    error = return_message('Error setting up Import/Export path: ' + kwargs['fsx_lustre'] + '). Syntax is <bucket_name>+<export_path>+<import_path>. If import_path is not specified it defaults to bucket root level')
+
+        if kwargs['fsx_lustre_size'] is not False:
+            fsx_lustre_capacity_allowed = [1200, 2400, 3600, 7200, 10800]
+            if int(kwargs['fsx_lustre_size']) not in fsx_lustre_capacity_allowed:
+                error = return_message('fsx_lustre_size must be: ' + ','.join(str(x) for x in fsx_lustre_capacity_allowed))
+            else:
+                kwargs['fsx_lustre_configuration']['capacity'] = kwargs['fsx_lustre_size']
 
     soca_private_subnets = [aligo_configuration['PrivateSubnet1'],
                             aligo_configuration['PrivateSubnet2'],
@@ -217,8 +243,7 @@ def main(**kwargs):
         optional_job_parameters = {'anonymous_metrics': aligo_configuration["DefaultMetricCollection"],
                                    'base_os': False,
                                    'efa_support': False,
-                                   'fsx_lustre_bucket': False,
-                                   'fsx_lustre_dns': False,
+                                   'fsx_lustre': False,
                                    'fsx_lustre_size': False,
                                    'ht_support': False,
                                    'keep_ebs': False,
@@ -305,17 +330,9 @@ def main(**kwargs):
                 'Key': None,
                 'Default': aligo_configuration['EFSDataDns'],
             },
-            'FSxLustreBucket': {
-                'Key': 'fsx_lustre_bucket',
+            'FSxLustreConfiguration': {
+                'Key': 'fsx_lustre_configuration',
                 'Default': False
-            },
-            'FSxLustreDns': {
-                'Key': 'fsx_lustre_dns',
-                'Default': False
-            },
-            'FSxLustreSize': {
-                'Key': 'fsx_lustre_size',
-                'Default': 1200
             },
             'ImageId': {
                 'Key': 'instance_ami',

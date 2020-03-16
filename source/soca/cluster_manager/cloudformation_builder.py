@@ -67,6 +67,12 @@ if [[ "''' + params['BaseOS'] + '''" == "centos7" ]] || [[ "''' + params['BaseOS
         PIP=$(which pip2.7)
         $PIP install awscli
         yum install -y nfs-utils # enforce install of nfs-utils
+else
+     # Upgrade awscli on ALI (do not use yum)
+     EASY_INSTALL=$(which easy_install-2.7)
+     $EASY_INSTALL pip
+     PIP=$(which pip)
+     $PIP install awscli --upgrade 
 fi
 if [[ "''' + params['BaseOS'] + '''" == "amazonlinux2" ]];
     then
@@ -86,8 +92,8 @@ echo export "SOCA_JOB_ID="''' + str(params['JobId']) + '''"" >> /etc/environment
 echo export "SOCA_SCRATCH_SIZE=''' + str(params['ScratchSize']) + '''" >> /etc/environment
 echo export "SOCA_INSTALL_BUCKET="''' + str(params['S3Bucket']) + '''"" >> /etc/environment
 echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + str(params['S3InstallFolder']) + '''"" >> /etc/environment
-echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreBucket']).lower() + '''"" >> /etc/environment
-echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreDns']).lower() + '''"" >> /etc/environment
+echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreConfiguration']['fsx_lustre']).lower() + '''"" >> /etc/environment
+echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreConfiguration']['existing_fsx']).lower() + '''"" >> /etc/environment
 echo export "SOCA_INSTANCE_TYPE=$GET_INSTANCE_TYPE" >> /etc/environment
 echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
 echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(params['ClusterId']) + '''/cluster_node_bootstrap/logs/''' + str(params['JobId']) + '''/$(hostname -s)"" >> /etc/environment
@@ -233,31 +239,34 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         # End MixedPolicyInstance
 
         # Begin FSx for Lustre
-        if params["FSxLustreBucket"] is not False:
-            fsx_lustre_configuration = LustreConfiguration()
-            fsx_lustre_configuration.ImportPath = params["FSxLustreBucket"]
-            fsx_lustre_configuration.ExportPath = params['FSxLustreBucket'] + "/" + params[
-                "ClusterId"] + "-fsxoutput/job-" + params["JobId"] + "/"
-            fsx_lustre = FileSystem("FSxForLustre")
-            fsx_lustre.FileSystemType = "LUSTRE"
-            fsx_lustre.StorageCapacity = params["FSxLustreSize"]
-            fsx_lustre.SecurityGroupIds = [params["SecurityGroupId"]]
-            fsx_lustre.SubnetIds = params["SubnetId"]
-            fsx_lustre.LustreConfiguration = fsx_lustre_configuration
-            fsx_lustre.Tags = base_Tags(
-                # False disable PropagateAtLaunch
-                Name=str(params["ClusterId"] + "-compute-job-" + params["JobId"]),
-                _soca_JobId=str(params["JobId"]),
-                _soca_JobName=str(params["JobName"]),
-                _soca_JobQueue=str(params["JobQueue"]),
-                _soca_StackId=stack_name,
-                _soca_JobOwner=str(params["JobOwner"]),
-                _soca_JobProject=str(params["JobProject"]),
-                _soca_KeepForever=str(params["KeepForever"]).lower(),
-                _soca_FSx="true",
-                _soca_ClusterId=str(params["ClusterId"]),
-            )
-            t.add_resource(fsx_lustre)
+        if params["FSxLustreConfiguration"]["fsx_lustre"] is not False:
+            if params["FSxLustreConfiguration"]["existing_fsx"] is False:
+                fsx_lustre = FileSystem("FSxForLustre")
+                fsx_lustre.FileSystemType = "LUSTRE"
+                fsx_lustre.StorageCapacity = params["FSxLustreConfiguration"]["capacity"]
+                fsx_lustre.SecurityGroupIds = [params["SecurityGroupId"]]
+                fsx_lustre.SubnetIds = params["SubnetId"]
+
+                if params["FSxLustreConfiguration"]["s3_backend"] is not False:
+                    fsx_lustre_configuration = LustreConfiguration()
+                    fsx_lustre_configuration.ImportPath = params["FSxLustreConfiguration"]["import_path"] if params["FSxLustreConfiguration"]["import_path"] is not False else params["FSxLustreConfiguration"]["s3_backend"]
+                    fsx_lustre_configuration.ExportPath = params["FSxLustreConfiguration"]["import_path"] if params["FSxLustreConfiguration"]["import_path"] is not False else params["FSxLustreConfiguration"]["s3_backend"] + "/" + params["ClusterId"] + "-fsxoutput/job-" +  params["JobId"] + "/"
+                    fsx_lustre.LustreConfiguration = fsx_lustre_configuration
+
+                fsx_lustre.Tags = base_Tags(
+                    # False disable PropagateAtLaunch
+                    Name=str(params["ClusterId"] + "-compute-job-" + params["JobId"]),
+                    _soca_JobId=str(params["JobId"]),
+                    _soca_JobName=str(params["JobName"]),
+                    _soca_JobQueue=str(params["JobQueue"]),
+                    _soca_StackId=stack_name,
+                    _soca_JobOwner=str(params["JobOwner"]),
+                    _soca_JobProject=str(params["JobProject"]),
+                    _soca_KeepForever=str(params["KeepForever"]).lower(),
+                    _soca_FSx="true",
+                    _soca_ClusterId=str(params["ClusterId"]),
+                )
+                t.add_resource(fsx_lustre)
         # End FSx For Lustre
 
         # Begin AutoScalingGroup Resource
@@ -310,7 +319,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             metrics.BaseOS = str(params["BaseOS"])
             metrics.StackUUID = str(params["StackUUID"])
             metrics.KeepForever = str(params["KeepForever"])
-            metrics.FsxLustre = "False" if params["FSxLustreBucket"] is False else 'True'
+            metrics.FsxLustre = str(params["FSxLustreConfiguration"])
             t.add_resource(metrics)
             # End Custom Resource
 

@@ -299,7 +299,7 @@ if __name__ == "__main__":
     cloudformation = boto3.client('cloudformation')
     queue_parameter_values = {}
     queues = False
-    queues_only_parameters = ["allowed_users", "excluded_users"]
+    queues_only_parameters = ["allowed_users", "excluded_users", "excluded_instance_types", "allowed_instance_types", "restricted_parameters"]
     # Retrieve Default Queue parameters
     stream_resource_mapping = open('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/queue_mapping.yml', "r")
     docs = yaml.load_all(stream_resource_mapping, Loader=yaml.FullLoader)

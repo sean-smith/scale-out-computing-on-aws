@@ -157,33 +157,46 @@ Below is a list of parameters you can specify when you request your simulation t
 
 ### FSx for Lustre
 
-#### fsx_lustre_bucket
+#### fsx_lustre
 
-- Description: Create an ephemeral FSx for your job and mount the  S3 bucket specified 
-- Example: `-l fsx_lustre_bucket=my-bucket-name`: Create a new FSx for Lustre and mount it accross all nodes
+##### With no S3 backend
+
+- Example: `-l fsx_lustre=True`: Create a new FSx for Lustre and mount it accross all nodes
 
 !!!info
-    - FSx partitions are mounted as `/fsx`
-    - [You need to give IAM permission first](../../storage/launch-job-with-fsx/)
+    - FSx partitions are mounted as `/fsx`. This can be changed if needed
+    - If `fsx_lustre_size` is not specified, default to 1200 GB
+    
+##### With S3 backend
+
+- Example: `-l fsx_lustre=my-bucket-name` or `-l fsx_lustre=s3://my-bucket-name` : Create a new FSx for Lustre and mount it across all nodes
+
+!!!info
+    - FSx partitions are mounted as `/fsx`. This can be changed if needed
+    - [You need to give IAM permission first](../../storage/launch-job-with-fsx/#how-to-provision-an-ephemeral-fsx-with-s3-backend)
     - If not specified, SOCA automatically prefix your bucket name with  `s3://`
     - If `fsx_lustre_size` is not specified, default to 1200 GB
+    - [You can configure custom ImportPath and ExportPath](../../storage/launch-job-with-fsx/#setup)
+
+##### Mount existing FSx
+
+- Description: Mount an existing FSx to all compute nodes if `fsx_lustre` points to a FSx filesystem ID
+- Example: `-l fsx_lustre=fs-xxxx`
+
+!!!info   
+    - FSx partitions are mounted as `/fsx`. This can be changed if needed 
+    - Make sure your FSx for Luster configuration is correct (use SOCA VPC and correct IAM roles)
+
 
 #### fsx_lustre_size
 
 - Description: Create an ephemeral FSx for your job and mount the  S3 bucket specified 
 - Unit: GB
-- Example: `-l fsx_lustre_sizey=3600`: Provision a 3.6TB EFS disk
+- Example: `-l fsx_lustre_size=3600`: Provision a 3.6TB EFS disk
 
 !!!info    
     If `fsx_lustre_size` is not specified, default to 1200 GB (smallest size supported)
     
-#### fsx_lustre_dns
-
-- Description: Mount an existing FSx to all compute nodes 
-- Example: `-l fsx_lustre_dns=xxx`
-
-!!!info    
-    `fsx_lustre_bucket` is ignored if  `fsx_lustre_bucket` is specified.
 
 ## Network
 
