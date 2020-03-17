@@ -80,9 +80,8 @@ margin-right: 0;
 {{qsub_root_size}}
 {{qsub_scratch_size}}
 {{qsub_scratch_iops}}
-{{qsub_fsx_lustre_bucket}}
+{{qsub_fsx_lustre}}
 {{qsub_fsx_lustre_size}}
-{{qsub_fsx_lustre_dns}}
 {{qsub_ht_support}}
 {{qsub_spot_allocation_count}}
 {{qsub_spot_allocation_strategy}}
@@ -182,8 +181,8 @@ myscript.sh
    </div>
    
    
-   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_bucket" placeholder="Enter the name of the S3 bucket to mount as FSx for Lustre (/fsx)" />
-      <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre_bucket">Documentation</a></i>
+   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre" placeholder="Need FSx for Lustre? User either True, a S3 bucket name or an existing Filesystem ID" />
+      <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre">Documentation</a></i>
 
    <input class="input2"  name="fsx_lustre_size" size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_size" placeholder="How much storage do you want to provision for your FSx partition (in GB)" pattern="\d+" />
       <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre_size">Documentation</a></i>
@@ -191,11 +190,6 @@ myscript.sh
         <div style="color: red; font-size: medium" ng-message="pattern">Size must be a number</div>
    </div>
    
-
-   <input class="input2"  size="35"  style="font-size: 15px;  margin-top: 6px;" type="text" ng-change="myFunc()" ng-model="fsx_lustre_dns" placeholder="Already have an FSx for Lustre? Enter the DNS to mount it accross all nodes" />
-      <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#fsx_lustre_dns">Documentation</a></i>
-
-
 <h3>Flags: </h3>
    <input type="checkbox" ng-change="myFunc()" ng-model="efa_support"> I want to use EFA <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#efa_support">Documentation</a></i> <br>
    <input type="checkbox" ng-change="myFunc()" ng-model="placement_group"> I do not want to use Placement Group (enabled by default)    <i><a style="padding: 5px" target="_blank" href="../tutorials/integration-ec2-job-parameters/#placement_group">Documentation</a></i> <br>
@@ -227,9 +221,8 @@ myscript.sh
         if($scope.efa_support){$scope.qsub_efa_support = "-l efa_support=True";}else{$scope.qsub_efa_support= "";}
         if($scope.placement_group){$scope.qsub_placement_group = "-l placement_group=False";}else{$scope.qsub_placement_group= "";}
         if($scope.ht_support){$scope.qsub_ht_support = "-l ht_support=True";}else{$scope.qsub_ht_support= "";}
-        if($scope.fsx_lustre_bucket){$scope.qsub_fsx_lustre_bucket = "-l fsx_lustre_bucket=" + $scope.fsx_lustre_bucket;}else{$scope.qsub_fsx_lustre_bucket = "";}
+        if($scope.fsx_lustre){$scope.qsub_fsx_lustre = "-l fsx_lustre=" + $scope.fsx_lustre;}else{$scope.qsub_fsx_lustre = "";}
         if($scope.fsx_lustre_size){$scope.qsub_fsx_lustre_size = "-l fsx_lustre_size=" + $scope.fsx_lustre_size;}else{$scope.qsub_fsx_lustre_size = "";}
-        if($scope.fsx_lustre_dns){$scope.qsub_fsx_lustre_dns = "-l fsx_lustre_dnst=" + $scope.fsx_lustre_dns;}else{$scope.qsub_fsx_lustre_dns = "";}
         
         if (!$scope.nodes){$scope.nodes_count=0;}else{$scope.nodes_count=$scope.nodes}
             

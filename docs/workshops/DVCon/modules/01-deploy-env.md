@@ -1,14 +1,12 @@
 # Lab 1: Deploy Environment
 
-Your temporary AWS account has been pre-provisioned with a multiuser computing environment.  **You'll use this pre-built cluster for the workshop labs**.
-
-We also want you to have hands-on experience deploying you're own cluster, and in this module we will have you walk through the process of launching a second cluster in your temporary AWS account.  This second cluster will be provisioned in the background while you work on the rest of the workshop in the pre-built cluster.
+We want you to have hands-on experience deploying your own cluster, and in this module we will have you walk through the process of launching a cluster in your temporary AWS account.  This cluster will be provisioned in the background. For the subsequent modules you'll access a pre-built cluster where EDA tools and licenses have been provisioned. 
 
 ## Step 1: Launch stack
 
 This automated AWS CloudFormation template deploys a scale-out computing environment in the AWS Cloud.
 
-1. Sign in to the AWS Management Console and click the link below to launch the scale-out-computing-on-aws AWS CloudFormation template.
+1. Sign in to the AWS Management Console and click the Launch Stack link below to launch the scale-out-computing-on-aws AWS CloudFormation template.
 
     [**Launch Stack**](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?&templateURL=https://s3.amazonaws.com/solutions-reference/scale-out-computing-on-aws/latest/scale-out-computing-on-aws.template)
 
@@ -21,7 +19,7 @@ This automated AWS CloudFormation template deploys a scale-out computing environ
 
 1. On the **Create stack** page, you should see the template URL in the **Amazon S3 URL** text box and choose **Next**.
 
-1. On the **Specify stack** details page, assign a name to your solution stack.  We recommend naming it "mfg405".
+1. On the **Specify stack** details page, assign a name to your solution stack.  We recommend naming it "dvcon".
 
     !!! warning
          The stack name must be less than 20 characters and must be lower-case only.
@@ -38,8 +36,8 @@ This automated AWS CloudFormation template deploys a scale-out computing environ
     |Custom AMI|<Optional input>|If using a customized Amazon Machine Image, enter the ID. Leave this field blank.
     |**Network and Security**|
     |EC2 Instance Type for Scheduler node|m5.large|The instance type for the scheduler.  Do not change this parameter.
-    |VPC Cluster CIDR|110.0.0.0/16|Choose the CIDR (/16) block for the VPC. Do not change this parameter.
-    |IP Address|0.0.0.0/0|**REQUIRED** The public-facing IP address that is permitted to log into the environment.  You can leave it at default, but we recommend you change it to your public-facing IP address. You can find your public-facing IP address at http://checkip.amazonaws.com.  Add the /32 suffix to the IP number. 
+    |VPC Cluster CIDR|10.0.0.0/16|Choose the CIDR (/16) block for the VPC. Do not change this parameter.
+    |IP Address|See description|**REQUIRED** The public-facing IP address that is permitted to log into the environment.  You can leave it at default, but we recommend you change it to your public-facing IP address. You can find your public-facing IP address at http://checkip.amazonaws.com.  Add the /32 suffix to the IP number. 
     |Key Pair Name|ee-default-keypair|**REQUIRED** Select the `ee-default-keypair` provided by the workshop.
     |**Default LDAP User**|
     |User Name|<Requires input>|**REQUIRED** Set a username for the default cluster user.

@@ -1,6 +1,4 @@
-# .
-
-# Lab 4 Configure Budgets
+# Lab 6: Configure Budgets
 
 This environment supports [**AWS Budgets**](https://aws.amazon.com/aws-cost-management/aws-budgets/) and lets you create custom budgets assigned to users, teams, projects, or queues. To prevent over-spending, you can integrate the scheduler with **AWS Budgets** to take action when customer-defined budget thesholds have been reached.  
 
@@ -30,7 +28,7 @@ To enable this feature, you will first need to verify the project assigned to ea
 
 1. Log back into the scheduler instance via SSH and edit the `/apps/soca/cluster_hooks/queuejob/check_project_budget.py` script and paste the AWS account ID as the value for the `aws_account_id` variable.  Save the file when done.
 
-    ```python hl_lines="2"
+    ```bash hl_lines="2"
     # User Variables
     aws_account_id = '<ENTER_YOUR_AWS_ACCOUNT_ID>'
     budget_config_file = '/apps/soca/cluster_manager/settings/project_cost_manager.txt'
@@ -38,7 +36,7 @@ To enable this feature, you will first need to verify the project assigned to ea
 
 1. Enable the integration with the scheduler by running the following commands on the scheduler host:
 
-    ```
+    ```bash
     sudo -i
     source /etc/environment
     qmgr -c "create hook check_project_budget event=queuejob"
@@ -50,7 +48,7 @@ To enable this feature, you will first need to verify the project assigned to ea
 ### Submit a job without budget assignment
 
 1. Switch to the `admin` cluster user.
-    
+
     `sudo su - admin`
 
 1. Submit a job.
@@ -58,8 +56,8 @@ To enable this feature, you will first need to verify the project assigned to ea
     `qsub -- /bin/echo Hello`
 
     This job will be rejected and you will see the following messages:
-    
-    ```
+
+    ```text
     qsub: Error. You tried to submit job without project. Specify project using -P parameter
     ```
 
@@ -69,9 +67,10 @@ To enable this feature, you will first need to verify the project assigned to ea
 
     This job will also be rejected:
 
-    ```
+    ```text
     qsub: User morrmt is not assigned to any project. See /apps/soca/cluster_manager/settings/project_cost_manager.txt
     ```
+
     Next, we'll associated the user with "Project 1" by adding the username to the `project_cost_manager.txt` mapping file.
 
 1. As sudo, open the `/apps/soca/cluster_manager/settings/project_cost_manager.txt` file and add "Project 1" budget and the "admin" user.
@@ -107,7 +106,8 @@ The script queries the AWS Budget in real-time. So, if your users are blocked be
 If a user tries to launch a job associated to a project which does not exist on AWS Budget or with an invalid name, you will see the following error:
 
 ```bash
-bash-4.2$ qsub -P "Project 2" -- /bin/echo Hello
+qsub -P "Project 2" -- /bin/echo Hello
 qsub: Error. Unable to query AWS Budget API. ERROR: An error occurred (NotFoundException) when calling the DescribeBudget operation: [Exception=NotFoundException] Failed to call DescribeBudget for [AccountId: <REDACTED_ACCOUNT_ID>] - Failed to call GetBudget for [AccountId: <REDACTED_ACCOUNT_ID>] - Unable to get budget: Project 2 - the budget doesn't exist.
 ```
+
 Done!  On to the next lab.  Click **Next**.

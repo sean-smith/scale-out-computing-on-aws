@@ -1,4 +1,4 @@
-# MFG405 Workshop Overview
+# DVCon Workshop Overview
 
 ## Launch a turnkey scale-out compute environment in minutes on AWS
 

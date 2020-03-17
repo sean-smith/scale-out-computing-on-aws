@@ -1,4 +1,4 @@
-# MFG405 Workshop Overview
+# Scaling EDA with Vivado Workshop Overview
 
 ## Launch a turnkey scale-out compute environment in minutes on AWS
 
