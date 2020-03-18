@@ -4,15 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2020-03-15
+## [2.0.0] - 2020-03-18
 ### Added
 
 - Support for MixedInstancePolicy and InstanceDistribution
 - Support for non-EBS optimized instances such as t2
-- Integration for AWS Session Manager
-- Integration for AWS Backup
-- Integration for AWS Cognito
-- Integration for Troposphere
+- Integration of AWS Session Manager
+- Integration of AWS Backup
+- Integration of AWS Cognito
+- Integration of Troposphere
 - Admins can now manage ACL (individual/LDAP groups) at queue level
 - Admins can now restrict specific type/family of instance at queue level
 - Admins can now prevent users to change specific EC2 parameters
@@ -23,11 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scheduler Network Interface is now tagged with cluster ID 
 - Scheduler and Compute hosts are now sync with Chrony (Amazon Time Sync)
 - Support for FSx for Lustre new Scratch2/Scratch1 and Persistent mode
+- Added Compute nodes logs on EFS (/apps/soca/<cluster_id>/cluster_node_bootstrap/logs/<job_id>/<host>/*.log) for easy debugging
 
 ### Changed
 
 - Ignore installation if PBSPro is already configured on the AMI
-- Default IP during installation to 0.0.0.0/0
 - Fixed bug when stack name only use uppercase
 - ComputeNode bootstrap scripts are now loaded from EFS
 - Users can now open a SSH session using SSM Session Manager
