@@ -3,7 +3,7 @@ import logging
 import config
 from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint
-from requests import post
+from requests import post, get
 
 logger = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')
@@ -38,6 +38,7 @@ def logout():
 def authenticate():
     username = request.form.get('username')
     password = request.form.get('password')
+    logger.info("Received login request for : " + str(username))
     if username is not None and password is not None:
         check_auth = post(config.Config.FLASK_ENDPOINT + '/api/validate_ldap_user',
                           headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
@@ -48,6 +49,19 @@ def authenticate():
             flash(check_auth.json()['message'])
             return redirect('/login')
         else:
+            # Valid User
+            session['username'] = username
+            logger.info("User authenticated, checking sudo permissions")
+            check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/validate_ldap_user_sudoers/' + username,
+                          headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
+                          verify=False)
+            logger.info(check_sudo_permission.json())
+            if check_sudo_permission.json()["success"] is True:
+                if check_sudo_permission.json()["message"] is True:
+                    session["sudoers"] = True
+                else:
+                    session["sudoers"] = False
+
             return redirect('/')
 
     else:

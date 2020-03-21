@@ -5,6 +5,7 @@ from api.v1.create_api_key import create_api_key
 from api.v1.invalidate_api_key import invalidate_api_key
 from api.v1.list_api_key import list_api_key
 from api.v1.validate_ldap_user import validate_ldap_user
+from api.v1.validate_ldap_user_sudoers import validate_ldap_user_sudoers
 from config import app_config
 from flask import Flask
 from flask_session import Session
@@ -33,6 +34,7 @@ app.register_blueprint(create_api_key)
 app.register_blueprint(list_api_key)
 app.register_blueprint(invalidate_api_key)
 app.register_blueprint(validate_ldap_user)
+app.register_blueprint(validate_ldap_user_sudoers)
 
 # Manage logger
 logger = logging.getLogger()

@@ -1,7 +1,7 @@
 import config
 import ldap
 from decorators import private_api
-from flask import Blueprint, jsonify, make_response, session, request
+from flask import Blueprint, jsonify, make_response, request
 
 validate_ldap_user = Blueprint('validate_ldap_user', __name__)
 
@@ -18,16 +18,16 @@ def main():
         con = ldap.initialize('ldap://{}'.format(ldap_host))
         try:
             con.bind_s(user_dn, password, ldap.AUTH_SIMPLE)
-            session['username'] = username
+
             # Check if user has sudo permissions
             sudoers_search_base = "ou=Sudoers," + base_dn
             sudoers_search_scope = ldap.SCOPE_SUBTREE
             sudoers_filter = 'cn=' + username
             is_sudo = con.search_s(sudoers_search_base, sudoers_search_scope, sudoers_filter)
             if is_sudo.__len__() > 0:
-                session['sudoers'] = True
+                sudoers = True
             else:
-                session['sudoers'] = False
+                sudoers = False
 
             return make_response(jsonify({'success': True, 'message': 'USER_VALID'}))
 
