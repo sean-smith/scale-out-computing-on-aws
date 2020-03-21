@@ -231,8 +231,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             idistribution.OnDemandAllocationStrategy = "prioritized"  # only supported value
             idistribution.OnDemandBaseCapacity = params["DesiredCapacity"] - params["SpotAllocationCount"]
             idistribution.OnDemandPercentageAboveBaseCapacity = "0"  # force the other instances to be SPOT
-            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(
-                params["SpotPrice"])
+            idistribution.SpotMaxPrice = Ref("AWS::NoValue") if params["SpotPrice"] == "auto" else str(params["SpotPrice"])
             idistribution.SpotAllocationStrategy = params['SpotAllocationStrategy']
             mip.InstancesDistribution = idistribution
 

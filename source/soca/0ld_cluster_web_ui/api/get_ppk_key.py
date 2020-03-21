@@ -1,8 +1,10 @@
-from flask import send_file, session, Blueprint
 import os
-from generic import auth
-import generic.parameters as parameters
 import subprocess
+
+import generic.parameters as parameters
+from flask import send_file, session, Blueprint
+from generic import auth
+
 get_ppk_key = Blueprint('get_ppk_key', __name__, template_folder='templates')
 
 

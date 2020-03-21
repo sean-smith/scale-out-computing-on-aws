@@ -1,8 +1,8 @@
 import configparser
-import os
-import boto3
-import os
 import json
+import os
+
+import boto3
 
 
 class RawConfigParser(configparser.RawConfigParser):
