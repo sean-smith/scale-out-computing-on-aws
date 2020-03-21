@@ -40,7 +40,7 @@ def authenticate():
     password = request.form.get('password')
     logger.info("Received login request for : " + str(username))
     if username is not None and password is not None:
-        check_auth = post(config.Config.FLASK_ENDPOINT + '/api/validate_ldap_user',
+        check_auth = post(config.Config.FLASK_ENDPOINT + '/api/authenticate_ldap_user',
                           headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
                           data={"username": username, "password": password},
                           verify=False)
@@ -49,18 +49,16 @@ def authenticate():
             flash(check_auth.json()['message'])
             return redirect('/login')
         else:
-            # Valid User
             session['username'] = username
             logger.info("User authenticated, checking sudo permissions")
             check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/validate_ldap_user_sudoers/' + username,
-                          headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
-                          verify=False)
+                                        headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
+                                        verify=False)
             logger.info(check_sudo_permission.json())
             if check_sudo_permission.json()["success"] is True:
-                if check_sudo_permission.json()["message"] is True:
-                    session["sudoers"] = True
-                else:
-                    session["sudoers"] = False
+                session["sudoers"] = True
+            else:
+                session["sudoers"] = False
 
             return redirect('/')
 

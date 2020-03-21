@@ -1,6 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
+from api.v1.authenticate_ldap_user import authenticate_ldap_user
 from api.v1.create_api_key import create_api_key
 from api.v1.invalidate_api_key import invalidate_api_key
 from api.v1.list_api_key import list_api_key
@@ -22,7 +23,7 @@ csrf = CSRFProtect(app)
 csrf.exempt("views.submit_job.generate_qsub")
 csrf.exempt("api.v1.create_api_key.main")
 csrf.exempt("api.v1.invalidate_api_key.main")
-csrf.exempt("api.v1.validate_ldap_user.main")
+csrf.exempt("api.v1.authenticate_ldap_user.main")
 
 
 # Register routes
@@ -35,7 +36,7 @@ app.register_blueprint(list_api_key)
 app.register_blueprint(invalidate_api_key)
 app.register_blueprint(validate_ldap_user)
 app.register_blueprint(validate_ldap_user_sudoers)
-
+app.register_blueprint(authenticate_ldap_user)
 # Manage logger
 logger = logging.getLogger()
 formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(module)s] [%(message)s]')

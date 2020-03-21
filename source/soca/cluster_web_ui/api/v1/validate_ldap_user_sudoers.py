@@ -13,18 +13,14 @@ def main(username):
     base_dn = config.Config.LDAP_BASE_DN
     con = ldap.initialize('ldap://{}'.format(ldap_host))
     try:
-        # Check if user has sudo permissions
         sudoers_search_base = "ou=Sudoers," + base_dn
         sudoers_search_scope = ldap.SCOPE_SUBTREE
         sudoers_filter = 'cn=' + username
         is_sudo = con.search_s(sudoers_search_base, sudoers_search_scope, sudoers_filter)
         if is_sudo.__len__() > 0:
-            return make_response(jsonify({'success': True, 'message': True}))
+            return make_response(jsonify({'success': True, 'message': "USER_HAS_SUDO_PERMISSION"}))
         else:
-            return make_response(jsonify({'success': True, 'message': False}))
-
-    except ldap.INVALID_CREDENTIALS:
-        return make_response(jsonify({'success': False, 'message': 'INVALID_USER_CREDENTIAL'}))
+            return make_response(jsonify({'success': False, 'message': "NO_SUDO_PERMISSION"}))
 
     except ldap.SERVER_DOWN:
         return make_response(jsonify({'success': False, 'message': 'LDAP_SERVER_DOWN'}))
