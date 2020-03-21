@@ -1,4 +1,3 @@
-import json
 import logging
 
 import config
@@ -40,10 +39,13 @@ def authenticate():
     username = request.form.get('username')
     password = request.form.get('password')
     if username is not None and password is not None:
-        check_auth = post(config.FLASK_ENDPOINT + '/api/validate_ldap_user', headers={"X-SOCA-ADMIN": config.SERVER_API_KEY},
-                          data=json.dumps(username=username, password=password))
+        check_auth = post(config.Config.FLASK_ENDPOINT + '/api/validate_ldap_user',
+                          headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
+                          data={"username": username, "password": password},
+                          verify=False)
+        logger.info(check_auth.json())
         if check_auth.json()['success'] is False:
-            flash(check_auth['message'])
+            flash(check_auth.json()['message'])
             return redirect('/login')
         else:
             return redirect('/')

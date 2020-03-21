@@ -55,7 +55,7 @@ then
     fi
     tar xvf $PYTHON_TGZ
     cd Python-$PYTHON_VERSION
-    ./configure LDFLAGS="-L/usr/lib64/openssl" CPPFLAGS="-I/usr/include/openssl" --prefix=/apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION
+    ./configure LDFLAGS="-L/usr/lib64/openssl" CPPFLAGS="-I/usr/include/openssl" -enable-loadable-sqlite-extensions --prefix=/apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION
     make
     make install
     ln -sf /apps/soca/$SOCA_CONFIGURATION/python/$PYTHON_VERSION /apps/soca/$SOCA_CONFIGURATION/python/latest

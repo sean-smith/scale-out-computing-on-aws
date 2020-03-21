@@ -21,6 +21,8 @@ csrf = CSRFProtect(app)
 csrf.exempt("views.submit_job.generate_qsub")
 csrf.exempt("api.v1.create_api_key.main")
 csrf.exempt("api.v1.invalidate_api_key.main")
+csrf.exempt("api.v1.validate_ldap_user.main")
+
 
 # Register routes
 app.config.from_object(app_config)

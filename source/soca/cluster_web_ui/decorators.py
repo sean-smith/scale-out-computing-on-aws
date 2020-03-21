@@ -9,7 +9,7 @@ def private_api(f):
     @wraps(f)
     def protect_resource(*args, **kwargs):
         if request.environ.get("REMOTE_ADDR", False) == "127.0.0.1" \
-                and request.headers.get('X-SOCA-TOKEN', None) == config.Config.SERVER_API_KEY:
+                and request.headers.get('X-SOCA-ADMIN', None) == config.Config.SERVER_API_KEY:
             return f(*args, **kwargs)
         else:
             return make_response(jsonify({"success": False, "message": "NOT_PERMITTED"}), 403)

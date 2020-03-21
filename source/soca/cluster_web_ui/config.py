@@ -21,7 +21,7 @@ class Config(object):
     FLASK_HOST = "127.0.0.1"
     FLASK_PROTOCOL = "https://"
     FLASK_PORT = "8443"
-    FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ": " + FLASK_PORT
+    FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
 
     # COGNITO
     ENABLE_SSO = False

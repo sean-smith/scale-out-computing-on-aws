@@ -9,7 +9,7 @@ validate_ldap_user = Blueprint('validate_ldap_user', __name__)
 @validate_ldap_user.route("/api/validate_ldap_user",  methods=["POST"])
 @private_api
 def main():
-    username = request.form.get("request", False)
+    username = request.form.get("username", False)
     password = request.form.get("password", False)
     if username is not False and password is not False:
         ldap_host = config.Config.LDAP_HOST
