@@ -7,16 +7,16 @@ from models import db, ApiKeys
 invalidate_api_key = Blueprint('invalidate_api_key', __name__)
 
 
-@invalidate_api_key.route("/api/invalidate_api_key",  methods=["POST"])
+@invalidate_api_key.route("/api/users/invalidate_api_key",  methods=["POST"])
 @private_api
 def main():
     token = request.form.get("token", False)
-    if token is False:
-        return make_response(jsonify({"success": False, "message": "TOKEN_CANT_BE_FALSE"}), 200)
-
+    username = request.form.get("username", False)
+    if token is False and username is not False:
+        return make_response(jsonify({"success": False, "message": "TOKEN_OR_USERNAME_CANT_BE_FALSE"}), 200)
     else:
         try:
-            check_existing_key = ApiKeys.query.filter_by(token=token).first()
+            check_existing_key = ApiKeys.query.filter_by(token=token, username=username).first()
             if check_existing_key:
                 check_existing_key.is_active = False
                 check_existing_key.deactivated_on = datetime.datetime.utcnow()

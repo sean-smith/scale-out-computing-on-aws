@@ -2,11 +2,10 @@ import base64
 import json
 import logging
 
-import api.v1.validate_api_key as validate_api_key
+import api.v1.users.validate_api_key as validate_api_key
 from flask import Blueprint, request, jsonify
 
 logger = logging.getLogger(__name__)
-
 submit_job = Blueprint('submit_job', __name__, template_folder='templates')
 
 @submit_job.route("/submit_job", methods=["POST"])

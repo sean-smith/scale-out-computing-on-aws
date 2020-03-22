@@ -5,7 +5,7 @@ from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint
 from requests import post, get
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')
 
 
@@ -40,7 +40,7 @@ def authenticate():
     password = request.form.get('password')
     logger.info("Received login request for : " + str(username))
     if username is not None and password is not None:
-        check_auth = post(config.Config.FLASK_ENDPOINT + '/api/authenticate_ldap_user',
+        check_auth = post(config.Config.FLASK_ENDPOINT + '/api/ldap/authenticate',
                           headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
                           data={"username": username, "password": password},
                           verify=False)

@@ -8,7 +8,7 @@ from models import db, ApiKeys
 create_api_key = Blueprint('create_api_key', __name__)
 
 
-@create_api_key.route("/api/create_api_key",  methods=["POST"])
+@create_api_key.route("/api/users/create_api_key",  methods=["POST"])
 @private_api
 def main():
     username = request.form.get("username", False)

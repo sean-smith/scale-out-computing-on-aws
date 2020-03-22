@@ -45,7 +45,7 @@ case "$1" in
                 chmod 600 flask_secret_key.txt
             fi
             export FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
-            $GUNICORN_BIN $GUNICORN_APP -b $GUNICORN_BIND --workers $GUNICORN_WORKERS --log-level warning --certfile cert.crt --keyfile cert.key --log-file application_output.log --daemon
+            $GUNICORN_BIN $GUNICORN_APP -b $GUNICORN_BIND --workers $GUNICORN_WORKERS --log-level debug --certfile cert.crt --keyfile cert.key --log-file application_output.log --daemon
 
         else
            echo 'SOCA is already running with PIDs: ' $status_check_process

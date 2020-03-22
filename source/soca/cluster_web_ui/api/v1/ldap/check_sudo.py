@@ -3,10 +3,10 @@ import ldap
 from decorators import private_api
 from flask import Blueprint, jsonify, make_response
 
-validate_ldap_user_sudoers = Blueprint('validate_ldap_user_sudoers', __name__)
+check_sudo = Blueprint('check_sudo', __name__)
 
 
-@validate_ldap_user_sudoers.route("/api/validate_ldap_user_sudoers/<string:username>",  methods=["GET"])
+@check_sudo.route("/api/validate_ldap_sudoers/<string:username>",  methods=["GET"])
 @private_api
 def main(username):
     ldap_host = config.Config.LDAP_HOST

@@ -19,9 +19,10 @@ class Config(object):
 
     # GUNICORN SETTINGS
     FLASK_HOST = "127.0.0.1"
-    FLASK_PROTOCOL = "https://"
-    FLASK_PORT = "8443"
+    FLASK_PROTOCOL = "http://"
+    FLASK_PORT = "5000"
     FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
+
 
     # COGNITO
     ENABLE_SSO = False
