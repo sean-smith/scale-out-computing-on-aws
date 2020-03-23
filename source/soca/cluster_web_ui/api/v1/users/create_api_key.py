@@ -20,10 +20,12 @@ def main():
                 db.session.commit()
 
         try:
+            check_sudo = ""
             api_token = secrets.token_hex(16)
             new_key = ApiKeys(username=username,
                               token=api_token,
                               is_active=True,
+                              has_sudo=check_sudo,
                               created_on=datetime.datetime.utcnow())
             db.session.add(new_key)
             db.session.commit()

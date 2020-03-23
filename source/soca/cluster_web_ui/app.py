@@ -1,32 +1,45 @@
 import logging.config
 
-from api.v1.ldap.check_sudo import check_sudo
-from api.v1.ldap.check_user import check_user
-from api.v1.users.authenticate import authenticate
-from api.v1.users.create_api_key import create_api_key
-from api.v1.users.invalidate_api_key import invalidate_api_key
-from api.v1.users.list_api_key import list_api_key
+from api.v1.ldap.group import Group
+from api.v1.ldap.sudo import Sudo
+from api.v1.ldap.user import User
 from config import app_config
 from flask import Flask, request
+from flask_restful import Api
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
 from models import db
-from views.index import index
-from views.submit_job import submit_job
-from views.web_job_submission import web_job_submission
 
 app = Flask(__name__)
+
+
+api_errors = {
+    'UserAlreadyExistsError': {
+        'message': "A user with that username already exists.",
+        'status': 444,
+    },
+    'ResourceDoesNotExist': {
+        'message': "A resource with that ID no longer exists.",
+        'status': 410,
+        'extra': "Any extra information you want.",
+    },
+}
+api = Api(app, errors=api_errors)
 # Manage CSRF
-csrf = CSRFProtect(app)
-csrf.exempt("views.submit_job.generate_qsub")
-csrf.exempt("api.v1.users.create_api_key.main")
-csrf.exempt("api.v1.users.invalidate_api_key.main")
-csrf.exempt("api.v1.authenticate_ldap_user.main")
+#csrf = CSRFProtect(app)
+#csrf.exempt("views.submit_job.generate_qsub")
+#csrf.exempt("api.v1.users.create_api_key.main")
+#csrf.exempt("api.v1.users.invalidate_api_key.main")
+#csrf.exempt("api.v1.ldap.group.group")
 
 
 # Register routes
 app.config.from_object(app_config)
+api.add_resource(Group, '/')
+api.add_resource(Sudo, '/sudo')
+api.add_resource(User, '/user')
+
+'''
 app.register_blueprint(web_job_submission)
 app.register_blueprint(index)
 app.register_blueprint(submit_job)
@@ -36,6 +49,8 @@ app.register_blueprint(invalidate_api_key)
 app.register_blueprint(check_user)
 app.register_blueprint(check_sudo)
 app.register_blueprint(authenticate)
+app.register_blueprint(list_users)
+'''
 
 # Manage logger
 dict_config = {
@@ -77,7 +92,7 @@ app.logger.addHandler(logger)
 
 with app.test_request_context():
     db.init_app(app)
-    csrf.init_app(app)
+    #csrf.init_app(app)
     db.create_all()
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()

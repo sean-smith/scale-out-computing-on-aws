@@ -39,11 +39,16 @@ class Config(object):
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
     DCV_MAX_SESSION_ACOUNT = 4
+
     # LDAP
     LDAP_HOST = "127.0.0.1"
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
+    USER_HOME = "/data/home"
+    ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
+    ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
+
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"
     PBS_QDEL = "/opt/pbs/bin/qdel"

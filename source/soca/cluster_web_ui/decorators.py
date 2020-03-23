@@ -12,7 +12,7 @@ def private_api(f):
                 and request.headers.get('X-SOCA-ADMIN', None) == config.Config.SERVER_API_KEY:
             return f(*args, **kwargs)
         else:
-            return make_response(jsonify({"success": False, "message": "NOT_PERMITTED"}), 403)
+            return make_response(jsonify({"success": False, "message": "NOT_PERMITTED"}), 401)
 
     return protect_resource
 
