@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+import secrets
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -8,21 +9,19 @@ class Config(object):
     # APP
     DEBUG = False
     TESTING = False
-    SERVER_API_KEY = "test" #secrets.token_hex(16) # Used to authenticate to private API. Change after each restart
     USE_PERMANENT_SESSION = True
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)
     SESSION_TYPE = "sqlalchemy"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_SQLALCHEMY_TABLE = "flask_sessions"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
-    SECRET_KEY = "wesh " #os.environ["FLASK_SECRET_KEY"]
-
+    SECRET_KEY = "wesh "  # os.environ["FLASK_SECRET_KEY"]
+    API_ROOT_KEY = secrets.token_hex(16)  # Do not use this key to interactive API requests.
     # GUNICORN SETTINGS
     FLASK_HOST = "127.0.0.1"
     FLASK_PROTOCOL = "http://"
     FLASK_PORT = "5000"
     FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
-
 
     # COGNITO
     ENABLE_SSO = False
@@ -41,13 +40,16 @@ class Config(object):
     DCV_MAX_SESSION_ACOUNT = 4
 
     # LDAP
-    LDAP_HOST = "127.0.0.1"
+    LDAP_HOST = "54.202.219.176"
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
     USER_HOME = "/data/home"
-    ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
-    ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
+
+    #ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
+    #ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
+    ROOT_DN = 'CN=admin,' + LDAP_BASE_DN
+    ROOT_PW = 'etM7U8D6'
 
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"

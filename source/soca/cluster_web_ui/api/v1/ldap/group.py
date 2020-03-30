@@ -4,21 +4,139 @@ from flask_restful import Resource, abort
 class Group(Resource):
     @private_api
     def get(self):
-        # Return information related to a specific LDAP group
+        #
+        """
+                                                                    Return information related to a specific LDAP group
+                                                                    ---
+                                                                    tags:
+                                                                      - LDAP Management (Groups)
+                                                                    parameters:
+                                                                      - in: body
+                                                                        name: body
+                                                                        schema:
+                                                                          id: GETApiKey
+                                                                          required:
+                                                                            - username
+                                                                            - token
+                                                                          properties:
+                                                                            username:
+                                                                              type: string
+                                                                              description: username of the SOCA user
+                                                                            token:
+                                                                              type: string
+                                                                              description: token associated to the user
+
+                                                                    responses:
+                                                                      200:
+                                                                        description: Pair of username/token is valid
+                                                                      203:
+                                                                        description: Invalid username/token pair
+                                                                      400:
+                                                                        description: Malformed client input
+                                                                    """
         return {'action': 'get'}
 
 
     def post(self):
         # Create a new  LDAP group
+        """
+                                                                            Create a new LDAP group
+                                                                            ---
+                                                                            tags:
+                                                                              - LDAP Management (Groups)
+                                                                            parameters:
+                                                                              - in: body
+                                                                                name: body
+                                                                                schema:
+                                                                                  id: GETApiKey
+                                                                                  required:
+                                                                                    - username
+                                                                                    - token
+                                                                                  properties:
+                                                                                    username:
+                                                                                      type: string
+                                                                                      description: username of the SOCA user
+                                                                                    token:
+                                                                                      type: string
+                                                                                      description: token associated to the user
+
+                                                                            responses:
+                                                                              200:
+                                                                                description: Pair of username/token is valid
+                                                                              203:
+                                                                                description: Invalid username/token pair
+                                                                              400:
+                                                                                description: Malformed client input
+                                                                            """
         return abort(409)
 
 
     def delete(self):
         # Delete a LDAP group
+        """
+                                                                            Delete a LDAP group
+                                                                            ---
+                                                                            tags:
+                                                                              - LDAP Management (Groups)
+                                                                            parameters:
+                                                                              - in: body
+                                                                                name: body
+                                                                                schema:
+                                                                                  id: GETApiKey
+                                                                                  required:
+                                                                                    - username
+                                                                                    - token
+                                                                                  properties:
+                                                                                    username:
+                                                                                      type: string
+                                                                                      description: username of the SOCA user
+                                                                                    token:
+                                                                                      type: string
+                                                                                      description: token associated to the user
+
+                                                                            responses:
+                                                                              200:
+                                                                                description: Pair of username/token is valid
+                                                                              203:
+                                                                                description: Invalid username/token pair
+                                                                              400:
+                                                                                description: Malformed client input
+                                                                            """
         return {'action': 'delete'}
 
 
     def put(self):
+        # add user to group
+        # PREVENT ANY ACTION TO OU=Sudoers
+        """
+                                                                            Modify LDAP group
+                                                                            ---
+                                                                            tags:
+                                                                              - LDAP Management (Groups)
+                                                                            parameters:
+                                                                              - in: body
+                                                                                name: body
+                                                                                schema:
+                                                                                  id: GETApiKey
+                                                                                  required:
+                                                                                    - username
+                                                                                    - token
+                                                                                  properties:
+                                                                                    username:
+                                                                                      type: string
+                                                                                      description: username of the SOCA user
+                                                                                    token:
+                                                                                      type: string
+                                                                                      description: token associated to the user
+
+                                                                            responses:
+                                                                              200:
+                                                                                description: Pair of username/token is valid
+                                                                              203:
+                                                                                description: Invalid username/token pair
+                                                                              400:
+                                                                                description: Malformed client input
+                                                                            """
         return {'action': 'PUT'}
 
 '''

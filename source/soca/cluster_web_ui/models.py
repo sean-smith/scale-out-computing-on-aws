@@ -8,7 +8,7 @@ class ApiKeys(db.Model):
     username = db.Column(db.String(255), nullable=False)
     token = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean)
-    has_sudo = db.Column(db.Boolean)
+    scope = db.Column(db.String(255), nullable=False)
     created_on = db.Column(db.DateTime)
     deactivated_on = db.Column(db.DateTime)
 

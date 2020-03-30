@@ -1,11 +1,10 @@
 import logging
-
 import config
 from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint
 from requests import post, get
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')
 
 
@@ -41,21 +40,21 @@ def authenticate():
     logger.info("Received login request for : " + str(username))
     if username is not None and password is not None:
         check_auth = post(config.Config.FLASK_ENDPOINT + '/api/ldap/authenticate',
-                          headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
                           data={"username": username, "password": password},
-                          verify=False)
-        logger.info(check_auth.json())
-        if check_auth.json()['success'] is False:
-            flash(check_auth.json()['message'])
+                          verify=False).json()
+
+        logger.info(check_auth)
+        if check_auth['success'] is False:
+            flash(check_auth['message'])
             return redirect('/login')
         else:
             session['username'] = username
             logger.info("User authenticated, checking sudo permissions")
-            check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/validate_ldap_user_sudoers/' + username,
-                                        headers={"X-SOCA-ADMIN": config.Config.SERVER_API_KEY},
-                                        verify=False)
-            logger.info(check_sudo_permission.json())
-            if check_sudo_permission.json()["success"] is True:
+            check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/ldap/sudo',
+                                        params={"username": username},
+                                        verify=False).json()
+            logger.info(check_sudo_permission)
+            if check_sudo_permission["success"] is True:
                 session["sudoers"] = True
             else:
                 session["sudoers"] = False

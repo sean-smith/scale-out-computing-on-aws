@@ -1,0 +1,49 @@
+import logging
+import config
+from flask import render_template, Blueprint, request, redirect, session, flash
+from requests import get, delete
+
+logger = logging.getLogger("api_log")
+my_api_key = Blueprint('my_api_key', __name__, template_folder='templates')
+
+
+@my_api_key.route("/my_api_key", methods=["GET"])
+def index():
+    check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
+                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                         params={"username": session["username"]}).json()
+
+    logger.info(str(request) + ": check_user_key: Status: " + str(check_user_key))
+    logger.debug("check_user_key: Content: " + str(check_user_key))
+    if check_user_key["success"] is True:
+        user_token = check_user_key["message"]
+    else:
+        user_token = "UNKNOWN"
+        flash("Unable to retrieve API key for user", "error")
+
+    return render_template("my_api_key.html",
+                           username=session["username"],
+                           user_token=user_token,
+                           master_host=request.host_url)
+
+
+@my_api_key.route("/reset_api_key", methods=["POST"])
+def reset_key():
+    username = request.form.get("username", None)
+    if username is not None:
+        invalidate_user_key = delete(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
+                                     headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                     data={"username": username},
+                                     verify=False)
+        print(invalidate_user_key)
+        logger.info(str(request) + ": invalidate_user_key: Status: " + str(invalidate_user_key.status_code))
+        logger.debug("invalidate_user_key: Content: " + str(invalidate_user_key._content))
+
+        if invalidate_user_key.json()["message"] is True:
+            return redirect("/my_api_key")
+        else:
+            logger.error("Error while trying to reset Trace: " +str(invalidate_user_key))
+            return redirect("/my_api_key")
+
+    else:
+        return redirect("/my_api_key")

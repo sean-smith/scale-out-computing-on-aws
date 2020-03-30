@@ -1,56 +1,62 @@
 import logging.config
-
-from api.v1.ldap.group import Group
-from api.v1.ldap.sudo import Sudo
-from api.v1.ldap.user import User
-from config import app_config
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_restful import Api
 from flask_session import Session
+from flask_restful_swagger import swagger
 from flask_sqlalchemy import SQLAlchemy
+from api.v1.ldap.sudo import Sudo
+from api.v1.ldap.ids import Ids
+from api.v1.ldap.user import User
+from api.v1.ldap.users import Users
+from api.v1.user.api_key import ApiKey
+from api.v1.ldap.group import Group
+from api.v1.ldap.authenticate import Authenticate
+from views.index import index
+from views.my_api_key import my_api_key
+from views.users import users
+
+from flask_wtf.csrf import CSRFProtect
+from config import app_config
 from models import db
+from flask_swagger import swagger
+from swagger_ui import api_doc
+import config
 
 app = Flask(__name__)
-
-
-api_errors = {
-    'UserAlreadyExistsError': {
-        'message': "A user with that username already exists.",
-        'status': 444,
-    },
-    'ResourceDoesNotExist': {
-        'message': "A resource with that ID no longer exists.",
-        'status': 410,
-        'extra': "Any extra information you want.",
-    },
-}
-api = Api(app, errors=api_errors)
-# Manage CSRF
-#csrf = CSRFProtect(app)
-#csrf.exempt("views.submit_job.generate_qsub")
-#csrf.exempt("api.v1.users.create_api_key.main")
-#csrf.exempt("api.v1.users.invalidate_api_key.main")
-#csrf.exempt("api.v1.ldap.group.group")
-
+csrf = CSRFProtect(app)
+csrf.exempt("api")
 
 # Register routes
 app.config.from_object(app_config)
-api.add_resource(Group, '/')
-api.add_resource(Sudo, '/sudo')
-api.add_resource(User, '/user')
 
-'''
-app.register_blueprint(web_job_submission)
+# Add API
+api = Api(app, decorators=[csrf.exempt])
+
+# LDAP
+api.add_resource(Sudo, '/api/ldap/sudo')
+api.add_resource(Authenticate, '/api/ldap/authenticate')
+api.add_resource(Ids, '/api/ldap/ids')
+api.add_resource(User, '/api/ldap/user')
+api.add_resource(Users, '/api/ldap/users')
+api.add_resource(Group, '/api/ldap/group')
+# Users
+api.add_resource(ApiKey, '/api/user/api_key')
+
+# Register views
 app.register_blueprint(index)
-app.register_blueprint(submit_job)
-app.register_blueprint(create_api_key)
-app.register_blueprint(list_api_key)
-app.register_blueprint(invalidate_api_key)
-app.register_blueprint(check_user)
-app.register_blueprint(check_sudo)
-app.register_blueprint(authenticate)
-app.register_blueprint(list_users)
-'''
+app.register_blueprint(my_api_key)
+app.register_blueprint(users)
+
+@app.route("/api/spec.json")
+def spec():
+    swag = swagger(app)
+    swag['info']['version'] = "1.0"
+    swag['info']['title'] = "SOCA Web API"
+    swag['info']['description'] = "<h3>Documentation for your Scale-Out Computing on AWS (SOCA) API</h3><hr>" \
+                                  "<li>User and Admin Documentation: https://awslabs.github.io/scale-out-computing-on-aws/</li>" \
+                                  "<li>CodeBase: https://github.com/awslabs/scale-out-computing-on-aws</li>"
+    return jsonify(swag)
+
 
 # Manage logger
 dict_config = {
@@ -98,6 +104,7 @@ with app.test_request_context():
     app_session.app.session_interface.db.create_all()
     app.config["SESSION_SQLALCHEMY"] = SQLAlchemy(app)
     app.config["FLASK_ENDPOINT"] = request.host_url
+    api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/spec.json", url_prefix="/api/doc", title="SOCA API Documentation")
 
 if __name__ == '__main__':
     app.run()
