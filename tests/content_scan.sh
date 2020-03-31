@@ -11,7 +11,7 @@
 #
 
 # update cfn-nag to latest version
-gem install cfn-nag
+sudo gem install cfn-nag
 CFN_NAG_SCAN=$(which cfn_nag_scan)
 CWD=$(dirname "${BASH_SOURCE[0]}")
 VIPERLIGHT=$(which viperlight)
