@@ -40,7 +40,7 @@ class Config(object):
     DCV_MAX_SESSION_ACOUNT = 4
 
     # LDAP
-    LDAP_HOST = "54.202.219.176"
+    LDAP_HOST = "54.86.193.158"
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
@@ -49,7 +49,7 @@ class Config(object):
     #ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
     #ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
     ROOT_DN = 'CN=admin,' + LDAP_BASE_DN
-    ROOT_PW = 'etM7U8D6'
+    ROOT_PW = '/nKy6QkO'
 
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"

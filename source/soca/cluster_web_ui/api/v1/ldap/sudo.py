@@ -1,7 +1,7 @@
 from flask_restful import Resource, reqparse
 import config
 import ldap
-from flask import jsonify
+from models import db,ApiKeys
 from decorators import restricted_api, admin_api
 
 
@@ -10,34 +10,30 @@ class Sudo(Resource):
     def get(self):
         #
         """
-                                 Check if user has sudo permissions on the cluster
-                                ---
-                                tags:
-                                  - LDAP Management (Users)
-                                parameters:
-                                  - in: body
-                                    name: body
-                                    schema:
-                                      id: GETApiKey
-                                      required:
-                                        - username
-                                        - token
-                                      properties:
-                                        username:
-                                          type: string
-                                          description: username of the SOCA user
-                                        token:
-                                          type: string
-                                          description: token associated to the user
+        Check if user has sudo permissions on the cluster
+        ---
+        tags:
+          - LDAP Management (Users)
+        parameters:
+          - in: body
+            name: body
+            schema:
+              id: User
+              required:
+                - username
+              properties:
+                username:
+                   type: string
+                   description: username of the SOCA user
 
-                                responses:
-                                  200:
-                                    description: Pair of username/token is valid
-                                  203:
-                                    description: Invalid username/token pair
-                                  400:
-                                    description: Malformed client input
-                                """
+        responses:
+          200:
+            description: Pair of username/token is valid
+          203:
+            description: Invalid username/token pair
+          400:
+            description: Malformed client input
+        """
         parser = reqparse.RequestParser()
         parser.add_argument('username', type=str, location='args')
         args = parser.parse_args()
@@ -76,7 +72,7 @@ class Sudo(Resource):
           - in: body
             name: body
             schema:
-              id: GETApiKey
+              id: User
               required:
                 - username
                 - token
@@ -108,6 +104,7 @@ class Sudo(Resource):
         base_dn = config.Config.LDAP_BASE_DN
         try:
             conn = ldap.initialize('ldap://{}'.format(ldap_host))
+            conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
             dn_user = "cn=" + username + ",ou=Sudoers," + base_dn
             attrs = [
                     ('objectClass', ['top'.encode('utf-8'),
@@ -118,65 +115,77 @@ class Sudo(Resource):
                 ]
 
             conn.add_s(dn_user, attrs)
+            change_user_key_scope = ApiKeys.query.filter_by(username=username, is_active=True).all()
+            if change_user_key_scope:
+                for key in change_user_key_scope:
+                    key.scope = "sudo"
+                    db.session.commit()
             return {"success": True, "message": "User granted SUDO permission"}, 200
 
         except ldap.SERVER_DOWN:
             return {"success": False, "message": "LDAP server is down"}, 500
 
+        except ldap.INVALID_CREDENTIALS:
+            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
+
         except Exception as err:
             return {"false": True, "message": "Unknown error: " +str(err)}, 500
 
-    # Delete SUDO permission for a user
+    @admin_api
     def delete(self):
         """
-                                                 Delete SUDO permission for a user
-                                                ---
-                                                tags:
-                                                  - LDAP Management (Users)
-                                                parameters:
-                                                  - in: body
-                                                    name: body
-                                                    schema:
-                                                      id: GETApiKey
-                                                      required:
-                                                        - username
-                                                        - token
-                                                      properties:
-                                                        username:
-                                                          type: string
-                                                          description: username of the SOCA user
-                                                        token:
-                                                          type: string
-                                                          description: token associated to the user
+        Delete SUDO permission for a user
+        ---
+        tags:
+          - LDAP Management (Users)
+        parameters:
+          - in: body
+            name: body
+            schema:
+              id: User
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  description: username of the SOCA user
 
-                                                responses:
-                                                  200:
-                                                    description: Pair of username/token is valid
-                                                  203:
-                                                    description: Invalid username/token pair
-                                                  400:
-                                                    description: Malformed client input
-                                                """
+        responses:
+          200:
+            description: Pair of username/token is valid
+          203:
+            description: Invalid username/token pair
+          400:
+            description: Malformed client input
+         """
         parser = reqparse.RequestParser()
         parser.add_argument('username', type=str, location='form')
         args = parser.parse_args()
         username = args["username"]
         if args["username"] is None:
-            return jsonify({"success": False, "message": "username can not be empty"})
+            return {"success": False, "message": "username can not be empty"}, 400
+
         ldap_host = config.Config.LDAP_HOST
         base_dn = config.Config.LDAP_BASE_DN
-        con = ldap.initialize('ldap://{}'.format(ldap_host))
-        dn_user = "cn=" + username + ",ou=Sudoers," + base_dn
-        attrs = [
-            ('objectClass', ['top'.encode('utf-8'),
-                             'sudoRole'.encode('utf-8')]),
-            ('sudoHost', ['ALL'.encode('utf-8')]),
-            ('sudoUser', [str(username).encode('utf-8')]),
-            ('sudoCommand', ['ALL'.encode('utf-8')])
-        ]
 
         try:
-            con.delete_s(dn_user, attrs)
-            return jsonify({"success": True, "message": "Removed SUDO permission"})
-        except Exception as e:
-            return jsonify({"false": True, "message": "Error: " + str(e)})
+            conn = ldap.initialize('ldap://{}'.format(ldap_host))
+            conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
+            dn_user = "cn=" + username + ",ou=Sudoers," + base_dn
+            conn.delete_s(dn_user)
+            change_user_key_scope = ApiKeys.query.filter_by(username=username, is_active=True).all()
+            if change_user_key_scope:
+                for key in change_user_key_scope:
+                    key.scope = "user"
+                    db.session.commit()
+
+            return {"success": True, "message": "User revoked SUDO permission"}, 200
+
+        except ldap.SERVER_DOWN:
+            return {"success": False, "message": "LDAP server is down"}, 500
+
+        except ldap.INVALID_CREDENTIALS:
+            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
+
+        except Exception as err:
+            return {"false": True, "message": "Unknown error: " +str(err)}, 500

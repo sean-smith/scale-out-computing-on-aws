@@ -185,8 +185,8 @@ class User(Resource):
 
         try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-        except Exception as err:
-            return {"success": False, "message": "Unable to LDAP bind. Please verify cn=Admin credentials. " + str(err)}, 401
+        except ldap.INVALID_CREDENTIALS:
+            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
         try:
             conn.add_s(dn_user, attrs)
@@ -240,12 +240,13 @@ class User(Resource):
 
         try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-        except Exception as err:
-            return {"success": False, "message": "Unable to LDAP bind. Please verify cn=Admin credentials. " + str(err)}, 403
+        except ldap.INVALID_CREDENTIALS:
+            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
         entries_to_delete = ["uid=" + username + ",ou=People," + ldap_base,
                              "cn=" + username + ",ou=Group," + ldap_base,
                              "cn=" + username + ",ou=Sudoers," + ldap_base]
+
         #print(datetime.now().strftime("%s"))
         #today = datetime.datetime.utcnow().strftime("%s")
         #print(today)

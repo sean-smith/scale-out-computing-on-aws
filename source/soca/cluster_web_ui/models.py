@@ -14,3 +14,13 @@ class ApiKeys(db.Model):
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class FlaskSessions(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(db.String(255), nullable=False)
+    data = db.Column(db.BLOB, nullable=False)
+    expiry = db.Column(db.DateTime)
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

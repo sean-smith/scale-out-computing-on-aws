@@ -44,11 +44,11 @@ def create_new_account():
             return redirect('/users')
         else:
             # Create API key
-            create_user_key = post(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
-                                   headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                   data={"username": username}, verify=False)
-            if create_user_key.status_code != 200:
-                flash("User created but unable to generate API token: " + create_user_key._content, "error")
+            create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
+                                  headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                  params={"username": username}, verify=False).json()
+            if create_user_key["success"] is False:
+                flash("User created but unable to generate API token: " + str(create_user_key._content), "error")
             else:
                 flash("User " + username + " has been created successfully", "success")
             return redirect('/users')
@@ -62,20 +62,18 @@ def delete_account():
     if session['sudoers'] is True:
         username = str(request.form.get('user_to_delete'))
         if session['username'] == username:
-            msg = {'success': False,
-                   'message': 'You cannot delete your own account.'}
-            flash(msg)
+            flash("You cannot delete your own account.", "error")
             return redirect('/users')
 
-        delete_account = openldap.delete_user(username)
-        if int(delete_account['exit_code']) == 0:
-            msg = {'success': True,
-                   'message': 'User: ' + username + ' has been deleted correctly'}
-        else:
-            msg = {'success': False,
-                   'message': 'Could not delete user: ' + username + '. Check trace: ' + str(delete_account)}
+        delete_user = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
+                               headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                               data={"username": username}).json()
 
-        flash(msg)
+        if delete_user["success"] is True:
+            flash('User: ' + username + ' has been deleted correctly', "success")
+        else:
+            flash('Could not delete user: ' + username + '. Check trace: ' + str(delete_user), "error")
+
         return redirect('/users')
 
     else:
