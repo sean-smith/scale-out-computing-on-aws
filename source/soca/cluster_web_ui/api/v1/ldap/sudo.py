@@ -13,7 +13,7 @@ class Sudo(Resource):
         Check SUDO permissions for a user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body
@@ -67,7 +67,7 @@ class Sudo(Resource):
         Add SUDO permission for a user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body
@@ -136,7 +136,7 @@ class Sudo(Resource):
         Remove SUDO permission for a user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body

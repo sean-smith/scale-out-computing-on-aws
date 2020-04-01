@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     {% include 'common/header.html' %}
+</head>
+
+<body id="page-top">
+
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              {% if sudoers == false %}
+               <div class="alert alert-danger" role="alert">
+                     <strong>Access denied </strong>
+                   Only users with sudo permissions can access this page
+                     <br>
+                 </div>
+              {% else %}
+              <div id="accessok">
+                  {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <br>
+                                {% if category == "success" %}
+                                <div class="alert alert-success">
+                                    <strong>{{ message }} </strong>
+                                </div>
+                                {% else %}
+                                 <div class="alert alert-danger">
+                                    <strong>{{ message }} </strong>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                  <div class="row">
+
+                      <div class="col-md-4">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Change my password</h6>
+                              </div>
+                              <div class="card-body">
+                                  <form action="/reset_password" method="post"
+                                    oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>
+                                      <div class="form-group">
+                                          <input id="password" placeholder="Password" class="form-control"  type="password" required name="password">
+                                      </div>
+                                      <div class="form-group">
+                                          <input placeholder="Confirm Password" id="password_verif" class="form-control" type="password" name="password_verif">
+                                      </div>
+                                      <div align="center">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                          <button type="submit" class="btn btn-primary btn-lg">Update Password</button>
+                                      </div>
+                                  </form>
+                              </div>
+                          </div>
+                      </div>
+
+
+                      <div class="col-md-8">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">My LDAP information</h6>
+                              </div>
+                              <div class="card-body">
+                                  <strong>{{ user_dn }}</strong>
+                                {%  for name,value in user_data.items() %}
+                                    <strong>{{ name }}</strong>
+                                  {%  for v in value %}
+                                      <li>{{ v }} </li>
+                                      {%  endfor
+                                              %}
+                                  {% endfor %}
+
+
+                              </div>
+                          </div>
+                      </div>
+
+                  </div>
+
+        </div>
+        {% endif %}
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+    {% include 'common/footer.html' %}
+
+</body>
+
+</html>

@@ -14,7 +14,7 @@ class ApiKey(Resource):
         Retrieve API key of the user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body
@@ -80,7 +80,7 @@ class ApiKey(Resource):
         Delete API key(s) associated to a user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
             - in: body
               name: body

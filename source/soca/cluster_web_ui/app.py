@@ -8,12 +8,14 @@ from api.v1.ldap.sudo import Sudo
 from api.v1.ldap.ids import Ids
 from api.v1.ldap.user import User
 from api.v1.ldap.users import Users
+from api.v1.user.reset_password import Reset
 from api.v1.user.api_key import ApiKey
 from api.v1.ldap.group import Group
 from api.v1.ldap.authenticate import Authenticate
 from views.index import index
 from views.my_api_key import my_api_key
 from views.users import users
+from views.my_account import my_account
 
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
@@ -41,10 +43,13 @@ api.add_resource(Users, '/api/ldap/users')
 api.add_resource(Group, '/api/ldap/group')
 # Users
 api.add_resource(ApiKey, '/api/user/api_key')
+api.add_resource(Reset, '/api/user/reset_password')
+
 
 # Register views
 app.register_blueprint(index)
 app.register_blueprint(my_api_key)
+app.register_blueprint(my_account)
 app.register_blueprint(users)
 
 @app.route("/api/spec.json")

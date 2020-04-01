@@ -47,7 +47,11 @@ def private_api(f):
     def private_resource(*args, **kwargs):
         username = request.headers.get("X-SOCA-USERNAME", None)
         token = request.headers.get("X-SOCA-TOKEN", None)
-        target_username = request.form.get("username", None)
+        if request.method == "GET":
+            target_username = request.args.get("username", None)
+        else:
+            target_username = request.form.get("username", None)
+
         if token == config.Config.API_ROOT_KEY:
             return f(*args, **kwargs)
 
@@ -57,10 +61,13 @@ def private_api(f):
             token_is_valid = ApiKeys.query.filter_by(token=token,
                                                      username=username,
                                                      is_active=True).first()
-            if token_is_valid and username == target_username:
+            if token_is_valid and token_is_valid.scope == "sudo":
                 return f(*args, **kwargs)
             else:
-                return {"success": False, "message": "Not authorized"}, 401
+                if token_is_valid and username == target_username:
+                    return f(*args, **kwargs)
+                else:
+                    return {"success": False, "message": "Not authorized"}, 401
 
     return private_resource
 

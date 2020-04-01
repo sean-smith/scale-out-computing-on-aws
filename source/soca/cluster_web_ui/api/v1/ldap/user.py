@@ -9,18 +9,20 @@ from requests import get
 import json
 import logging
 from decorators import private_api, admin_api
+from flask import session
+import ldap.modlist as modlist
 from datetime import datetime
 logger = logging.getLogger("soca_api")
 
 
 class User(Resource):
-    @admin_api
+    @private_api
     def get(self):
         """
         Retrieve information for a specific user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body
@@ -69,7 +71,7 @@ class User(Resource):
         Create a new LDAP user
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body
@@ -205,7 +207,7 @@ class User(Resource):
         Delete a LDAP user ($HOME is preserved on EFS)
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         parameters:
           - in: body
             name: body
@@ -266,36 +268,86 @@ class User(Resource):
         return {"success": True, "message": "Deleted user."}, 200
 
 
-
     @admin_api
     def put(self):
         """
-        Change user parameters
-                                                                    ---
-                                                                    tags:
-                                                                      - LDAP Management (Users)
-                                                                    parameters:
-                                                                      - in: body
-                                                                        name: body
-                                                                        schema:
-                                                                          id: GETApiKey
-                                                                          required:
-                                                                            - username
-                                                                            - token
-                                                                          properties:
-                                                                            username:
-                                                                              type: string
-                                                                              description: username of the SOCA user
-                                                                            token:
-                                                                              type: string
-                                                                              description: token associated to the user
+        Change LDAP attribute for a user. Supported attributes: ["userPassword"]. This is a generic API for @admin_only. Users hwo wants to change their OWN password muse use /api/user/reset_password endpoint
+        ---
+        tags:
+          - User Management
+        securityDefinitions:
+          api_key:
+            type: apiKey
+            name: x-api-key
+            in: header
+        security:
+          - api_key: []
+        parameters:
+          - in: body
+            name: body
+            schema:
+              id: LDAPModify
+              required:
+                - username
+                - attribute
+                - value
+              properties:
+                username:
+                  type: string
+                  description: username of the SOCA user
+                attribute:
+                  type: string
+                  description: Attribute to change
+                value:
+                  type: string
+                  description: New attribute value
 
-                                                                    responses:
-                                                                      200:
-                                                                        description: Pair of username/token is valid
-                                                                      203:
-                                                                        description: Invalid username/token pair
-                                                                      400:
-                                                                        description: Malformed client input
-                                                                    """
-        pass
+        responses:
+          200:
+            description: Pair of username/token is valid
+          203:
+            description: Invalid username/token pair
+          400:
+            description: Malformed client input
+        """
+        parser = reqparse.RequestParser()
+        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('attribute', type=str, location='form')
+        parser.add_argument('value', type=str, location='form')
+        args = parser.parse_args()
+        username = args["username"]
+        attribute = args["attribute"]
+        value = args["value"]
+        ALLOWED_ATTRIBUTES = ["userPassword"]
+        if username is None or value is None or attribute is None:
+            return {"success": False,
+                    "message": "username (str), attribute (str) and value (str) parameters are required"}, 400
+
+        if attribute not in ALLOWED_ATTRIBUTES:
+            return {"success": False,
+                    "message": "attribute is not supported"}, 400
+
+        dn_user = "uid=" + username + ",ou=people," + config.Config.LDAP_BASE_DN
+        if attribute == "userPassword":
+            enc_passwd = bytes(value, 'utf-8')
+            salt = os.urandom(16)
+            sha = hashlib.sha1(enc_passwd)
+            sha.update(salt)
+            digest = sha.digest()
+            b64_envelop = encode(digest + salt)
+            passwd = '{{SSHA}}{}'.format(b64_envelop.decode('utf-8'))
+            new_value = passwd
+        try:
+            conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
+        except ldap.SERVER_DOWN:
+            return {"success": False, "message": "LDAP server is down."}, 500
+
+        try:
+            conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
+            mod_attrs = [(ldap.MOD_REPLACE, "userPassword", new_value.encode('utf-8'))]
+            conn.modify_s(dn_user, mod_attrs)
+            return {"success": True, "message": "LDAP attribute has been modified correctly."}, 200
+        except ldap.INVALID_CREDENTIALS:
+            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
+        except Exception as err:
+            return {"success": False, "message": "Unknown error: " + str(err)}, 401

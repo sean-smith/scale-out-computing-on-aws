@@ -14,7 +14,7 @@ class Users(Resource):
         List all LDAP users
         ---
         tags:
-          - LDAP Management (Users)
+          - User Management
         responses:
           200:
             description: Pair of username/token is valid

@@ -9,7 +9,7 @@ class Group(Resource):
                                                                     Return information related to a specific LDAP group
                                                                     ---
                                                                     tags:
-                                                                      - LDAP Management (Groups)
+                                                                      - Group Management
                                                                     parameters:
                                                                       - in: body
                                                                         name: body
@@ -43,7 +43,7 @@ class Group(Resource):
                                                                             Create a new LDAP group
                                                                             ---
                                                                             tags:
-                                                                              - LDAP Management (Groups)
+                                                                              - Group Management
                                                                             parameters:
                                                                               - in: body
                                                                                 name: body
@@ -77,7 +77,7 @@ class Group(Resource):
                                                                             Delete a LDAP group
                                                                             ---
                                                                             tags:
-                                                                              - LDAP Management (Groups)
+                                                                              - Group Management
                                                                             parameters:
                                                                               - in: body
                                                                                 name: body
@@ -112,7 +112,7 @@ class Group(Resource):
                                                                             Modify LDAP group
                                                                             ---
                                                                             tags:
-                                                                              - LDAP Management (Groups)
+                                                                              - Group Management
                                                                             parameters:
                                                                               - in: body
                                                                                 name: body
