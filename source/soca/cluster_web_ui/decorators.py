@@ -3,7 +3,7 @@ from functools import wraps
 import config
 from models import ApiKeys
 from flask import request, redirect, session
-
+from requests import get
 
 # Restricted API can only be accessed using Flask Root API key
 # In other words, @restricted_api can only be triggered by the web application
@@ -64,11 +64,38 @@ def private_api(f):
 
     return private_resource
 
+
 # Views require a valid login
 def login_required(f):
     @wraps(f)
     def validate_account():
-        if 'username' in session:
+        if "username" in session:
+            if "api_key" in session:
+                # If a new API key has been issued,
+                check_existing_key = ApiKeys.query.filter_by(username=session["username"], is_active=True).first()
+                if check_existing_key.token != session["api_key"]:
+                    # Update API Key in session
+                    session["api_key"] = check_existing_key.token
+                else:
+                    # API Key exist and is already up-to-date
+                    pass
+
+                #  Make sure the scope still align with SUDO permissions (eg: when admin grant/revoke sudo)
+                if session["sudoers"] is True and check_existing_key.scope == "user":
+                    # SUDO permissions were revoked for the user
+                    session["sudoers"] = False
+
+                if session["sudoers"] is False and check_existing_key.scope == "sudo":
+                    # SUDO permissions were granted to the user
+                    session["sudoers"] = True
+
+            else:
+                # Retrieve current API key for the user or create a new one
+                check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
+                                     headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                     params={"username": session["username"]}).json()
+                session["api_key"] = check_user_key["message"]
+
             return f()
         else:
             if config.Config.ENABLE_SSO is True:

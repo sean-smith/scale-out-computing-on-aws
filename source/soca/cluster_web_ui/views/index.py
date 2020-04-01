@@ -3,23 +3,19 @@ import config
 from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint
 from requests import post, get
-from models import FlaskSessions
 
 logger = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')
 
 
-def session_info():
-    return {'username': session['username'].lower(),
-            'sudoers': session['sudoers']
-            }
+
 
 
 @index.route('/', methods=['GET'])
 @login_required
 def home():
-    username = session_info()['username']
-    sudoers = session_info()['sudoers']
+    username = session['username']
+    sudoers = session['sudoers']
     return render_template('index.html', username=username, sudoers=sudoers)
 
 
@@ -30,7 +26,9 @@ def login():
 
 @index.route('/logout', methods=['GET'])
 def logout():
-    session.pop('username', None)
+    session_data = ["username", "sudoers", "api_key"]
+    for param in session_data:
+        session.pop(param, None)
     return redirect('/')
 
 
@@ -49,7 +47,7 @@ def authenticate():
             flash(check_auth['message'])
             return redirect('/login')
         else:
-            session['username'] = username
+            session['username'] = username.lower()
             logger.info("User authenticated, checking sudo permissions")
             check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/ldap/sudo',
                                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},

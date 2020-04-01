@@ -10,7 +10,7 @@ class Sudo(Resource):
     def get(self):
         #
         """
-        Check if user has sudo permissions on the cluster
+        Check SUDO permissions for a user
         ---
         tags:
           - LDAP Management (Users)
@@ -75,7 +75,6 @@ class Sudo(Resource):
               id: User
               required:
                 - username
-                - token
               properties:
                 username:
                   type: string
@@ -134,7 +133,7 @@ class Sudo(Resource):
     @admin_api
     def delete(self):
         """
-        Delete SUDO permission for a user
+        Remove SUDO permission for a user
         ---
         tags:
           - LDAP Management (Users)
@@ -188,4 +187,4 @@ class Sudo(Resource):
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
         except Exception as err:
-            return {"false": True, "message": "Unknown error: " +str(err)}, 500
+            return {"false": True, "message": "Unknown error: " + str(err)}, 500

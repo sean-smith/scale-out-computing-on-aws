@@ -14,6 +14,7 @@ logger = logging.getLogger("soca_api")
 
 
 class User(Resource):
+    @admin_api
     def get(self):
         """
         Retrieve information for a specific user
@@ -269,7 +270,7 @@ class User(Resource):
     @admin_api
     def put(self):
         """
-                                                                     Change user parameters
+        Change user parameters
                                                                     ---
                                                                     tags:
                                                                       - LDAP Management (Users)
