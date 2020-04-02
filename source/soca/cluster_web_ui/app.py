@@ -14,7 +14,9 @@ from api.v1.ldap.group import Group
 from api.v1.ldap.authenticate import Authenticate
 from views.index import index
 from views.my_api_key import my_api_key
-from views.admin import admin
+from views.admin.users import admin_users
+from views.admin.queues import admin_queues
+
 from views.my_account import my_account
 
 from flask_wtf.csrf import CSRFProtect
@@ -50,7 +52,9 @@ api.add_resource(Reset, '/api/user/reset_password')
 app.register_blueprint(index)
 app.register_blueprint(my_api_key)
 app.register_blueprint(my_account)
-app.register_blueprint(admin)
+app.register_blueprint(admin_users)
+app.register_blueprint(admin_queues)
+
 
 @app.route("/api/spec.json")
 def spec():

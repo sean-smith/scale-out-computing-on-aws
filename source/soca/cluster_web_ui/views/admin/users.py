@@ -6,11 +6,11 @@ from models import ApiKeys
 from decorators import login_required
 
 logger = logging.getLogger("api_log")
-admin = Blueprint('admin', __name__, template_folder='templates')
+admin_users = Blueprint('admin_users', __name__, template_folder='templates')
 
 
 
-@admin.route('/admin', methods=['GET'])
+@admin_users.route('/admin', methods=['GET'])
 @login_required
 def index():
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
@@ -20,7 +20,7 @@ def index():
     return render_template('admin.html', username=session['username'], sudoers=session['sudoers'], all_users=all_users)
 
 
-@admin.route('/manage_sudo', methods=['POST'])
+@admin_users.route('/manage_sudo', methods=['POST'])
 @login_required
 def manage_sudo():
     username = request.form.get('username', None)
@@ -53,7 +53,7 @@ def manage_sudo():
     else:
         return redirect("/admin")
 
-@admin.route('/create_new_account', methods=['POST'])
+@admin_users.route('/create_new_account', methods=['POST'])
 @login_required
 def create_new_account():
         username = str(request.form.get('username'))
@@ -87,7 +87,7 @@ def create_new_account():
         return redirect('/users')
 
 
-@admin.route('/delete_account', methods=['POST'])
+@admin_users.route('/delete_account', methods=['POST'])
 @login_required
 def delete_account():
     if session['sudoers'] is True:
