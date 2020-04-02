@@ -6,19 +6,54 @@ from models import ApiKeys
 from decorators import login_required
 
 logger = logging.getLogger("api_log")
-users = Blueprint('users', __name__, template_folder='templates')
+admin = Blueprint('admin', __name__, template_folder='templates')
 
 
 
-@users.route('/users', methods=['GET'])
+@admin.route('/admin', methods=['GET'])
 @login_required
 def index():
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY}).json()
-    all_users = get_all_users["message"].keys()
-    return render_template('users.html', username=session['username'], sudoers=session['sudoers'], all_users=all_users)
 
-@users.route('/create_new_account', methods=['POST'])
+    all_users = get_all_users["message"].keys()
+    return render_template('admin.html', username=session['username'], sudoers=session['sudoers'], all_users=all_users)
+
+
+@admin.route('/manage_sudo', methods=['POST'])
+@login_required
+def manage_sudo():
+    username = request.form.get('username', None)
+    action = request.form.get('action', None)
+    if username == session["username"]:
+        flash("You can not manage your own Admin permissions.", "error")
+        return redirect("/admin")
+
+    if action in ["grant", "revoke"]:
+        if username is not None:
+            give_sudo = post(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
+                                   headers={"X-SOCA-TOKEN": session["api_key"],
+                                            "X-SOCA-USERNAME": session["username"]},
+                                   data={"username": username})
+
+            if give_sudo.status_code == 200:
+                flash("Admin permissions granted", "success")
+            elif give_sudo.status_code == 203:
+                if action == "grant":
+                    flash(username + " already has Admin permission", "error")
+                else:
+                    flash(username + " does not have Admin privileges", "error")
+                return redirect("/admin")
+
+            else:
+                flash("Unable to grant user Admin permission: " + str(give_sudo._content) , "error")
+            return redirect("/admin")
+        else:
+            return redirect("/admin")
+    else:
+        return redirect("/admin")
+
+@admin.route('/create_new_account', methods=['POST'])
 @login_required
 def create_new_account():
         username = str(request.form.get('username'))
@@ -52,7 +87,7 @@ def create_new_account():
         return redirect('/users')
 
 
-@users.route('/delete_account', methods=['POST'])
+@admin.route('/delete_account', methods=['POST'])
 @login_required
 def delete_account():
     if session['sudoers'] is True:

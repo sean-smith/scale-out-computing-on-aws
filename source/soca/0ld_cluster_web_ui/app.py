@@ -136,13 +136,13 @@ def sftp():
     scheduler_ip = parameters.get_aligo_configuration()['SchedulerPublicIP']
     return render_template('sftp.html', scheduler_ip=scheduler_ip, username=username, sudoers=sudoers)
 
-@app.route('/users', methods=['GET'])
+@app.route('/admin', methods=['GET'])
 @auth.login_required
 def users():
     username = session_info()['username']
     sudoers = session_info()['sudoers']
     all_users = openldap.get_all_users()
-    return render_template('users.html', username=username, sudoers=sudoers, all_users=all_users)
+    return render_template('admin.html', username=username, sudoers=sudoers, all_users=all_users)
 
 @app.route('/create_new_account', methods=['POST'])
 @auth.login_required

@@ -127,6 +127,9 @@ class Sudo(Resource):
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
+        except ldap.ALREADY_EXISTS:
+            return {"success": False, "message": "User already has the correct permissions configured."}, 203
+
         except Exception as err:
             return {"false": True, "message": "Unknown error: " +str(err)}, 500
 

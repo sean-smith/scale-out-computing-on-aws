@@ -41,7 +41,7 @@
                     {% endwith %}
                   <div class="row">
 
-                      <div class="col-md-4">
+                      <div class="col-md-5">
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
                                   <h6 class="m-0 font-weight-bold text-primary">Change my password</h6>
@@ -65,7 +65,7 @@
                       </div>
 
 
-                      <div class="col-md-8">
+                      <div class="col-md-7">
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
                                   <h6 class="m-0 font-weight-bold text-primary">My LDAP information</h6>
@@ -76,11 +76,8 @@
                                     <strong>{{ name }}</strong>
                                   {%  for v in value %}
                                       <li>{{ v }} </li>
-                                      {%  endfor
-                                              %}
+                                      {%  endfor %}
                                   {% endfor %}
-
-
                               </div>
                           </div>
                       </div>
