@@ -9,6 +9,7 @@ from requests import get
 import json
 import logging
 from decorators import private_api, admin_api
+import re
 from flask import session
 import ldap.modlist as modlist
 from datetime import datetime
@@ -16,7 +17,6 @@ logger = logging.getLogger("soca_api")
 
 
 class Group(Resource):
-    @private_api
     def get(self):
         """
         Retrieve information for a specific group
@@ -44,23 +44,36 @@ class Group(Resource):
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('user', type=str, location='args')
+        parser.add_argument('group', type=str, location='args')
         args = parser.parse_args()
-        user = args["user"]
-        if user is None:
+        group = args["group"]
+        if group is None:
             return {"success": False,
-                    "message": "user (str) parameter is required"}, 400
+                    "message": "group (str) parameter is required"}, 400
 
-        user_filter = 'cn='+user
-        user_search_base = "ou=People," + config.Config.LDAP_BASE_DN
-        user_search_scope = ldap.SCOPE_SUBTREE
+        group_search_base = "ou=Group," + config.Config.LDAP_BASE_DN
+        group_search_scope = ldap.SCOPE_SUBTREE
+        group_filter = 'cn=' + group
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
-            check_user = conn.search_s(user_search_base, user_search_scope, user_filter)
-            if check_user.__len__() == 0:
-                return {"success": False, "message": "Unknown user"}, 203
-            else:
-                return {"success": True, "message": str(check_user)}, 200
+            groups = conn.search_s(group_search_base, group_search_scope, group_filter, ["cn", "memberUid"])
+            if groups.__len__() == 0:
+                return {"success": False,
+                        "message": "Group does not exist"}, 203
+            for group in groups:
+                group_base = group[0]
+                group_name = group[1]['cn'][0].decode('utf-8')
+                members = []
+                if "memberUid" in group[1].keys():
+                    for member in group[1]["memberUid"]:
+                        user = re.match("uid=(\w+),", member.decode("utf-8"))
+                        if user:
+                            members.append(user.group(1))
+                        else:
+                            return {"success": False, "message": "Unable to retrieve memberUid for this group"}, 500
+
+            return {"success": True, "message": {"group_dn": group_base, "members": members}}
+
 
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500
@@ -268,7 +281,7 @@ class Group(Resource):
         return {"success": True, "message": "Deleted user."}, 200
 
 
-    @admin_api
+    #@admin_api
     def put(self):
         """
         Change LDAP attribute for a user. Supported attributes: ["userPassword"]. This is a generic API for @admin_only. Users hwo wants to change their OWN password muse use /api/user/reset_password endpoint
@@ -311,42 +324,55 @@ class Group(Resource):
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
+        parser.add_argument('group', type=str, location='form')
         parser.add_argument('user', type=str, location='form')
-        parser.add_argument('attribute', type=str, location='form')
-        parser.add_argument('value', type=str, location='form')
+        parser.add_argument('action', type=str, location='form')
         args = parser.parse_args()
+        group = args["group"]
         user = args["user"]
-        attribute = args["attribute"]
-        value = args["value"]
-        ALLOWED_ATTRIBUTES = ["userPassword"]
-        if user is None or value is None or attribute is None:
+        action = args["action"]
+        ALLOWED_ACTIONS = ["add", "remove"]
+        if user is None or group is None or action is None:
             return {"success": False,
-                    "message": "user (str), attribute (str) and value (str) parameters are required"}, 400
+                    "message": "user (str), group (str) and action (str) parameters are required"}, 400
 
-        if attribute not in ALLOWED_ATTRIBUTES:
+        if action not in ALLOWED_ACTIONS:
             return {"success": False,
                     "message": "attribute is not supported"}, 400
 
-        dn_user = "uid=" + user + ",ou=people," + config.Config.LDAP_BASE_DN
-        if attribute == "userPassword":
-            enc_passwd = bytes(value, 'utf-8')
-            salt = os.urandom(16)
-            sha = hashlib.sha1(enc_passwd)
-            sha.update(salt)
-            digest = sha.digest()
-            b64_envelop = encode(digest + salt)
-            passwd = '{{SSHA}}{}'.format(b64_envelop.decode('utf-8'))
-            new_value = passwd
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
         except ldap.SERVER_DOWN:
             return {"success": False, "message": "LDAP server is down."}, 500
 
+        user_dn = "uid=" + user + ",ou=People," + config.Config.LDAP_BASE_DN
+        group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
+
+        get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
+                            headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+
+        if get_all_users.status_code == 200:
+            all_users = get_all_users.json()["message"]
+            if user_dn not in all_users.values():
+                return {"success": False,
+                        "message": "User do not exist."}, 203
+        else:
+            return {"success": False,
+                    "message": "Unable to retrieve list of LDAP users. " + str(get_all_users._content)}, 500
+
+        if action == "add":
+            mod_attrs = [(ldap.MOD_ADD, 'memberUid', [user_dn.encode("utf-8")])]
+        else:
+            mod_attrs = [(ldap.MOD_DELETE, 'memberUid', [user_dn.encode("utf-8")])]
+
         try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-            mod_attrs = [(ldap.MOD_REPLACE, "userPassword", new_value.encode('utf-8'))]
-            conn.modify_s(dn_user, mod_attrs)
-            return {"success": True, "message": "LDAP attribute has been modified correctly."}, 200
+            conn.modify_s(group_dn, mod_attrs)
+            return {"success": True, "message": "LDAP attribute has been modified correctly"}, 200
+        except ldap.TYPE_OR_VALUE_EXISTS:
+            return {"success": True, "message": "User already part of the group"}, 203
+        except ldap.NO_SUCH_ATTRIBUTE:
+            return {"success": True, "message": "User do not belong to the group"}, 203
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
         except Exception as err:
