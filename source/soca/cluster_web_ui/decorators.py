@@ -5,6 +5,7 @@ from models import ApiKeys
 from flask import request, redirect, session
 from requests import get
 
+
 # Restricted API can only be accessed using Flask Root API key
 # In other words, @restricted_api can only be triggered by the web application
 def restricted_api(f):
@@ -21,16 +22,16 @@ def restricted_api(f):
 def admin_api(f):
     @wraps(f)
     def admin_resource(*args, **kwargs):
-        username = request.headers.get("X-SOCA-USERNAME", None)
+        user = request.headers.get("X-SOCA-USER", None)
         token = request.headers.get("X-SOCA-TOKEN", None)
         if token == config.Config.API_ROOT_KEY:
                 return f(*args, **kwargs)
 
-        if username is None or token is None:
+        if user is None or token is None:
             return {"success": False, "message": "Not Authorized"}, 401
         else:
             token_has_sudo = ApiKeys.query.filter_by(token=token,
-                                                     username=username,
+                                                     user=user,
                                                      scope="sudo",
                                                      is_active=True).first()
             if token_has_sudo:
@@ -40,31 +41,31 @@ def admin_api(f):
     return admin_resource
 
 
-# Private API can only be accessed with a valid pair of username/token
+# Private API can only be accessed with a valid pair of user/token
 # User can only interact with their own environment
 def private_api(f):
     @wraps(f)
     def private_resource(*args, **kwargs):
-        username = request.headers.get("X-SOCA-USERNAME", None)
+        user = request.headers.get("X-SOCA-USER", None)
         token = request.headers.get("X-SOCA-TOKEN", None)
         if request.method == "GET":
-            target_username = request.args.get("username", None)
+            target_user = request.args.get("user", None)
         else:
-            target_username = request.form.get("username", None)
+            target_user = request.form.get("user", None)
 
         if token == config.Config.API_ROOT_KEY:
             return f(*args, **kwargs)
 
-        if username is None or token is None:
+        if user is None or token is None:
             return {"success": False, "message": "NOT_PERMITTED"}, 401
         else:
             token_is_valid = ApiKeys.query.filter_by(token=token,
-                                                     username=username,
+                                                     user=user,
                                                      is_active=True).first()
             if token_is_valid and token_is_valid.scope == "sudo":
                 return f(*args, **kwargs)
             else:
-                if token_is_valid and username == target_username:
+                if token_is_valid and user == target_user:
                     return f(*args, **kwargs)
                 else:
                     return {"success": False, "message": "Not authorized"}, 401
@@ -72,14 +73,34 @@ def private_api(f):
     return private_resource
 
 
+# Read/Only APIs only require a valid pair of token
+def read_only_api(f):
+    @wraps(f)
+    def ro_resource(*args, **kwargs):
+        user = request.headers.get("X-SOCA-USER", None)
+        token = request.headers.get("X-SOCA-TOKEN", None)
+        if token == config.Config.API_ROOT_KEY:
+            return f(*args, **kwargs)
+
+        token_is_valid = ApiKeys.query.filter_by(token=token,
+                                                 user=user,
+                                                 is_active=True).first()
+        if token_is_valid:
+            return f(*args, **kwargs)
+        else:
+            return {"success": False, "message": "Not authorized"}, 401
+
+    return ro_resource
+
+
 # Views require a valid login
 def login_required(f):
     @wraps(f)
     def validate_account():
-        if "username" in session:
+        if "user" in session:
             if "api_key" in session:
                 # If a new API key has been issued,
-                check_existing_key = ApiKeys.query.filter_by(username=session["username"], is_active=True).first()
+                check_existing_key = ApiKeys.query.filter_by(user=session["user"], is_active=True).first()
                 if check_existing_key.token != session["api_key"]:
                     # Update API Key in session
                     session["api_key"] = check_existing_key.token
@@ -100,7 +121,7 @@ def login_required(f):
                 # Retrieve current API key for the user or create a new one
                 check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                     params={"username": session["username"]}).json()
+                                     params={"user": session["user"]}).json()
                 session["api_key"] = check_user_key["message"]
 
             return f()

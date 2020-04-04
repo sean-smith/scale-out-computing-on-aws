@@ -6,7 +6,7 @@ import ldap
 class Authenticate(Resource):
     def post(self):
         """
-        Validate a LDAP username/password
+        Validate a LDAP user/password
         ---
         tags:
           - LDAP management
@@ -16,47 +16,49 @@ class Authenticate(Resource):
             schema:
               id: GETApiKey
               required:
-                - username
+                - user
                 - password
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: user of the SOCA user
                 token:
                   type: string
                   description: token associated to the user
 
         responses:
           200:
-            description: Pair of username/token is valid.
+            description: Pair of user/token is valid
           203:
-            description: Invalid username/token pair.
+            description: Invalid user/token pair
           400:
-            description: Client error.
+            description: Client error
+          500:
+            description: Backend error
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         parser.add_argument('password', type=str, location='form')
         args = parser.parse_args()
-        username = args["username"]
+        user = args["user"]
         password = args["password"]
-        if username is None or password is None:
+        if user is None or password is None:
             return {"success": False,
-                    "message": "username (str) and password (str) parameters are required"}, 400
+                    "message": "user (str) and password (str) parameters are required"}, 400
 
         ldap_host = config.Config.LDAP_HOST
         base_dn = config.Config.LDAP_BASE_DN
-        user_dn = 'uid={},ou=people,{}'.format(username, base_dn)
+        user_dn = 'uid={},ou=people,{}'.format(user, base_dn)
         try:
             conn = ldap.initialize('ldap://{}'.format(ldap_host))
             conn.bind_s(user_dn, password, ldap.AUTH_SIMPLE)
-            return {'success': True, 'message': 'User is valid.'}, 200
+            return {'success': True, 'message': 'User is valid'}, 200
 
         except ldap.INVALID_CREDENTIALS:
-            return {'success': False, 'message': 'Invalid user credentials.'}, 401
+            return {'success': False, 'message': 'Invalid user credentials'}, 401
 
         except ldap.SERVER_DOWN:
-            return {'success': False, 'message': 'LDAP server is down.'}, 500
+            return {'success': False, 'message': 'Unable to contact LDAP server'}, 500
 
         except Exception as err:
             return {'success': False, 'message': 'Unknown error: ' + str(err)}, 500

@@ -29,11 +29,11 @@ class User(Resource):
             schema:
             id: User
             required:
-              - username
+              - user
             properties:
-              username:
+              user:
                 type: string
-                description: username of the SOCA user
+                description: user of the SOCA user
 
         responses:
           200:
@@ -44,14 +44,14 @@ class User(Resource):
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='args')
+        parser.add_argument('user', type=str, location='args')
         args = parser.parse_args()
-        username = args["username"]
-        if username is None:
+        user = args["user"]
+        if user is None:
             return {"success": False,
-                    "message": "username (str) parameter is required"}, 400
+                    "message": "user (str) parameter is required"}, 400
 
-        user_filter = 'cn='+username
+        user_filter = 'cn='+user
         user_search_base = "ou=People," + config.Config.LDAP_BASE_DN
         user_search_scope = ldap.SCOPE_SUBTREE
         try:
@@ -78,7 +78,7 @@ class User(Resource):
             schema:
               id: NewUser
               required:
-                - username
+                - user
                 - password
                 - sudoers
                 - email
@@ -86,9 +86,9 @@ class User(Resource):
                 - uid
                 - gid
               properties:
-                username:
+                user:
                   type: string
-                  description: Username you want to create
+                  description: user you want to create
                 password:
                   type: string
                   description: Password for the new user
@@ -113,14 +113,14 @@ class User(Resource):
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         parser.add_argument('password', type=str, location='form')
         parser.add_argument('sudoers', type=bool, location='form')
         parser.add_argument('email', type=str, location='form')
         parser.add_argument('uid', type=int, location='form')
         parser.add_argument('gid', type=int, location='form')
         args = parser.parse_args()
-        username = args["username"]
+        user = args["user"]
         password = args["password"]
         sudoers = args["sudoers"]
         email = args["email"]
@@ -134,9 +134,9 @@ class User(Resource):
                 logger.error("/api/ldap/ids returned error : " + str(get_id.__dict__))
                 return {"success": False, "message": "/api/ldap/ids returned error: " +str(get_id.__dict__)}, 500
 
-        if username is None or password is None or sudoers is None or email is None:
+        if user is None or password is None or sudoers is None or email is None:
             return {"success": False,
-                    "message": "username (str), password (str), sudoers (bool) and email (str) parameters are required"},  400
+                    "message": "user (str), password (str), sudoers (bool) and email (str) parameters are required"},  400
 
         # Note: parseaddr adheres to rfc5322 , which means user@domain is a correct address.
         # You do not necessarily need to add a tld at the end
@@ -160,7 +160,7 @@ class User(Resource):
         except ldap.SERVER_DOWN:
             return {"success": False, "message": "LDAP server is down."}, 500
 
-        dn_user = "uid=" + username + ",ou=people," + config.Config.LDAP_BASE_DN
+        dn_user = "uid=" + user + ",ou=people," + config.Config.LDAP_BASE_DN
         enc_passwd = bytes(password, 'utf-8')
         salt = os.urandom(16)
         sha = hashlib.sha1(enc_passwd)
@@ -175,14 +175,14 @@ class User(Resource):
                                  'shadowAccount'.encode('utf-8'),
                                  'inetOrgPerson'.encode('utf-8'),
                                  'organizationalPerson'.encode('utf-8')]),
-                ('uid', [str(username).encode('utf-8')]),
+                ('uid', [str(user).encode('utf-8')]),
                 ('uidNumber', [str(uid).encode('utf-8')]),
                 ('gidNumber', [str(gid).encode('utf-8')]),
                 ('mail', [email.encode('utf-8')]),
-                ('cn', [str(username).encode('utf-8')]),
-                ('sn', [str(username).encode('utf-8')]),
+                ('cn', [str(user).encode('utf-8')]),
+                ('sn', [str(user).encode('utf-8')]),
                 ('loginShell', ['/bin/bash'.encode('utf-8')]),
-                ('homeDirectory', (config.Config.USER_HOME + '/' + str(username)).encode('utf-8')),
+                ('homeDirectory', (config.Config.USER_HOME + '/' + str(user)).encode('utf-8')),
                 ('userPassword', [passwd.encode('utf-8')])
             ]
 
@@ -214,11 +214,11 @@ class User(Resource):
             schema:
               id: User
               required:
-                - username
+                - user
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: user of the SOCA user
 
         responses:
           200:
@@ -229,12 +229,12 @@ class User(Resource):
             description: Malformed client input
                 """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         args = parser.parse_args()
-        username = args["username"]
-        if username is None:
+        user = args["user"]
+        if user is None:
             return {"success": False,
-                    "message": "username (str) parameter is required"}, 400
+                    "message": "user (str) parameter is required"}, 400
         ldap_base = config.Config.LDAP_BASE_DN
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
@@ -246,19 +246,19 @@ class User(Resource):
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
-        entries_to_delete = ["uid=" + username + ",ou=People," + ldap_base,
-                             "cn=" + username + ",ou=Group," + ldap_base,
-                             "cn=" + username + ",ou=Sudoers," + ldap_base]
+        entries_to_delete = ["uid=" + user + ",ou=People," + ldap_base,
+                             "cn=" + user + ",ou=Group," + ldap_base,
+                             "cn=" + user + ",ou=Sudoers," + ldap_base]
 
         #print(datetime.now().strftime("%s"))
         #today = datetime.datetime.utcnow().strftime("%s")
         #print(today)
-        #run_command('mv /data/home/' + username + ' /data/home/' + username + '_' + str(today))
+        #run_command('mv /data/home/' + user + ' /data/home/' + user + '_' + str(today))
         for entry in entries_to_delete:
             try:
                 conn.delete_s(entry)
             except ldap.NO_SUCH_OBJECT:
-                if entry == "uid=" + username + ",ou=People," + ldap_base:
+                if entry == "uid=" + user + ",ou=People," + ldap_base:
                     return {"success": False, "message": "Unknown user"}, 203
                 else:
                     pass
@@ -288,13 +288,13 @@ class User(Resource):
             schema:
               id: LDAPModify
               required:
-                - username
+                - user
                 - attribute
                 - value
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: user of the SOCA user
                 attribute:
                   type: string
                   description: Attribute to change
@@ -304,30 +304,30 @@ class User(Resource):
 
         responses:
           200:
-            description: Pair of username/token is valid
+            description: Pair of user/token is valid
           203:
-            description: Invalid username/token pair
+            description: Invalid user/token pair
           400:
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         parser.add_argument('attribute', type=str, location='form')
         parser.add_argument('value', type=str, location='form')
         args = parser.parse_args()
-        username = args["username"]
+        user = args["user"]
         attribute = args["attribute"]
         value = args["value"]
         ALLOWED_ATTRIBUTES = ["userPassword"]
-        if username is None or value is None or attribute is None:
+        if user is None or value is None or attribute is None:
             return {"success": False,
-                    "message": "username (str), attribute (str) and value (str) parameters are required"}, 400
+                    "message": "user (str), attribute (str) and value (str) parameters are required"}, 400
 
         if attribute not in ALLOWED_ATTRIBUTES:
             return {"success": False,
                     "message": "attribute is not supported"}, 400
 
-        dn_user = "uid=" + username + ",ou=people," + config.Config.LDAP_BASE_DN
+        dn_user = "uid=" + user + ",ou=people," + config.Config.LDAP_BASE_DN
         if attribute == "userPassword":
             enc_passwd = bytes(value, 'utf-8')
             salt = os.urandom(16)

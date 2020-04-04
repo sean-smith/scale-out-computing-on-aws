@@ -56,16 +56,16 @@ class Reset(Resource):
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument("username", type=str, location="form")
+        parser.add_argument("user", type=str, location="form")
         parser.add_argument("password", type=str, location="form")
         args = parser.parse_args()
-        username = args["username"]
+        user = args["user"]
         password = args["password"]
-        if username is None or password is None:
+        if user is None or password is None:
             return {"success": False,
-                    "message": "username (str) and password (str) parameters are required"}, 400
+                    "message": "user (str) and password (str) parameters are required"}, 400
 
-        dn_user = "uid=" + username + ",ou=people," + config.Config.LDAP_BASE_DN
+        dn_user = "uid=" + user + ",ou=people," + config.Config.LDAP_BASE_DN
         enc_passwd = bytes(password, 'utf-8')
         salt = os.urandom(16)
         sha = hashlib.sha1(enc_passwd)
@@ -87,4 +87,4 @@ class Reset(Resource):
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 401
+            return {"success": False, "message": "Unknown error: " + str(err)}, 500

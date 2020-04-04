@@ -14,9 +14,9 @@ index = Blueprint('index', __name__, template_folder='templates')
 @index.route('/', methods=['GET'])
 @login_required
 def home():
-    username = session['username']
+    user = session['user']
     sudoers = session['sudoers']
-    return render_template('index.html', username=username, sudoers=sudoers)
+    return render_template('index.html', user=user, sudoers=sudoers)
 
 
 @index.route('/login', methods=['GET'])
@@ -26,7 +26,7 @@ def login():
 
 @index.route('/logout', methods=['GET'])
 def logout():
-    session_data = ["username", "sudoers", "api_key"]
+    session_data = ["user", "sudoers", "api_key"]
     for param in session_data:
         session.pop(param, None)
     return redirect('/')
@@ -34,24 +34,23 @@ def logout():
 
 @index.route('/auth', methods=['POST'])
 def authenticate():
-    username = request.form.get('username')
+    user = request.form.get('user')
     password = request.form.get('password')
-    logger.info("Received login request for : " + str(username))
-    if username is not None and password is not None:
+    logger.info("Received login request for : " + str(user))
+    if user is not None and password is not None:
         check_auth = post(config.Config.FLASK_ENDPOINT + '/api/ldap/authenticate',
-                          data={"username": username, "password": password},
+                          data={"user": user, "password": password},
                           verify=False).json()
-
         logger.info(check_auth)
         if check_auth['success'] is False:
             flash(check_auth['message'])
             return redirect('/login')
         else:
-            session['username'] = username.lower()
+            session['user'] = user.lower()
             logger.info("User authenticated, checking sudo permissions")
             check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/ldap/sudo',
                                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                        params={"username": username},
+                                        params={"user": user},
                                         verify=False).json()
             logger.info(check_sudo_permission)
             if check_sudo_permission["success"] is True:

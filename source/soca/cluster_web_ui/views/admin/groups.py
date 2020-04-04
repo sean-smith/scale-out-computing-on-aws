@@ -6,21 +6,38 @@ from models import ApiKeys
 from decorators import login_required
 
 logger = logging.getLogger("api_log")
-admin_users = Blueprint('admin_users', __name__, template_folder='templates')
+admin_groups = Blueprint('admin_groups', __name__, template_folder='templates')
 
 
 
-@admin_users.route('/admin/users', methods=['GET'])
+@admin_groups.route('/admin/groups', methods=['GET'])
 @login_required
 def index():
+    get_all_groups = get(config.Config.FLASK_ENDPOINT + "/api/ldap/groups",
+                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+
+    if get_all_groups.status_code == 200:
+        all_groups = get_all_groups.json()["message"].keys()
+    else:
+        flash("Unable to list groups: " + str(get_all_groups._content), "error")
+        all_groups = {}
+
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY}).json()
+                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
 
-    all_users = get_all_users["message"].keys()
-    return render_template('admin_users.html', user=session['user'], sudoers=session['sudoers'], all_users=all_users)
+    if get_all_users.status_code == 200:
+        all_users = get_all_users.json()["message"].keys()
+    else:
+        flash("Unable to list all_users: " + str(get_all_users._content), "error")
+        all_users = {}
+
+    return render_template('admin_groups.html', user=session['user'],
+                           sudoers=session['sudoers'],
+                           all_groups=all_groups,
+                           all_users=all_users)
 
 
-@admin_users.route('/admin/manage_sudo', methods=['POST'])
+@admin_groups.route('/admin/manage_sudo', methods=['POST'])
 @login_required
 def manage_sudo():
     user = request.form.get('user', None)
@@ -53,7 +70,7 @@ def manage_sudo():
     else:
         return redirect("/admin/users")
 
-@admin_users.route('/admin/create_user', methods=['POST'])
+@admin_groups.route('/admin/create_new_account', methods=['POST'])
 @login_required
 def create_new_account():
         user = str(request.form.get('user'))
@@ -87,7 +104,7 @@ def create_new_account():
         return redirect('/admin/users')
 
 
-@admin_users.route('/admin/delete_user', methods=['POST'])
+@admin_groups.route('/admin/delete_account', methods=['POST'])
 @login_required
 def delete_account():
     if session['sudoers'] is True:

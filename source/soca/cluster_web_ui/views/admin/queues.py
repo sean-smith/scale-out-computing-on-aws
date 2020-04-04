@@ -17,4 +17,4 @@ def index():
                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY}).json()
 
     all_users = get_all_users["message"].keys()
-    return render_template('admin.html', username=session['username'], sudoers=session['sudoers'], all_users=all_users)
+    return render_template('admin_queues.html', username=session['username'], sudoers=session['sudoers'], all_users=all_users)

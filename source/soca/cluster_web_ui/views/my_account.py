@@ -14,11 +14,10 @@ my_account = Blueprint('my_account', __name__, template_folder='templates')
 @my_account.route("/my_account", methods=["GET"])
 @login_required
 def index():
-    print(session["api_key"])
     get_ldap_info = get(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
                                headers={"X-SOCA-TOKEN": session["api_key"],
-                                        "X-SOCA-USERNAME": session["username"]},
-                               params={"username": session["username"]})
+                                        "X-SOCA-USER": session["user"]},
+                               params={"user": session["user"]})
 
     if get_ldap_info.status_code == 200:
         info = ast.literal_eval(get_ldap_info.json()["message"])
@@ -32,7 +31,7 @@ def index():
         flash("Unable to retrieve your LDAP information. Error: " + str(get_ldap_info._content), "error")
 
     return render_template("my_account.html",
-                           username=session["username"],
+                           user=session["user"],
                            user_dn=user_dn,
                            user_data=user_data)
 
@@ -44,34 +43,34 @@ def reset_key():
     admin_reset = request.form.get("admin_reset", None)
     if admin_reset == "yes":
         # Admin can generate a temp password on behalf of the user
-        username = request.form.get("username", None)
-        if username is None:
-            return redirect("/admin")
-        elif username == session["username"]:
+        user = request.form.get("user", None)
+        if user is None:
+            return redirect("/admin/users")
+        elif user == session["user"]:
             flash("You can not reset your own password using this tool. Please visit 'My Account' section for that", "error")
-            return redirect("/admin")
+            return redirect("/admin/users")
         else:
             password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(8))
             change_password = post(config.Config.FLASK_ENDPOINT + '/api/user/reset_password',
                                        headers={"X-SOCA-TOKEN": session["api_key"],
-                                                "X-SOCA-USERNAME": session["username"]},
-                                       data={"username": username,
+                                                "X-SOCA-USER": session["user"]},
+                                       data={"user": user,
                                              "password": password},
                                        verify=False)
             if change_password.status_code == 200:
-                flash("Password for " + username + " has been changed to " + password + ".<hr> User is recommended to change it using 'My Account' section", "success")
-                return redirect("/admin")
+                flash("Password for " + user + " has been changed to " + password + "<hr> User is recommended to change it using 'My Account' section", "success")
+                return redirect("/admin/users")
             else:
                 flash("Unable to reset password. Error: " + str(change_password._content), "error")
-                return redirect("/admin")
+                return redirect("/admin/users")
     else:
         if password is not None:
             # User can change their own password
             if password == password_verif:
                 change_password = post(config.Config.FLASK_ENDPOINT + '/api/user/reset_password',
                                        headers={"X-SOCA-TOKEN": session["api_key"],
-                                                "X-SOCA-USERNAME": session["username"]},
-                                       data={"username": session["username"],
+                                                "X-SOCA-USER": session["user"]},
+                                       data={"user": session["user"],
                                              "password": password},
                                        verify=False)
 

@@ -1,81 +1,50 @@
-from decorators import private_api
+import config
+import ldap
 from flask_restful import Resource
+import logging
+from decorators import admin_api
+
+logger = logging.getLogger("soca_api")
+
 
 class Groups(Resource):
-    @private_api
+    #@admin_api
     def get(self):
-        # Return all LDAP groups
-        return {'hello': 'world'}
+        """
+        List all LDAP groups
+        ---
+        tags:
+          - Group Management
+        responses:
+          200:
+            description: Pair of user/token is valid
+          203:
+            description: Invalid user/token pair
+          400:
+            description: Malformed client input
+        """
+        # List all LDAP users
+        ldap_host = config.Config.LDAP_HOST
+        base_dn = config.Config.LDAP_BASE_DN
+        all_ldap_groups = {}
+        group_search_base = "ou=Group," + base_dn
+        group_search_scope = ldap.SCOPE_SUBTREE
+        group_filter = 'cn=*'
+        try:
+            con = ldap.initialize('ldap://{}'.format(ldap_host))
+            groups = con.search_s(group_search_base, group_search_scope, group_filter, ['cn'])
+            for group in groups:
+                group_base = group[0]
+                group_name = group[1]['cn'][0].decode('utf-8')
+                all_ldap_groups[group_name] = group_base
 
-'''
-@group.route("/api/ldap/group",  methods=["GET"])
-def list_group_membership():
-    ldap_host = config.Config.LDAP_HOST
-    base_dn = config.Config.LDAP_BASE_DN
-    all_ldap_users = {}
-    user_search_base = "ou=People," + base_dn
-    user_search_scope = ldap.SCOPE_SUBTREE
-    user_filter = 'uid=*'
-    con = ldap.initialize('ldap://{}'.format(ldap_host))
-    users = con.search_s(user_search_base, user_search_scope, user_filter)
-    for user in users:
-        user_base = user[0]
-        username = user[1]['uid'][0].decode('utf-8')
-        all_ldap_users[username] = user_base
+            return {"success": True, "message": all_ldap_groups}, 200
 
-    return jsonify(all_ldap_users)
+        except ldap.SERVER_DOWN:
+            return {"success": False, "message": "LDAP server seems to be down."}, 500
 
+        except ldap.NO_SUCH_OBJECT:
+            return {"success": False, "message": "Group does not exist"}, 203
 
-@group.route("/api/ldap/group",  methods=["POST"])
-def create_group():
-    ldap_host = config.Config.LDAP_HOST
-    base_dn = config.Config.LDAP_BASE_DN
-    all_ldap_users = {}
-    user_search_base = "ou=People," + base_dn
-    user_search_scope = ldap.SCOPE_SUBTREE
-    user_filter = 'uid=*'
-    con = ldap.initialize('ldap://{}'.format(ldap_host))
-    users = con.search_s(user_search_base, user_search_scope, user_filter)
-    for user in users:
-        user_base = user[0]
-        username = user[1]['uid'][0].decode('utf-8')
-        all_ldap_users[username] = user_base
-
-    return jsonify(all_ldap_users)
-
-
-@group.route("/api/ldap/group",  methods=["DELETE"])
-def delete_group():
-    ldap_host = config.Config.LDAP_HOST
-    base_dn = config.Config.LDAP_BASE_DN
-    all_ldap_users = {}
-    user_search_base = "ou=People," + base_dn
-    user_search_scope = ldap.SCOPE_SUBTREE
-    user_filter = 'uid=*'
-    con = ldap.initialize('ldap://{}'.format(ldap_host))
-    users = con.search_s(user_search_base, user_search_scope, user_filter)
-    for user in users:
-        user_base = user[0]
-        username = user[1]['uid'][0].decode('utf-8')
-        all_ldap_users[username] = user_base
-
-    return jsonify(all_ldap_users)
-
-
-@group.route("/api/ldap/group",  methods=["PUT"])
-def update_group_membership():
-    ldap_host = config.Config.LDAP_HOST
-    base_dn = config.Config.LDAP_BASE_DN
-    all_ldap_users = {}
-    user_search_base = "ou=People," + base_dn
-    user_search_scope = ldap.SCOPE_SUBTREE
-    user_filter = 'uid=*'
-    con = ldap.initialize('ldap://{}'.format(ldap_host))
-    users = con.search_s(user_search_base, user_search_scope, user_filter)
-    for user in users:
-        user_base = user[0]
-        username = user[1]['uid'][0].decode('utf-8')
-        all_ldap_users[username] = user_base
-
-    return jsonify(all_ldap_users)
-'''
+        except Exception as err:
+            return {"success": False, "message": "Unknown Error: " + str(err)}, 500

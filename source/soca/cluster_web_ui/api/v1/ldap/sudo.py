@@ -20,26 +20,26 @@ class Sudo(Resource):
             schema:
               id: User
               required:
-                - username
+                - user
               properties:
-                username:
+                user:
                    type: string
-                   description: username of the SOCA user
+                   description: user of the SOCA user
 
         responses:
           200:
-            description: Pair of username/token is valid
+            description: Pair of user/token is valid
           203:
-            description: Invalid username/token pair
+            description: Invalid user/token pair
           400:
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='args')
+        parser.add_argument('user', type=str, location='args')
         args = parser.parse_args()
-        username = args["username"]
-        if args["username"] is None:
-            return {"success": False, "message": "username can not be empty"}, 400
+        user = args["user"]
+        if user is None:
+            return {"success": False, "message": "user can not be empty"}, 400
 
         ldap_host = config.Config.LDAP_HOST
         base_dn = config.Config.LDAP_BASE_DN
@@ -48,7 +48,7 @@ class Sudo(Resource):
             con = ldap.initialize('ldap://{}'.format(ldap_host))
             sudoers_search_base = "ou=Sudoers," + base_dn
             sudoers_search_scope = ldap.SCOPE_SUBTREE
-            sudoers_filter = 'cn=' + username
+            sudoers_filter = 'cn=' + user
             is_sudo = con.search_s(sudoers_search_base, sudoers_search_scope, sudoers_filter)
             if is_sudo.__len__() > 0:
                 return {'success': True, 'message': "User has SUDO permissions."}, 200
@@ -74,29 +74,29 @@ class Sudo(Resource):
             schema:
               id: User
               required:
-                - username
+                - user
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: user of the SOCA user
                 token:
                   type: string
                   description: token associated to the user
 
         responses:
           200:
-            description: Pair of username/token is valid
+            description: Pair of user/token is valid
           203:
-            description: Invalid username/token pair
+            description: Invalid user/token pair
           400:
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         args = parser.parse_args()
-        username = args["username"]
-        if args["username"] is None:
-            return {"success": False, "message": "username can not be empty"}, 400
+        user = args["user"]
+        if user is None:
+            return {"success": False, "message": "user can not be empty"}, 400
 
         # check if user exist
         ldap_host = config.Config.LDAP_HOST
@@ -104,17 +104,17 @@ class Sudo(Resource):
         try:
             conn = ldap.initialize('ldap://{}'.format(ldap_host))
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-            dn_user = "cn=" + username + ",ou=Sudoers," + base_dn
+            dn_user = "cn=" + user + ",ou=Sudoers," + base_dn
             attrs = [
                     ('objectClass', ['top'.encode('utf-8'),
                                      'sudoRole'.encode('utf-8')]),
                     ('sudoHost', ['ALL'.encode('utf-8')]),
-                    ('sudoUser', [str(username).encode('utf-8')]),
+                    ('sudoUser', [str(user).encode('utf-8')]),
                     ('sudoCommand', ['ALL'.encode('utf-8')])
                 ]
 
             conn.add_s(dn_user, attrs)
-            change_user_key_scope = ApiKeys.query.filter_by(username=username, is_active=True).all()
+            change_user_key_scope = ApiKeys.query.filter_by(user=user, is_active=True).all()
             if change_user_key_scope:
                 for key in change_user_key_scope:
                     key.scope = "sudo"
@@ -146,26 +146,26 @@ class Sudo(Resource):
             schema:
               id: User
               required:
-                - username
+                - user
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: user of the SOCA user
 
         responses:
           200:
-            description: Pair of username/token is valid
+            description: Pair of user/token is valid
           203:
-            description: Invalid username/token pair
+            description: Invalid user/token pair
           400:
             description: Malformed client input
          """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         args = parser.parse_args()
-        username = args["username"]
-        if args["username"] is None:
-            return {"success": False, "message": "username can not be empty"}, 400
+        user = args["user"]
+        if user is None:
+            return {"success": False, "message": "user can not be empty"}, 400
 
         ldap_host = config.Config.LDAP_HOST
         base_dn = config.Config.LDAP_BASE_DN
@@ -173,9 +173,9 @@ class Sudo(Resource):
         try:
             conn = ldap.initialize('ldap://{}'.format(ldap_host))
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-            dn_user = "cn=" + username + ",ou=Sudoers," + base_dn
+            dn_user = "cn=" + user + ",ou=Sudoers," + base_dn
             conn.delete_s(dn_user)
-            change_user_key_scope = ApiKeys.query.filter_by(username=username, is_active=True).all()
+            change_user_key_scope = ApiKeys.query.filter_by(user=user, is_active=True).all()
             if change_user_key_scope:
                 for key in change_user_key_scope:
                     key.scope = "user"

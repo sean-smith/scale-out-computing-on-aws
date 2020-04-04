@@ -15,7 +15,7 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_SQLALCHEMY_TABLE = "flask_sessions"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
-    SECRET_KEY = "wesh "  # os.environ["FLASK_SECRET_KEY"]
+    SECRET_KEY = "&@#T*&#$bsda" #os.environ["FLASK_SECRET_KEY"]
     API_ROOT_KEY = secrets.token_hex(16)  # Do not use this key to interactive API requests.
     # GUNICORN SETTINGS
     FLASK_HOST = "127.0.0.1"
@@ -40,7 +40,7 @@ class Config(object):
     DCV_MAX_SESSION_ACOUNT = 4
 
     # LDAP
-    LDAP_HOST = "54.86.193.158"
+    LDAP_HOST = "107.21.165.155"
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
@@ -49,7 +49,7 @@ class Config(object):
     #ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
     #ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
     ROOT_DN = 'CN=admin,' + LDAP_BASE_DN
-    ROOT_PW = '/nKy6QkO'
+    ROOT_PW = 'FPEfDWrK'
 
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"

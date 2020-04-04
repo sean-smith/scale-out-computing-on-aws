@@ -11,7 +11,7 @@ my_api_key = Blueprint('my_api_key', __name__, template_folder='templates')
 def index():
     check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
                          headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                         params={"username": session["username"]}).json()
+                         params={"user": session["user"]}).json()
 
     logger.info(str(request) + ": check_user_key: Status: " + str(check_user_key))
     logger.debug("check_user_key: Content: " + str(check_user_key))
@@ -22,18 +22,18 @@ def index():
         flash("Unable to retrieve API key for user", "error")
 
     return render_template("my_api_key.html",
-                           username=session["username"],
+                           user=session["user"],
                            user_token=user_token,
                            master_host=request.host_url)
 
 
 @my_api_key.route("/reset_api_key", methods=["POST"])
 def reset_key():
-    username = request.form.get("username", None)
-    if username is not None:
+    user = request.form.get("user", None)
+    if user is not None:
         invalidate_user_key = delete(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                     data={"username": username},
+                                     data={"user": user},
                                      verify=False)
         print(invalidate_user_key)
         logger.info(str(request) + ": invalidate_user_key: Status: " + str(invalidate_user_key.status_code))

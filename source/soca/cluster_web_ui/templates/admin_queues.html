@@ -43,11 +43,9 @@
                   <nav>
                      <nav>
                       <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                          <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-add" role="tab" aria-controls="nav-home" aria-selected="true">Add a new user</a>
-                          <a class="nav-item nav-link" id="nav-profile-tab" data-toggle="tab" href="#nav-delete" role="tab" aria-controls="nav-profile" aria-selected="false">Delete a user</a>
-                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-reset " role="tab" aria-controls="nav-contact" aria-selected="false">Reset user password</a>
-                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-admin " role="tab" aria-controls="nav-contact" aria-selected="false">Grant/Revoke user Admin permissions</a>
-                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-ldap" role="tab" aria-controls="nav-contact" aria-selected="false">LDAP details</a>
+                          <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-add" role="tab" aria-controls="nav-home" aria-selected="true">Create a queue</a>
+                          <a class="nav-item nav-link" id="nav-profile-tab" data-toggle="tab" href="#nav-delete" role="tab" aria-controls="nav-delete" aria-selected="false">Delete a queue</a>
+                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-parameters" role="tab" aria-controls="nav-contact" aria-selected="false">Queue parameters</a>
                       </div>
                      </nav>
                   <div class="tab-content" id="nav-tabContent">
@@ -55,31 +53,21 @@
                           <br>
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
-                                  <h6 class="m-0 font-weight-bold text-primary">Add New User</h6>
+                                  <h6 class="m-0 font-weight-bold text-primary">Create a new queue</h6>
                               </div>
                               <div class="card-body">
-                                  <form action="/create_new_account" method="post"
-                                    oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>
+                                  <form action="/admin/create_new_queue" method="post">
                                       <div class="form-group">
-                                          <input id="username" placeholder="Username" class="form-control" type="text" required name="username">
+                                          <input id="queue_name" placeholder="Queue name" class="form-control" type="text" required name="queue_name">
                                       </div>
-                                      <div class="form-group">
-                                          <input id="password" placeholder="Password" class="form-control"  type="password" required name="password">
-                                      </div>
-                                      <div class="form-group">
-                                          <input placeholder="Confirm Password" id="password_verif" class="form-control" type="password" name="password_verif">
-                                      </div>
-
-                                       <div class="form-group">
-                                          <input id="email" placeholder="Email" class="form-control"  type="email" required name="email">
-                                      </div>
-                                      <div class="form-group form-check">
-                                          <input type="checkbox" class="form-check-input" name="sudo" id="sudo">
-                                          <label class="form-check-label" for="sudo">Enable Sudo Access</label>
-                                      </div>
+                                      <select class="form-control" id="queue_type" name="queue_type">
+                                            <option value="automatic">Automatic Provisioning (Default)</option>
+                                          <option value="alwayson">AlwaysOn</option>
+                                    </select>
+                                      <br>
                                       <div align="center">
                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                          <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                                          <button type="submit" class="btn btn-primary btn-lg">Create new Queue</button>
                                       </div>
                                   </form>
                               </div>
@@ -98,7 +86,7 @@
                                       Deleting user will prevent user to access the cluster but does not remove associated $HOME directory and data
                                   </div>
 
-                                  <form action="/reset_password" method="post"
+                                  <form action="/admin/delete_user" method="post"
                                     oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>                                  <div class="form-group">
                                     <select class="form-control" id="user_to_delete" name="user_to_delete">
                                         {% for user in all_users %}
@@ -130,7 +118,7 @@
                                       <strong>Important </strong>
                                       This will generate a temporary password for a given user
                                   </div>
-                                  <form action="/reset_password" method="post" oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>                                       <div class="form-group">
+                                  <form action="/admin/reset_password" method="post" oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>                                       <div class="form-group">
                                     <select class="form-control" id="username" name="username">
                                         {% for user in all_users %}
                                             <option value="{{user}}">{{user}}</option>
@@ -160,11 +148,7 @@
                                   <h6 class="m-0 font-weight-bold text-primary">Grant user Admin permission</h6>
                               </div>
                               <div class="card-body">
-                                  <div class="alert alert-success" role="alert">
-                                      <strong>Important </strong>
-                                      This will give Admin permission to the user
-                                  </div>
-                                  <form action="/manage_sudo" method="post">
+                                  <form action="/admin/manage_sudo" method="post">
                                       <div class="form-group">
                                     <select class="form-control" id="username" name="username">
                                         {% for user in all_users %}
@@ -192,11 +176,7 @@
                                   <h6 class="m-0 font-weight-bold text-primary">Revoke user Admin permission</h6>
                               </div>
                               <div class="card-body">
-                                  <div class="alert alert-danger" role="alert">
-                                      <strong>Important </strong>
-                                      This will <strong>revoke</strong> Admin permission to the user
-                                  </div>
-                                  <form action="/manage_sudo" method="post">
+                                  <form action="/admin/manage_sudo" method="post">
                                       <div class="form-group">
                                     <select class="form-control" id="username" name="username">
                                         {% for user in all_users %}

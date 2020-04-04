@@ -21,11 +21,11 @@ class ApiKey(Resource):
             schema:
               id: GETApiKey
               required:
-                - username
+                - user
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: user of the SOCA user
 
         responses:
           200:
@@ -36,15 +36,15 @@ class ApiKey(Resource):
             description: Malformed client input
         """
         parser = reqparse.RequestParser()
-        parser.add_argument("username", type=str, location='args')
+        parser.add_argument("user", type=str, location='args')
         args = parser.parse_args()
-        username = args["username"]
-        if username is None:
+        user = args["user"]
+        if user is None:
             return {"success": False,
-                    "message": "username (str) parameter is required"}, 400
+                    "message": "user (str) parameter is required"}, 400
 
         try:
-            check_existing_key = ApiKeys.query.filter_by(username=username,
+            check_existing_key = ApiKeys.query.filter_by(user=user,
                                                          is_active=True).first()
             if check_existing_key:
                 return {"success": True, "message": check_existing_key.token}, 200
@@ -52,14 +52,14 @@ class ApiKey(Resource):
                 try:
                     permissions = get(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
                                       headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                      params={"username": username})
+                                      params={"user": user})
 
                     if permissions.status_code == 200:
                         scope = "sudo"
                     else:
                         scope = "user"
                     api_token = secrets.token_hex(16)
-                    new_key = ApiKeys(username=username,
+                    new_key = ApiKeys(user=user,
                                       token=api_token,
                                       is_active=True,
                                       scope=scope,
@@ -87,11 +87,11 @@ class ApiKey(Resource):
               schema:
                 id: DELETEApiKey
                 required:
-                  - username
+                  - user
                 properties:
-                    username:
+                    user:
                         type: string
-                        description: username of the SOCA user
+                        description: user of the SOCA user
 
         responses:
             200:
@@ -102,13 +102,13 @@ class ApiKey(Resource):
                description: Client error.
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, location='form')
+        parser.add_argument('user', type=str, location='form')
         args = parser.parse_args()
-        username = args["username"]
-        if username is None:
-            return {"success": False, "message": "Username (str) parameters is required"}, 400
+        user = args["user"]
+        if user is None:
+            return {"success": False, "message": "user (str) parameters is required"}, 400
         try:
-            check_existing_keys = ApiKeys.query.filter_by(username=username, is_active=True).all()
+            check_existing_keys = ApiKeys.query.filter_by(user=user, is_active=True).all()
             if check_existing_keys:
                 for key in check_existing_keys:
                     key.is_active = False

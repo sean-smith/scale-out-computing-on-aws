@@ -11,11 +11,13 @@ from api.v1.ldap.users import Users
 from api.v1.user.reset_password import Reset
 from api.v1.user.api_key import ApiKey
 from api.v1.ldap.group import Group
+from api.v1.ldap.groups import Groups
 from api.v1.ldap.authenticate import Authenticate
 from views.index import index
 from views.my_api_key import my_api_key
 from views.admin.users import admin_users
 from views.admin.queues import admin_queues
+from views.admin.groups import admin_groups
 
 from views.my_account import my_account
 
@@ -43,6 +45,7 @@ api.add_resource(Ids, '/api/ldap/ids')
 api.add_resource(User, '/api/ldap/user')
 api.add_resource(Users, '/api/ldap/users')
 api.add_resource(Group, '/api/ldap/group')
+api.add_resource(Groups, '/api/ldap/groups')
 # Users
 api.add_resource(ApiKey, '/api/user/api_key')
 api.add_resource(Reset, '/api/user/reset_password')
@@ -54,6 +57,7 @@ app.register_blueprint(my_api_key)
 app.register_blueprint(my_account)
 app.register_blueprint(admin_users)
 app.register_blueprint(admin_queues)
+app.register_blueprint(admin_groups)
 
 
 @app.route("/api/spec.json")
