@@ -8,7 +8,7 @@ logger = logging.getLogger("soca_api")
 
 
 class Users(Resource):
-    @admin_api
+    #@admin_api
     def get(self):
         """
         List all LDAP users

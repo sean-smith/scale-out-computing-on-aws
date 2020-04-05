@@ -53,6 +53,7 @@ def manage_sudo():
     else:
         return redirect("/admin/users")
 
+
 @admin_users.route('/admin/create_user', methods=['POST'])
 @login_required
 def create_new_account():
@@ -70,21 +71,28 @@ def create_new_account():
                                      "email": email,
                                      "sudoers": sudoers,
                                      "uid": uid,
-                                     "gid": gid}).json()
+                                     "gid": gid})
+        if create_new_user.status_code == 200:
+            if create_new_user.json()["success"] is False:
+                flash("Unable to create " + user +" for the following reason: " + create_new_user["message"], "error")
+                return redirect('/admin/users')
+            else:
+                # Create API key
+                create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
+                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                      params={"user": user}, verify=False)
+                if create_user_key.status_code == 200:
+                    if create_user_key.json()["success"] is False:
+                        flash("User created but unable to generate API token: " + create_user_key.json()["message"], "error")
+                    else:
+                        flash("User " + user + " has been created successfully", "success")
+                else:
+                    flash("User created but unable to generate API token: " + str(create_user_key._content), "error")
 
-        if create_new_user["success"] is False:
-            flash("Unable to create " + user +" for the following reason: " + create_new_user["message"], "error")
             return redirect('/admin/users')
         else:
-            # Create API key
-            create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
-                                  headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                  params={"user": user}, verify=False).json()
-            if create_user_key["success"] is False:
-                flash("User created but unable to generate API token: " + str(create_user_key._content), "error")
-            else:
-                flash("User " + user + " has been created successfully", "success")
-        return redirect('/admin/users')
+            flash("Unable to create new user. API returned error: " + str(create_new_user._content), "error")
+            return redirect('/admin/users')
 
 
 @admin_users.route('/admin/delete_user', methods=['POST'])

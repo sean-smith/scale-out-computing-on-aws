@@ -120,7 +120,7 @@ class User(Resource):
         parser.add_argument('uid', type=int, location='form')
         parser.add_argument('gid', type=int, location='form')
         args = parser.parse_args()
-        user = args["user"]
+        user = ''.join(x for x in args["user"] if x.isalpha() or x.isdigit())  # Sanitize input
         password = args["password"]
         sudoers = args["sudoers"]
         email = args["email"]

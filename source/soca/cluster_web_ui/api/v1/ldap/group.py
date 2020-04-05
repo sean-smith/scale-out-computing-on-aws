@@ -1,22 +1,15 @@
-import hashlib
-import os
-from base64 import b64encode as encode
-from email.utils import parseaddr
 import config
 import ldap
 from flask_restful import Resource, reqparse
 from requests import get
-import json
 import logging
 from decorators import private_api, admin_api
 import re
-from flask import session
-import ldap.modlist as modlist
-from datetime import datetime
 logger = logging.getLogger("soca_api")
 
 
 class Group(Resource):
+    @admin_api
     def get(self):
         """
         Retrieve information for a specific group
@@ -62,7 +55,6 @@ class Group(Resource):
                         "message": "Group does not exist"}, 203
             for group in groups:
                 group_base = group[0]
-                group_name = group[1]['cn'][0].decode('utf-8')
                 members = []
                 if "memberUid" in group[1].keys():
                     for member in group[1]["memberUid"]:
@@ -78,126 +70,107 @@ class Group(Resource):
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500
 
-    @admin_api
+    #@admin_api
     def post(self):
         """
-        Create a new LDAP user
+        Create a new LDAP group
         ---
         tags:
-          - User Management
+          - Group Management
         parameters:
           - in: body
             name: body
             schema:
-              id: NewUser
+              id: Group
               required:
-                - user
-                - password
-                - sudoers
-                - email
+                - group
               optional:
-                - uid
                 - gid
+                - users
               properties:
-                user:
+                group:
                   type: string
-                  description: user you want to create
-                password:
-                  type: string
-                  description: Password for the new user
-                sudoers:
-                  type: boolean
-                  description: True (give user SUDO permissions) or False
-                email:
-                  type: string
-                  description: Email address associated to the user
-                uid:
-                  type: integer
-                  description: Linux UID to be associated to the user
+                  description: Name of the group
                 gid:
                   type: integer
-                  description: Linux GID to be associated to user's group
+                  description: Linux GID to be associated to the group
+                users:
+                  type: list
+                  description: List of user(s) to add to the group
+
+
         responses:
           200:
-            description: User created
+            description: Group created
           203:
-            description: User already exist
+            description: Group already exist
+          204:
+            description: User does not exist and can't be added to the group
           400:
             description: Malformed client input
+          500:
+            description: Backend issue
         """
         parser = reqparse.RequestParser()
-        parser.add_argument('user', type=str, location='form')
-        parser.add_argument('password', type=str, location='form')
-        parser.add_argument('sudoers', type=bool, location='form')
-        parser.add_argument('email', type=str, location='form')
-        parser.add_argument('uid', type=int, location='form')
+        parser.add_argument('group', type=str, location='form')
         parser.add_argument('gid', type=int, location='form')
+        parser.add_argument('users', type=str, location='form')
         args = parser.parse_args()
-        user = args["user"]
-        password = args["password"]
-        sudoers = args["sudoers"]
-        email = args["email"]
-        uid = args["uid"]
+        group = ''.join(x for x in args["group"] if x.isalpha() or x.isdigit()) # Sanitize Input
         gid = args["gid"]
-        if uid is None or gid is None:
-            get_id = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids', verify=False)
-            if get_id.status_code == 200:
-                current_ldap_ids = (json.loads(get_id.text))
-            else:
-                logger.error("/api/ldap/ids returned error : " + str(get_id.__dict__))
-                return {"success": False, "message": "/api/ldap/ids returned error: " +str(get_id.__dict__)}, 500
-
-        if user is None or password is None or sudoers is None or email is None:
-            return {"success": False,
-                    "message": "user (str), password (str), sudoers (bool) and email (str) parameters are required"},  400
-
-        # Note: parseaddr adheres to rfc5322 , which means user@domain is a correct address.
-        # You do not necessarily need to add a tld at the end
-        if "@" not in parseaddr(email)[1]:
-            return {"success": False, "message": "Email address seems to be invalid."}, 400
-
-        if uid is None:
-            uid = current_ldap_ids["message"]['next_uid']
+        users = args["users"]
+        get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
+                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                      verify=False)
+        if get_gid.status_code == 200:
+            current_ldap_gids = get_gid.json()
         else:
-            if uid in current_ldap_ids["message"]['used_uid']:
-                return {"success": False, "message": "UID already in use."}, 203
+            return {"success": False, "message": "Unable to retrieve GID: " +str(get_gid._content)}, 500
 
         if gid is None:
-            gid = current_ldap_ids["message"]['next_gid']
+            group_id = current_ldap_gids["message"]["proposed_gid"]
         else:
-            if gid in current_ldap_ids["message"]['used_gid']:
+            if gid in current_ldap_gids["message"]["gid_in_use"]:
                 return {"success": False, "message": "GID already in use."}, 203
+            group_id = gid
+
+        if group is None:
+            return {"success": False,
+                    "message": "group (str) parameter is required"},  400
 
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
         except ldap.SERVER_DOWN:
             return {"success": False, "message": "LDAP server is down."}, 500
 
-        dn_user = "uid=" + user + ",ou=people," + config.Config.LDAP_BASE_DN
-        enc_passwd = bytes(password, 'utf-8')
-        salt = os.urandom(16)
-        sha = hashlib.sha1(enc_passwd)
-        sha.update(salt)
-        digest = sha.digest()
-        b64_envelop = encode(digest + salt)
-        passwd = '{{SSHA}}{}'.format(b64_envelop.decode('utf-8'))
+        group_members = []
+        if users is not None:
+            if not isinstance(users, list):
+                return {"success": False,
+                        "message": "users must be a valid list"}, 400
+
+            get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
+                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+
+            if get_all_users.status_code == 200:
+                all_users = get_all_users.json()["message"]
+
+            for member in users:
+                if member not in all_users.keys():
+                    return {"success": False,
+                            "message": "User (" + member +") does not exist."}, 204
+                else:
+                    group_members.append(member)
+
+        #
+        group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
         attrs = [
-                ('objectClass', ['top'.encode('utf-8'),
-                                 'person'.encode('utf-8'),
-                                 'posixAccount'.encode('utf-8'),
-                                 'shadowAccount'.encode('utf-8'),
-                                 'inetOrgPerson'.encode('utf-8'),
-                                 'organizationalPerson'.encode('utf-8')]),
-                ('uid', [str(user).encode('utf-8')]),
-                ('uidNumber', [str(uid).encode('utf-8')]),
-                ('gidNumber', [str(gid).encode('utf-8')]),
-                ('mail', [email.encode('utf-8')]),
-                ('cn', [str(user).encode('utf-8')]),
-                ('sn', [str(user).encode('utf-8')]),
-                ('loginShell', ['/bin/bash'.encode('utf-8')]),
-                ('homeDirectory', (config.Config.USER_HOME + '/' + str(user)).encode('utf-8')),
-                ('userPassword', [passwd.encode('utf-8')])
-            ]
+            ('objectClass', ['top'.encode('utf-8'),
+                             'posixGroup'.encode('utf-8')]),
+            ('gidNumber', [str(group_id).encode('utf-8')]),
+            ('cn', [str(group).encode('utf-8')])
+
+        ]
 
         try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
@@ -205,22 +178,22 @@ class Group(Resource):
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
         try:
-            conn.add_s(dn_user, attrs)
-            return {"success": True, "message": "Added user."}, 200
+            conn.add_s(group_dn, attrs)
+            return {"success": True, "message": "Group created successfully"}, 200
 
         except ldap.ALREADY_EXISTS:
-            return {"success": False, "message": "User already exist"}, 203
+            return {"success": False, "message": "Group already exist"}, 203
 
         except Exception as err:
-            return {"success": False, "message": "Uknown error" + str(err)}, 500
+            return {"success": False, "message": "Unknown error when trying to create a group: " + str(err)}, 500
 
     @admin_api
     def delete(self):
         """
-        Delete a LDAP user ($HOME is preserved on EFS)
+        Delete a LDAP group
         ---
         tags:
-          - User Management
+          - Group Management
         parameters:
           - in: body
             name: body
@@ -284,10 +257,10 @@ class Group(Resource):
     #@admin_api
     def put(self):
         """
-        Change LDAP attribute for a user. Supported attributes: ["userPassword"]. This is a generic API for @admin_only. Users hwo wants to change their OWN password muse use /api/user/reset_password endpoint
+        Add/Remove user to/from a LDAP group
         ---
         tags:
-          - User Management
+          - Group Management
         securityDefinitions:
           api_key:
             type: apiKey
@@ -299,29 +272,35 @@ class Group(Resource):
           - in: body
             name: body
             schema:
-              id: LDAPModify
+              id: d
               required:
                 - user
                 - attribute
                 - value
               properties:
-                user:
+                group:
                   type: string
                   description: user of the SOCA user
-                attribute:
+                user:
                   type: string
                   description: Attribute to change
-                value:
+                action:
                   type: string
                   description: New attribute value
 
         responses:
           200:
-            description: Pair of user/token is valid
+            description: LDAP attribute modified successfully
           203:
-            description: Invalid user/token pair
+            description: User already belongs to the group
+          204:
+            description: User does not belong to the group
           400:
             description: Malformed client input
+          401:
+            description: Unable to bind LDAP (invalid credentials)
+          500:
+            description: Backend issue (see trace)
         """
         parser = reqparse.RequestParser()
         parser.add_argument('group', type=str, location='form')
@@ -372,7 +351,7 @@ class Group(Resource):
         except ldap.TYPE_OR_VALUE_EXISTS:
             return {"success": True, "message": "User already part of the group"}, 203
         except ldap.NO_SUCH_ATTRIBUTE:
-            return {"success": True, "message": "User do not belong to the group"}, 203
+            return {"success": True, "message": "User do not belong to the group"}, 204
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
         except Exception as err:
