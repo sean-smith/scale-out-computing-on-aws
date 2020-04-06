@@ -3,7 +3,7 @@ import config
 from flask import render_template, Blueprint, request, redirect, session, flash
 from requests import get, post, delete
 from models import ApiKeys
-from decorators import login_required
+from decorators import login_required, admin_only
 
 logger = logging.getLogger("api_log")
 admin_users = Blueprint('admin_users', __name__, template_folder='templates')
@@ -12,16 +12,18 @@ admin_users = Blueprint('admin_users', __name__, template_folder='templates')
 
 @admin_users.route('/admin/users', methods=['GET'])
 @login_required
+@admin_only
 def index():
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY}).json()
 
     all_users = get_all_users["message"].keys()
-    return render_template('admin_users.html', user=session['user'], sudoers=session['sudoers'], all_users=all_users)
+    return render_template('admin_users.html', user=session['user'], all_users=all_users)
 
 
 @admin_users.route('/admin/manage_sudo', methods=['POST'])
 @login_required
+@admin_only
 def manage_sudo():
     user = request.form.get('user', None)
     action = request.form.get('action', None)
@@ -56,6 +58,7 @@ def manage_sudo():
 
 @admin_users.route('/admin/create_user', methods=['POST'])
 @login_required
+@admin_only
 def create_new_account():
         user = str(request.form.get('user'))
         password = str(request.form.get('password'))
@@ -70,33 +73,30 @@ def create_new_account():
                                      "password": password,
                                      "email": email,
                                      "sudoers": sudoers,
-                                     "uid": uid,
-                                     "gid": gid})
+                                     "uid": uid})
+
         if create_new_user.status_code == 200:
-            if create_new_user.json()["success"] is False:
-                flash("Unable to create " + user +" for the following reason: " + create_new_user["message"], "error")
-                return redirect('/admin/users')
-            else:
-                # Create API key
-                create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
+            # Create API key
+            create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
                                       headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                       params={"user": user}, verify=False)
-                if create_user_key.status_code == 200:
-                    if create_user_key.json()["success"] is False:
-                        flash("User created but unable to generate API token: " + create_user_key.json()["message"], "error")
-                    else:
-                        flash("User " + user + " has been created successfully", "success")
+            if create_user_key.status_code == 200:
+                if create_user_key.json()["success"] is False:
+                    flash("User created but unable to generate API token: " + create_user_key.json()["message"], "error")
                 else:
-                    flash("User created but unable to generate API token: " + str(create_user_key._content), "error")
+                    flash("User " + user + " has been created successfully", "success")
+            else:
+                flash("User created but unable to generate API token: " + str(create_user_key.text), "error")
 
             return redirect('/admin/users')
         else:
-            flash("Unable to create new user. API returned error: " + str(create_new_user._content), "error")
+            flash("Unable to create new user. API returned error: " + str(create_new_user.text), "error")
             return redirect('/admin/users')
 
 
 @admin_users.route('/admin/delete_user', methods=['POST'])
 @login_required
+@admin_only
 def delete_account():
     if session['sudoers'] is True:
         user = str(request.form.get('user_to_delete'))

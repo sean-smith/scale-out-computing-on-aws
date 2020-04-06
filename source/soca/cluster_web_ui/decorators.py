@@ -2,7 +2,7 @@ import urllib
 from functools import wraps
 import config
 from models import ApiKeys
-from flask import request, redirect, session
+from flask import request, redirect, session, flash
 from requests import get
 
 
@@ -35,7 +35,17 @@ def admin_api(f):
                                                      scope="sudo",
                                                      is_active=True).first()
             if token_has_sudo:
-                return f(*args, **kwargs)
+                if request.method == "DELETE":
+                    target_user = request.args.get("user", None)
+                    target_group = request.args.get("group", None)
+                    if target_user == user:
+                        return {"success": False, "message": "You can not delete your own user"}, 401
+                    elif user+"group" == target_group:
+                        return {"success": False, "message": "You can not delete your own group"}, 401
+                    else:
+                        return f(*args, **kwargs)
+                else:
+                    return f(*args, **kwargs)
             else:
                 return {"success": False, "message": "Not authorized"}, 401
     return admin_resource
@@ -50,8 +60,10 @@ def private_api(f):
         token = request.headers.get("X-SOCA-TOKEN", None)
         if request.method == "GET":
             target_user = request.args.get("user", None)
+            target_group = request.args.get("group", None)
         else:
             target_user = request.form.get("user", None)
+            target_group = request.form.get("group", None)
 
         if token == config.Config.API_ROOT_KEY:
             return f(*args, **kwargs)
@@ -65,10 +77,19 @@ def private_api(f):
             if token_is_valid and token_is_valid.scope == "sudo":
                 return f(*args, **kwargs)
             else:
-                if token_is_valid and user == target_user:
-                    return f(*args, **kwargs)
+
+                if request.method["DELETE"]:
+                    if token_is_valid and user == target_user:
+                        return {"success": False, "message": "You can not delete your own user"}, 401
+                    elif token_is_valid and user + "group" == target_group:
+                        return {"success": False, "message": "You can not delete your own group"}, 401
+                    else:
+                        return {"success": False, "message": "Not authorized"}, 401
                 else:
-                    return {"success": False, "message": "Not authorized"}, 401
+                    if (token_is_valid and user == target_user) or (token_is_valid and user + "group" == target_group):
+                        return f(*args, **kwargs)
+                    else:
+                        return {"success": False, "message": "Not authorized"}, 401
 
     return private_resource
 
@@ -85,7 +106,8 @@ def read_only_api(f):
         token_is_valid = ApiKeys.query.filter_by(token=token,
                                                  user=user,
                                                  is_active=True).first()
-        if token_is_valid:
+
+        if token_is_valid and request.method["GET"]:
             return f(*args, **kwargs)
         else:
             return {"success": False, "message": "Not authorized"}, 401
@@ -135,4 +157,21 @@ def login_required(f):
                 return redirect(oauth_url)
             else:
                 return redirect('/login')
+    return validate_account
+
+
+# Views restricted to admin
+def admin_only(f):
+    @wraps(f)
+    def validate_account():
+        if "sudoers" in session:
+            if session["sudoers"] is True:
+                return f()
+            else:
+                flash("Sorry this page requires admin privileges.", "error")
+                return redirect("/")
+
+        else:
+            return redirect('/login')
+
     return validate_account

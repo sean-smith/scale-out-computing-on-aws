@@ -8,7 +8,7 @@ from decorators import restricted_api, admin_api
 
 
 class ApiKey(Resource):
-    @restricted_api
+    @admin_api
     def get(self):
         """
         Retrieve API key of the user

@@ -40,6 +40,8 @@ class Ids(Resource):
         GID = 5000
         MAX_IDS = 65533  # 65534 is for "nobody" and 65535 is reserved
 
+        print(get_all_ids)
+
         for uid in get_all_ids:
             uid_temp = int(uid[1].get('uidNumber')[0])
             uid_in_use.append(uid_temp)

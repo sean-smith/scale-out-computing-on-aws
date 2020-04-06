@@ -5,13 +5,14 @@ from email.utils import parseaddr
 import config
 import ldap
 from flask_restful import Resource, reqparse
-from requests import get
+from requests import get, post
 import json
 import logging
 from decorators import private_api, admin_api
 from flask import session
+import shutil
 import ldap.modlist as modlist
-from datetime import datetime
+import datetime
 logger = logging.getLogger("soca_api")
 
 
@@ -144,16 +145,16 @@ class User(Resource):
             return {"success": False, "message": "Email address seems to be invalid."}, 400
 
         if uid is None:
-            uid = current_ldap_ids["message"]['next_uid']
+            uid = current_ldap_ids["message"]['proposed_uid']
         else:
-            if uid in current_ldap_ids["message"]['used_uid']:
+            if uid in current_ldap_ids["message"]['uid_in_use']:
                 return {"success": False, "message": "UID already in use."}, 203
 
         if gid is None:
-            gid = current_ldap_ids["message"]['next_gid']
+            gid = current_ldap_ids["message"]['proposed_gid']
         else:
-            if gid in current_ldap_ids["message"]['used_gid']:
-                return {"success": False, "message": "GID already in use."}, 203
+            if gid in current_ldap_ids["message"]['gid_in_use']:
+                return {"success": False, "message": "UID already in use."}, 203
 
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
@@ -189,17 +190,24 @@ class User(Resource):
         try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
         except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
+            return {"success": False, "message": "Unable to bind LDAP. Please verify cn=Admin credentials"}, 401
 
         try:
             conn.add_s(dn_user, attrs)
-            return {"success": True, "message": "Added user."}, 200
+            create_user_group = post(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                                     headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                     data={"group": user + "group", "members": user})
+            print(create_user_group)
+            if create_user_group.status_code != 200:
+                return {"success": True, "message": "Added user but unable to create user group: " +str(create_user_group.text)}, 203
+
+            return {"success": True, "message": "Added user"}, 200
 
         except ldap.ALREADY_EXISTS:
             return {"success": False, "message": "User already exist"}, 203
 
         except Exception as err:
-            return {"success": False, "message": "Uknown error" + str(err)}, 500
+            return {"success": False, "message": "Unknown error" + str(err)}, 500
 
     @admin_api
     def delete(self):
@@ -250,10 +258,10 @@ class User(Resource):
                              "cn=" + user + ",ou=Group," + ldap_base,
                              "cn=" + user + ",ou=Sudoers," + ldap_base]
 
-        #print(datetime.now().strftime("%s"))
-        #today = datetime.datetime.utcnow().strftime("%s")
-        #print(today)
-        #run_command('mv /data/home/' + user + ' /data/home/' + user + '_' + str(today))
+        today = datetime.datetime.utcnow().strftime("%s")
+        user_home = config.Config.USER_HOME + "/" + user
+        backup_folder = config.Config.USER_HOME + "/" + user + "_" + today
+        shutil.move(user_home, backup_folder)
         for entry in entries_to_delete:
             try:
                 conn.delete_s(entry)

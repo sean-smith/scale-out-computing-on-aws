@@ -1,7 +1,7 @@
 import config
 import ldap
 from flask_restful import Resource, reqparse
-from requests import get
+from requests import get, put
 import logging
 from decorators import private_api, admin_api
 import re
@@ -9,7 +9,7 @@ logger = logging.getLogger("soca_api")
 
 
 class Group(Resource):
-    @admin_api
+    #@admin_api
     def get(self):
         """
         Retrieve information for a specific group
@@ -114,14 +114,16 @@ class Group(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('group', type=str, location='form')
         parser.add_argument('gid', type=int, location='form')
-        parser.add_argument('users', type=str, location='form')
+        parser.add_argument('members', type=str, location='form')  # comma separated list of users
         args = parser.parse_args()
-        group = ''.join(x for x in args["group"] if x.isalpha() or x.isdigit()) # Sanitize Input
+        group = ''.join(x for x in args["group"] if x.isalpha() or x.isdigit())  # Sanitize Input
         gid = args["gid"]
-        users = args["users"]
+        members = args["members"].split(",")
+
         get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
                       headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                       verify=False)
+
         if get_gid.status_code == 200:
             current_ldap_gids = get_gid.json()
         else:
@@ -144,8 +146,8 @@ class Group(Resource):
             return {"success": False, "message": "LDAP server is down."}, 500
 
         group_members = []
-        if users is not None:
-            if not isinstance(users, list):
+        if members is not None:
+            if not isinstance(members, list):
                 return {"success": False,
                         "message": "users must be a valid list"}, 400
 
@@ -154,22 +156,22 @@ class Group(Resource):
 
             if get_all_users.status_code == 200:
                 all_users = get_all_users.json()["message"]
+            else:
+                return {"success": False, "message": "Unable to retrieve the list of SOCA users " + str(get_all_users._content)}, 210
 
-            for member in users:
+            for member in members:
                 if member not in all_users.keys():
                     return {"success": False,
-                            "message": "User (" + member +") does not exist."}, 204
+                            "message": "Unable to create group because user (" + member +") does not exist."}, 211
                 else:
                     group_members.append(member)
 
-        #
         group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
         attrs = [
             ('objectClass', ['top'.encode('utf-8'),
                              'posixGroup'.encode('utf-8')]),
             ('gidNumber', [str(group_id).encode('utf-8')]),
-            ('cn', [str(group).encode('utf-8')])
-
+            ('cn', [str(group).encode('utf-8')],)
         ]
 
         try:
@@ -179,7 +181,20 @@ class Group(Resource):
 
         try:
             conn.add_s(group_dn, attrs)
-            return {"success": True, "message": "Group created successfully"}, 200
+            users_not_added = []
+            for member in group_members:
+                add_member_to_group = put(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                                          headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                          data={"group": group,
+                                                "user": member,
+                                                "action": "add"})
+                if add_member_to_group.status_code != 200:
+                    users_not_added.append(member)
+
+            if users_not_added.__len__() == 0:
+                return {"success": True, "message": "Group created successfully"}, 200
+            else:
+                return {"success": True, "message": "Group created successfully but unable to add some users: " + str(users_not_added)}, 203
 
         except ldap.ALREADY_EXISTS:
             return {"success": False, "message": "Group already exist"}, 203
@@ -215,12 +230,12 @@ class Group(Resource):
             description: Malformed client input
                 """
         parser = reqparse.RequestParser()
-        parser.add_argument('user', type=str, location='form')
+        parser.add_argument('group', type=str, location='form')
         args = parser.parse_args()
-        user = args["user"]
-        if user is None:
+        group = args["group"]
+        if group is None:
             return {"success": False,
-                    "message": "user (str) parameter is required"}, 400
+                    "message": "group (str) parameter is required"}, 400
         ldap_base = config.Config.LDAP_BASE_DN
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
@@ -232,26 +247,16 @@ class Group(Resource):
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
-        entries_to_delete = ["uid=" + user + ",ou=People," + ldap_base,
-                             "cn=" + user + ",ou=Group," + ldap_base,
-                             "cn=" + user + ",ou=Sudoers," + ldap_base]
+        try:
+            conn.delete_s("cn=" + group + ",ou=Group," + ldap_base)
+            return {"success": True, "message": "Deleted user."}, 200
+        except ldap.NO_SUCH_OBJECT:
+            return {"success": False, "message": "Unknown group"}, 203
 
-        #print(datetime.now().strftime("%s"))
-        #today = datetime.datetime.utcnow().strftime("%s")
-        #print(today)
-        #run_command('mv /data/home/' + user + ' /data/home/' + user + '_' + str(today))
-        for entry in entries_to_delete:
-            try:
-                conn.delete_s(entry)
-            except ldap.NO_SUCH_OBJECT:
-                if entry == "uid=" + user + ",ou=People," + ldap_base:
-                    return {"success": False, "message": "Unknown user"}, 203
-                else:
-                    pass
-            except Exception as err:
-                return {"success": False, "message": "Unknown error: " + str(err)}, 500
+        except Exception as err:
+            return {"success": False, "message": "Unknown error: " + str(err)}, 500
 
-        return {"success": True, "message": "Deleted user."}, 200
+
 
 
     #@admin_api

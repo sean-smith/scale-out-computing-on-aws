@@ -15,25 +15,18 @@
           <br>
           <div class="container-fluid">
               {% include 'common/horizontal_menu_bar.html' %}
-              {% if sudoers == false %}
-               <div class="alert alert-danger" role="alert">
-                     <strong>Access denied </strong>
-                   Only users with sudo permissions can access this page
-                     <br>
-                 </div>
-              {% else %}
-              <div id="accessok">
+
                   {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
                                 <br>
                                 {% if category == "success" %}
                                 <div class="alert alert-success">
-                                    <strong>{{ message }} </strong>
+                                    <strong>{{ message | safe }} </strong>
                                 </div>
                                 {% else %}
                                  <div class="alert alert-danger">
-                                    <strong>{{ message }} </strong>
+                                    <strong>{{ message | safe }} </strong>
                                 </div>
                                 {% endif %}
                             {% endfor %}
@@ -60,10 +53,10 @@
                               <div class="card-body">
                                   <form action="/admin/create_group" method="post">
                                       <div class="form-group">
-                                          <input id="queue_name" placeholder="Group name" class="form-control" type="text" required name="queue_name">
+                                          <input id="group_name" placeholder="Group name" class="form-control" type="text" required name="group_name">
                                       </div>
                                       Members: (choose all that apply) <br>
-                                      <select class="form-control" id="members" name="members" multiple>
+                                      <select class="form-control" id="members" size="15" name="members" multiple>
                                            {% for user in all_users %}
                                             <option value="{{user}}">{{user}}</option>
                                         {% endfor %}
@@ -71,7 +64,7 @@
                                     </select>
                                       <br>
                                       <div align="center">
-                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                           <input type="hidden"  name="csrf_token" value="{{ csrf_token() }}">
                                           <button type="submit" class="btn btn-primary btn-lg">Create Group</button>
                                       </div>
                                   </form>
@@ -91,11 +84,11 @@
                                       Deleting group may cause access issue. Make sure your group is no longer in use before deleting it
                                   </div>
 
-                                  <form action="/admin/delete_group" method="post"
-                                    oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>                                  <div class="form-group">
-                                    <select class="form-control" id="user_to_delete" name="user_to_delete">
-                                        {% for user in all_users %}
-                                            <option value="{{user}}">{{user}}</option>
+                                  <form action="/admin/delete_group" method="post">
+                                                                      <div class="form-group">
+                                    <select class="form-control" id="group_to_delete" name="group_to_delete">
+                                        {% for group in all_groups %}
+                                            <option value="{{group}}">{{group}}</option>
                                         {% endfor %}
 
                                     </select>
@@ -246,8 +239,6 @@
                                 </div>
                             </div>
                       </div>
-                  </div>
-        {% endif %}
   </div>
 
   <a class="scroll-to-top rounded" href="#page-top">
