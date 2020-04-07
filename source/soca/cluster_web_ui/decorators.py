@@ -77,8 +77,7 @@ def private_api(f):
             if token_is_valid and token_is_valid.scope == "sudo":
                 return f(*args, **kwargs)
             else:
-
-                if request.method["DELETE"]:
+                if request.method == "DELETE":
                     if token_is_valid and user == target_user:
                         return {"success": False, "message": "You can not delete your own user"}, 401
                     elif token_is_valid and user + "group" == target_group:
@@ -107,7 +106,7 @@ def read_only_api(f):
                                                  user=user,
                                                  is_active=True).first()
 
-        if token_is_valid and request.method["GET"]:
+        if token_is_valid and request.method == "GET":
             return f(*args, **kwargs)
         else:
             return {"success": False, "message": "Not authorized"}, 401

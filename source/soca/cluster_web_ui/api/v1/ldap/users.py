@@ -2,13 +2,13 @@ import config
 import ldap
 from flask_restful import Resource
 import logging
-from decorators import admin_api
+from decorators import admin_api, read_only_api
 
 logger = logging.getLogger("soca_api")
 
 
 class Users(Resource):
-    #@admin_api
+    @read_only_api
     def get(self):
         """
         List all LDAP users

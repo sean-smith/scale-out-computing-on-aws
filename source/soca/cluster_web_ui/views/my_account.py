@@ -1,7 +1,7 @@
 import logging
 import config
 from flask import render_template, Blueprint, request, redirect, session, flash
-from requests import get, post
+from requests import get, post, put
 from decorators import login_required
 import ast
 import string
@@ -14,27 +14,50 @@ my_account = Blueprint('my_account', __name__, template_folder='templates')
 @my_account.route("/my_account", methods=["GET"])
 @login_required
 def index():
-    get_ldap_info = get(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
+    get_user_ldap_group = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                headers={"X-SOCA-TOKEN": session["api_key"],
                                         "X-SOCA-USER": session["user"]},
-                               params={"user": session["user"]})
+                               params={"group": session["user"] +"group"})
 
-    if get_ldap_info.status_code == 200:
-        info = ast.literal_eval(get_ldap_info.json()["message"])
-        for attribute in info:
-            user_dn = attribute[0]
-            user_data = attribute[1]
+    get_user_ldap_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
+                              headers={"X-SOCA-TOKEN": session["api_key"],
+                                       "X-SOCA-USER": session["user"]})
 
+    if get_user_ldap_group.status_code == 200:
+        group_members = get_user_ldap_group.json()["message"]["members"]
     else:
-        user_dn = "UNKNOWN"
-        user_data = {}
-        flash("Unable to retrieve your LDAP information. Error: " + str(get_ldap_info._content), "error")
+        group_members = ["No Member yet"]
+
+    if get_user_ldap_users.status_code == 200:
+        all_users = get_user_ldap_users.json()["message"].keys()
+    else:
+        all_users = []
 
     return render_template("my_account.html",
                            user=session["user"],
-                           user_dn=user_dn,
-                           user_data=user_data)
+                           group_members=group_members,
+                           all_users=all_users)
 
+
+@my_account.route('/manage_group', methods=['POST'])
+@login_required
+def manage_group():
+    group = session["user"] + "group"
+    user = request.form.get('user')
+    action = request.form.get('action')
+    update_group = put(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                             headers={"X-SOCA-TOKEN": session["api_key"],
+                                      "X-SOCA-USER": session["user"]},
+                             data={"group": group,
+                                   "user": user,
+                                   "action": action})
+
+    if update_group.status_code == 200:
+        flash("Group update successfully", "success")
+    else:
+        flash('Unable to update group: ' + update_group.json()["message"], "error")
+
+    return redirect('/my_account')
 
 @my_account.route("/reset_password", methods=["POST"])
 def reset_key():

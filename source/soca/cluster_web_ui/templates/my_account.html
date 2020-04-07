@@ -29,11 +29,11 @@
                                 <br>
                                 {% if category == "success" %}
                                 <div class="alert alert-success">
-                                    <strong>{{ message }} </strong>
+                                    <strong>{{ message | safe}} </strong>
                                 </div>
                                 {% else %}
                                  <div class="alert alert-danger">
-                                    <strong>{{ message }} </strong>
+                                    <strong>{{ message | safe }} </strong>
                                 </div>
                                 {% endif %}
                             {% endfor %}
@@ -68,17 +68,68 @@
                       <div class="col-md-7">
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
-                                  <h6 class="m-0 font-weight-bold text-primary">My LDAP information</h6>
+                                  <h6 class="m-0 font-weight-bold text-primary">My LDAP Group</h6>
                               </div>
                               <div class="card-body">
-                                  <strong>{{ user_dn }}</strong>
-                                {%  for name,value in user_data.items() %}
-                                    <strong>{{ name }}</strong>
-                                  {%  for v in value %}
-                                      <li>{{ v }} </li>
-                                      {%  endfor %}
+                              <div class="alert alert-primary">
+                                  Users in your group can access (read-only) your $HOME directory by default.
+                              </div>
+
+                                  <h4>User(s) in your group:</h4>
+                                {%  for user in group_members %}
+                                    <li>{{ user }}</li>
                                   {% endfor %}
                               </div>
+                          <hr>
+                          <div class="card-body">
+                              <h4>Add a user to your group</h4>
+                              <form action="/manage_group" method="post">
+                                  <div class="form-group">
+                                    <select class="form-control" id="user" name="user">
+                                        {% for user in all_users %}
+                                            <option value="{{user}}">{{user}}</option>
+                                        {% endfor %}
+                                    </select>
+                                  </div>
+
+                                  <div class="form-group form-check">
+                                      <input type="checkbox" class="form-check-input" name="add_user_verif" id="add_user_verif" required>
+                                      <label class="form-check-label" for="add_user_verif">I am sure I want to <strong>ADD</strong> this user to my group</label>
+                                  </div>
+                                  <div align="center">
+                                      <input type="hidden" name="action" value="add">
+                                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                      <button type="submit" class="btn btn-success btn-lg">Add user to your group</button>
+                                  </div>
+                                  </form>
+                              </div>
+                          <hr>
+                          <div class="card-body">
+                              <h4>Remove a user from your group</h4>
+                              <form action="/manage_group" method="post">
+                                  <div class="form-group">
+                                    <select class="form-control" id="user" name="user">
+                                        {% for user in all_users %}
+                                            <option value="{{user}}">{{user}}</option>
+                                        {% endfor %}
+                                    </select>
+                                  </div>
+
+                                  <div class="form-group form-check">
+                                      <input type="checkbox" class="form-check-input" name="sudo_revoke_verif" id="remove_user_verif" required>
+                                      <label class="form-check-label" for="remove_user_verif">I am sure I want to <strong>REMOVE</strong> this user from my group</label>
+                                  </div>
+                                  <div align="center">
+                                      <input type="hidden" name="action" value="remove">
+                                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                      <button type="submit" class="btn btn-danger btn-lg">Remove user to your group</button>
+                                  </div>
+                                  </form>
+                              </div>
+
+
+
+
                           </div>
                       </div>
 

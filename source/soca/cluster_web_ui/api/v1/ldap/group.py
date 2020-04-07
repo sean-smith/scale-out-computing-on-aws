@@ -9,7 +9,7 @@ logger = logging.getLogger("soca_api")
 
 
 class Group(Resource):
-    #@admin_api
+    @private_api
     def get(self):
         """
         Retrieve information for a specific group
@@ -52,7 +52,7 @@ class Group(Resource):
             groups = conn.search_s(group_search_base, group_search_scope, group_filter, ["cn", "memberUid"])
             if groups.__len__() == 0:
                 return {"success": False,
-                        "message": "Group does not exist"}, 203
+                        "message": "Group does not exist"}, 210
             for group in groups:
                 group_base = group[0]
                 members = []
@@ -70,7 +70,7 @@ class Group(Resource):
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500
 
-    #@admin_api
+    @admin_api
     def post(self):
         """
         Create a new LDAP group
@@ -259,7 +259,7 @@ class Group(Resource):
 
 
 
-    #@admin_api
+    @private_api
     def put(self):
         """
         Add/Remove user to/from a LDAP group
@@ -339,7 +339,7 @@ class Group(Resource):
             all_users = get_all_users.json()["message"]
             if user_dn not in all_users.values():
                 return {"success": False,
-                        "message": "User do not exist."}, 203
+                        "message": "User do not exist."}, 212
         else:
             return {"success": False,
                     "message": "Unable to retrieve list of LDAP users. " + str(get_all_users._content)}, 500
@@ -354,9 +354,9 @@ class Group(Resource):
             conn.modify_s(group_dn, mod_attrs)
             return {"success": True, "message": "LDAP attribute has been modified correctly"}, 200
         except ldap.TYPE_OR_VALUE_EXISTS:
-            return {"success": True, "message": "User already part of the group"}, 203
+            return {"success": True, "message": "User already part of the group"}, 211
         except ldap.NO_SUCH_ATTRIBUTE:
-            return {"success": True, "message": "User do not belong to the group"}, 204
+            return {"success": True, "message": "User do not belong to the group"}, 210
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
         except Exception as err:

@@ -1,7 +1,7 @@
 import logging
 import config
 from flask import render_template, Blueprint, request, redirect, session, flash
-from requests import get, post, delete
+from requests import get, post, delete, put
 from models import ApiKeys
 from decorators import login_required, admin_only
 
@@ -76,3 +76,47 @@ def delete_group():
         flash('Could not delete group: ' + group + '. Check trace: ' + str(group_to_delete.text), "error")
 
     return redirect('/admin/groups')
+
+@admin_groups.route('/admin/check_group', methods=['POST'])
+@login_required
+@admin_only
+def check_group():
+    group = str(request.form.get('group'))
+    check_group = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                             headers={"X-SOCA-TOKEN": session["api_key"],
+                                      "X-SOCA-USER": session["user"]},
+                             params={"group": group})
+
+
+    if check_group.status_code == 200:
+        members = check_group.json()["message"]["members"]
+        if members.__len__() == 0:
+            members = ["No member found."]
+        flash('List of users of ' + group + ': <hr> ' + ' '.join(members), "success")
+    else:
+        flash('Could not check group membership: ' + group + '. Check trace: ' + check_group.json()["message"], "error")
+
+    return redirect('/admin/groups')
+
+@admin_groups.route('/admin/manage_group', methods=['POST'])
+@login_required
+@admin_only
+def manage_group():
+    group = request.form.get('group')
+    user = request.form.get('user')
+    action = request.form.get('action')
+    update_group = put(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                             headers={"X-SOCA-TOKEN": session["api_key"],
+                                      "X-SOCA-USER": session["user"]},
+                             data={"group": group,
+                                     "user": user,
+                                     "action": action})
+
+    if update_group.status_code == 200:
+        flash("Group update successfully", "success")
+    else:
+        flash('Unable to update group: ' + update_group.json()["message"], "error")
+
+    return redirect('/admin/groups')
+
+

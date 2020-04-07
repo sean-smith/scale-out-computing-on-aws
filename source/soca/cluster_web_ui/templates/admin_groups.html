@@ -39,7 +39,7 @@
                           <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-add" role="tab" aria-controls="nav-home" aria-selected="true">Create a group</a>
                           <a class="nav-item nav-link" id="nav-profile-tab" data-toggle="tab" href="#nav-delete" role="tab" aria-controls="nav-delete" aria-selected="false">Delete a group</a>
                           <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-check" role="tab" aria-controls="nav-contact" aria-selected="false">Check group membership</a>
-                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-change" role="tab" aria-controls="nav-contact" aria-selected="false">Change group membership</a>
+                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-update" role="tab" aria-controls="nav-contact" aria-selected="false">Change group membership</a>
 
                       </div>
                      </nav>
@@ -106,32 +106,67 @@
                           </div>
                       </div>
 
-                    <div class="tab-pane fade" id="nav-membership" role="tabpanel" aria-labelledby="nav-contact-tab">
+                    <div class="tab-pane fade" id="nav-check" role="tabpanel" aria-labelledby="nav-contact-tab">
                           <br>
-                    <div class="row">
+                          <div class="card shadow mb-4">
+                              <div class="card-header py-3">
+                                  <h6 class="m-0 font-weight-bold text-primary">Check group membership</h6>
+                              </div>
+                              <div class="card-body">
+                                  <form action="/admin/check_group" method="post">
+                                                                      <div class="form-group">
+                                    <select class="form-control" id="group" name="group">
+                                        {% for group in all_groups %}
+                                            <option value="{{group}}">{{group}}</option>
+                                        {% endfor %}
+
+                                    </select>
+                                  </div>
+                                      <div align="center">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                          <button type="submit" class="btn btn-danger btn-lg">Check group</button>
+                                      </div>
+                                  </form>
+                              </div>
+                          </div>
+
+                    </div>
+                      <div class="tab-pane fade" id="nav-update" role="tabpanel" aria-labelledby="nav-home-tab">
+                          <br>
+                          <div class="row">
                     <div class="col-md-6">
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
-                                  <h6 class="m-0 font-weight-bold text-primary">Grant user Admin permission</h6>
+                                  <h6 class="m-0 font-weight-bold text-primary">Add to group</h6>
                               </div>
                               <div class="card-body">
-                                  <form action="/admin/manage_sudo" method="post">
+                                  <form action="/admin/manage_group" method="post">
                                       <div class="form-group">
-                                    <select class="form-control" id="username" name="username">
+                                      Select user:
+                                    <select class="form-control" id="user" name="user">
                                         {% for user in all_users %}
                                             <option value="{{user}}">{{user}}</option>
                                         {% endfor %}
                                     </select>
                                   </div>
+                                  <div class="form-group">
+                                  Select group:
+                                      <select class="form-control" id="group" name="group">
+                                        {% for group in all_groups %}
+                                            <option value="{{group}}">{{group}}</option>
+                                        {% endfor %}
+
+                                    </select>
+                                  </div>
                                        <div class="form-group form-check">
                                           <input type="checkbox" class="form-check-input" name="admin_verif" id="admin_reset_verif" required>
-                                           <label class="form-check-label" for="admin_verif">I am sure I want to <strong>grant</strong> Admin permission to this user</label>
+                                           <label class="form-check-label" for="admin_verif">I am sure I want to <strong>ADD</strong> this user to the group</label>
                                       </div>
                                       <div align="center">
-                                          <input type="hidden" name="action" value="grant">
+                                          <input type="hidden" name="action" value="add">
                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                           <button type="submit" class="btn btn-success btn-lg">Grant Admin permission</button>
+                                           <button type="submit" class="btn btn-success btn-lg">Add user</button>
                                       </div>
                                   </form>
                               </div>
@@ -140,104 +175,44 @@
                     <div class="col-md-6">
                         <div class="card shadow mb-4">
                               <div class="card-header py-3">
-                                  <h6 class="m-0 font-weight-bold text-primary">Revoke user Admin permission</h6>
+                                  <h6 class="m-0 font-weight-bold text-primary">Remove from group</h6>
                               </div>
                               <div class="card-body">
-                                  <form action="/admin/manage_sudo" method="post">
+                                  <form action="/admin/manage_group" method="post">
                                       <div class="form-group">
-                                    <select class="form-control" id="username" name="username">
+                                      Select user:
+                                    <select class="form-control" id="user" name="user">
                                         {% for user in all_users %}
                                             <option value="{{user}}">{{user}}</option>
                                         {% endfor %}
                                     </select>
                                   </div>
+                                  <div class="form-group">
+                                  Select group:
+                                      <select class="form-control" id="group" name="group">
+                                        {% for group in all_groups %}
+                                            <option value="{{group}}">{{group}}</option>
+                                        {% endfor %}
+
+                                    </select>
+                                  </div>
+
                                        <div class="form-group form-check">
                                           <input type="checkbox" class="form-check-input" name="sudo_revoke_verif" id="sudo_revoke_verif" required>
-                                           <label class="form-check-label" for="sudo_revoke_verif">I am sure I want to <strong>revoke</strong> Admin permission to this user</label>
+                                           <label class="form-check-label" for="sudo_revoke_verif">I am sure I want to <strong>REMOVE</strong> this user from the group</label>
                                       </div>
                                       <div align="center">
-                                          <input type="hidden" name="action" value="revoke">
+                                          <input type="hidden" name="action" value="remove">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                           <button type="submit" class="btn btn-danger btn-lg">Revoke Admin permission</button>
+                                           <button type="submit" class="btn btn-danger btn-lg">Remove user</button>
                                       </div>
                                   </form>
                               </div>
                           </div>
                     </div>
                     </div>
-                    </div>
-                      <div class="tab-pane fade" id="nav-ldap" role="tabpanel" aria-labelledby="nav-home-tab">
-                          <br>
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Technical Details</h6>
-                                </div>
-                                <div class="card-body">
-                                    Scale-Out Computing on AWS uses OpenLDAP and you can interact with your directory using LDIF directly. If you are not familiar with LDIF, you can use our custom wrapper available at <code>/apps/soca/cluster_manager/ldap_manager.py</code>
-                                    <br><br>
-                                    <li>People: OU=People,DC=soca,DC=local</li>
-                                    <li>Groups: OU=Group,DC=soca,DC=local</li>
-                                    <li>Sudoers: OU=Sudoers,DC=soca,DC=local (This OU manages sudo permission on the cluster)</li>
-                                    <br>
-                                    <div class="alert alert-warning" role="alert">
-                                        Admin username and password can be found on <code>/root/OpenLdapAdminUsername.txt</code> and <code>/root/OpenLdapAdminPassword.txt</code>.
-                                    </div>
-                                    <hr>
-                                    <h3> Example: Create a new LDAP group</h3>
-                                    Create a "mynewgroup.ldif" text file.
-                                    <pre>
-                                       <code class="language-bash">
-        dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
-        objectClass: top
-        objectClass: posixGroup
-        cn: mynewgroup
-        gidNumber: 6000
-        memberUid: mytestuser</code></pre>
-                                    Then run the following command to create your group
-                                    <pre>
-                                        <code class="language-bash">
-        ~ ldapadd -x -D cn=admin,dc=soca,dc=local -y /root/OpenLdapAdminPassword.txt -f mynewgroup.ldif
-        adding new entry "cn=mynewgroup,ou=Group,dc=soca,dc=local"</code></pre>
-                                    Finally valid your group has been created correctly using <code>ldapsearch</code>
-                                    <pre>
-                                        <code class="language-bash">
-        # Validate with Ldapsearch
-        ~ ldapsearch -x cn=mynewgroup
-        #Extended LDIF
-        #
-        # LDAPv3
-        # base DC=soca,DC=local (default) with scope subtree
-        # filter: cn=mynewgroup
-        # requesting: ALL
-        #
 
-        # mynewgroup, Group, soca.local
-        dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
-        objectClass: top
-        objectClass: posixGroup
-        cn: mynewgroup
-        gidNumber: 6000
-        memberUid: mytestuser</code></pre>
-        <hr>
-                                     <h3> Example: Modify Operation</h3>
-                                    <pre>
-                                        <code class="language-bash">
-        dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
-        changetype: modify
-        add: memberUid
-        memberUid: anotheruser</code></pre>
-                                    <hr>
-                                     <h3> Example: Delete Operation</h3>
-                                    <pre>
-                                        <code class="language-bash">
-        dn: cn=mynewgroup,ou=Group,dc=soca,dc=local
-        changetype: modify
-        delete: memberUid
-        memberUid:: anotheruser # you get the memberUid by running a simple ldapsearch first</code></pre>
-
-                                </div>
-                            </div>
                       </div>
   </div>
 
