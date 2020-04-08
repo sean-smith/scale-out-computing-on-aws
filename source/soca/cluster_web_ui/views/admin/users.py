@@ -33,23 +33,31 @@ def manage_sudo():
 
     if action in ["grant", "revoke"]:
         if user is not None:
-            give_sudo = post(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
-                                   headers={"X-SOCA-TOKEN": session["api_key"],
-                                            "X-SOCA-USER": session["user"]},
-                                   data={"user": user})
+            if action == "grant":
+                give_sudo = post(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
+                                       headers={"X-SOCA-TOKEN": session["api_key"],
+                                                "X-SOCA-USER": session["user"]},
+                                       data={"user": user})
 
-            if give_sudo.status_code == 200:
-                flash("Admin permissions granted", "success")
-            elif give_sudo.status_code == 203:
-                if action == "grant":
-                    flash(user + " already has Admin permission", "error")
+                if give_sudo.status_code == 200:
+                    flash(give_sudo.json(["message"]), "success")
                 else:
-                    flash(user + " does not have Admin privileges", "error")
-                return redirect("/admin")
+                    flash("Error: " + give_sudo.json(["message"]), "error")
+                return redirect("/admin/users")
 
             else:
-                flash("Unable to grant user Admin permission: " + str(give_sudo._content) , "error")
-            return redirect("/admin/users")
+                # Revoke SUDO
+                remove_sudo = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
+                                 headers={"X-SOCA-TOKEN": session["api_key"],
+                                          "X-SOCA-USER": session["user"]},
+                                 data={"user": user})
+                if remove_sudo.status_code == 200:
+                    flash("Admin permissions revoked", "success")
+                else:
+                    flash("Error: " + remove_sudo.json()["message"], "error")
+
+                return redirect("/admin/users")
+
         else:
             return redirect("/admin/users")
     else:
@@ -98,23 +106,19 @@ def create_new_account():
 @login_required
 @admin_only
 def delete_account():
-    if session['sudoers'] is True:
-        user = str(request.form.get('user_to_delete'))
-        if session['user'] == user:
-            flash("You cannot delete your own account.", "error")
-            return redirect('/admin/users')
+    user = str(request.form.get('user_to_delete'))
+    if session['user'] == user:
+        flash("You cannot delete your own account.", "error")
+        return redirect('/admin/users')
 
-        delete_user = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
+    delete_user = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
                              headers={"X-SOCA-TOKEN": session["api_key"],
                                       "X-SOCA-USER": session["user"]},
                              data={"user": user}).json()
 
-        if delete_user["success"] is True:
-            flash('User: ' + user + ' has been deleted correctly', "success")
-        else:
-            flash('Could not delete user: ' + user + '. Check trace: ' + str(delete_user), "error")
-
-        return redirect('/admin/users')
-
+    if delete_user["success"] is True:
+        flash('User: ' + user + ' has been deleted correctly', "success")
     else:
-        return redirect('/')
+        flash('Could not delete user: ' + user + '. Check trace: ' + str(delete_user), "error")
+
+    return redirect('/admin/users')

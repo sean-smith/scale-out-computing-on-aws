@@ -76,8 +76,10 @@
                               </div>
 
                                   <h4>User(s) in your group:</h4>
-                                {%  for user in group_members %}
-                                    <li>{{ user }}</li>
+                                {%  for member in group_members %}
+                                     {%  if member !=  user %}
+                                        <li>{{ member }}</li>
+                                    {% endif %}
                                   {% endfor %}
                               </div>
                           <hr>
@@ -109,8 +111,10 @@
                               <form action="/manage_group" method="post">
                                   <div class="form-group">
                                     <select class="form-control" id="user" name="user">
-                                        {% for user in all_users %}
-                                            <option value="{{user}}">{{user}}</option>
+                                        {% for member in group_members %}
+                                            {%  if member !=  user %}
+                                            <option value="{{member}}">{{member}}</option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                   </div>

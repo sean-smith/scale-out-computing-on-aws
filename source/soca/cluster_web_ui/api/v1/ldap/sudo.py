@@ -119,7 +119,7 @@ class Sudo(Resource):
                 for key in change_user_key_scope:
                     key.scope = "sudo"
                     db.session.commit()
-            return {"success": True, "message": "User granted SUDO permission"}, 200
+            return {"success": True, "message": user + " now has admin permission"}, 200
 
         except ldap.SERVER_DOWN:
             return {"success": False, "message": "LDAP server is down"}, 500
@@ -181,13 +181,15 @@ class Sudo(Resource):
                     key.scope = "user"
                     db.session.commit()
 
-            return {"success": True, "message": "User revoked SUDO permission"}, 200
+            return {"success": True, "message": user + " does not have admin permission anymore"}, 200
 
         except ldap.SERVER_DOWN:
             return {"success": False, "message": "LDAP server is down"}, 500
 
+        except ldap.NO_SUCH_OBJECT:
+            return {"success": False, "message": "User do not have admin permission"}, 210
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
         except Exception as err:
-            return {"false": True, "message": "Unknown error: " + str(err)}, 500
+            return {"success": False, "message": "Unknown error: " + str(err)}, 500

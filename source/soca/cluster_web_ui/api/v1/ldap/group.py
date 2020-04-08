@@ -118,7 +118,10 @@ class Group(Resource):
         args = parser.parse_args()
         group = ''.join(x for x in args["group"] if x.isalpha() or x.isdigit())  # Sanitize Input
         gid = args["gid"]
-        members = args["members"].split(",")
+        if args["members"] is None:
+            members = []
+        else:
+            members = args["members"].split(",")
 
         get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
                       headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
@@ -127,13 +130,13 @@ class Group(Resource):
         if get_gid.status_code == 200:
             current_ldap_gids = get_gid.json()
         else:
-            return {"success": False, "message": "Unable to retrieve GID: " +str(get_gid._content)}, 500
+            return {"success": False, "message": "Unable to retrieve GID: " +str(get_gid.json())}, 500
 
         if gid is None:
             group_id = current_ldap_gids["message"]["proposed_gid"]
         else:
             if gid in current_ldap_gids["message"]["gid_in_use"]:
-                return {"success": False, "message": "GID already in use."}, 203
+                return {"success": False, "message": "GID already in use."}, 211
             group_id = gid
 
         if group is None:
@@ -157,7 +160,7 @@ class Group(Resource):
             if get_all_users.status_code == 200:
                 all_users = get_all_users.json()["message"]
             else:
-                return {"success": False, "message": "Unable to retrieve the list of SOCA users " + str(get_all_users._content)}, 210
+                return {"success": False, "message": "Unable to retrieve the list of SOCA users " + str(get_all_users.json())}, 212
 
             for member in members:
                 if member not in all_users.keys():
@@ -194,10 +197,10 @@ class Group(Resource):
             if users_not_added.__len__() == 0:
                 return {"success": True, "message": "Group created successfully"}, 200
             else:
-                return {"success": True, "message": "Group created successfully but unable to add some users: " + str(users_not_added)}, 203
+                return {"success": True, "message": "Group created successfully but unable to add some users: " + str(users_not_added)}, 214
 
         except ldap.ALREADY_EXISTS:
-            return {"success": False, "message": "Group already exist"}, 203
+            return {"success": False, "message": "Group already exist"}, 215
 
         except Exception as err:
             return {"success": False, "message": "Unknown error when trying to create a group: " + str(err)}, 500
@@ -357,6 +360,8 @@ class Group(Resource):
             return {"success": True, "message": "User already part of the group"}, 211
         except ldap.NO_SUCH_ATTRIBUTE:
             return {"success": True, "message": "User do not belong to the group"}, 210
+        except ldap.NO_SUCH_OBJECT:
+            return {"success": True, "message": "Group do not exist. Create it first."}, 210
         except ldap.INVALID_CREDENTIALS:
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
         except Exception as err:

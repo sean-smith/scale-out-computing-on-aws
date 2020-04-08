@@ -13,12 +13,13 @@ from api.v1.user.api_key import ApiKey
 from api.v1.ldap.group import Group
 from api.v1.ldap.groups import Groups
 from api.v1.ldap.authenticate import Authenticate
+from api.v1.system.files import Files
 from views.index import index
 from views.my_api_key import my_api_key
 from views.admin.users import admin_users
 from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
-
+from views.admin.configuration import configuration
 from views.my_account import my_account
 
 from flask_wtf.csrf import CSRFProtect
@@ -49,6 +50,8 @@ api.add_resource(Groups, '/api/ldap/groups')
 # Users
 api.add_resource(ApiKey, '/api/user/api_key')
 api.add_resource(Reset, '/api/user/reset_password')
+# System
+api.add_resource(Files, '/api/system/files')
 
 
 # Register views
@@ -58,6 +61,7 @@ app.register_blueprint(my_account)
 app.register_blueprint(admin_users)
 app.register_blueprint(admin_queues)
 app.register_blueprint(admin_groups)
+app.register_blueprint(configuration)
 
 
 @app.route("/api/spec.json")

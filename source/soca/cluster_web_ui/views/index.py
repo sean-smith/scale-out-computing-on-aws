@@ -18,7 +18,6 @@ def home():
     sudoers = session['sudoers']
     return render_template('index.html', user=user, sudoers=sudoers)
 
-
 @index.route('/login', methods=['GET'])
 def login():
     return render_template('login.html')

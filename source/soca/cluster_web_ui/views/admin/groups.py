@@ -41,8 +41,9 @@ def index():
 @login_required
 @admin_only
 def create_group():
-    group_name = str(request.form.get('group_name'))
-    members = str(request.form.getlist('members'))
+    group_name = request.form.get('group_name')
+    members = request.form.getlist('members')
+
     create_group = post(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
@@ -51,7 +52,7 @@ def create_group():
     if create_group.status_code == 200:
         flash("Group " + group_name + " created successfully", "success")
     else:
-        flash("Error while creating " + group_name + " because of " + str(create_group._content), "error")
+        flash("Error while creating " + group_name + " because of " + create_group.json()["message"], "error")
 
     return redirect('/admin/groups')
 
