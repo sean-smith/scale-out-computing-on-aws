@@ -115,9 +115,11 @@ class Group(Resource):
         parser.add_argument('group', type=str, location='form')
         parser.add_argument('gid', type=int, location='form')
         parser.add_argument('members', type=str, location='form')  # comma separated list of users
+
         args = parser.parse_args()
         group = ''.join(x for x in args["group"] if x.isalpha() or x.isdigit())  # Sanitize Input
         gid = args["gid"]
+
         if args["members"] is None:
             members = []
         else:

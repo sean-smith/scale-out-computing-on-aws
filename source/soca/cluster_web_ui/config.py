@@ -15,13 +15,27 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_SQLALCHEMY_TABLE = "flask_sessions"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
-    SECRET_KEY = "&@#T*&#$bsda" #os.environ["FLASK_SECRET_KEY"]
-    API_ROOT_KEY = secrets.token_hex(16)  # Do not use this key to interactive API requests.
+    SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
+    API_ROOT_KEY = secrets.token_hex(16)
+
+    # List of file admins can edit via web ui
+    CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB = {1: "/Users/mcrozes/Desktop/test_file_1.yml",
+                                               2: "/Users/mcrozes/Desktop/test_file_2",
+                                               3: "/Users/mcrozes/Desktop/test_file_3",
+                                               4: "/apps/soca/soca-" + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/queue_mapping.yml',
+                                               5: "/apps/soca/soca-" + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/licenses_mapping.yml',
+                                               6: "/apps/soca/soca-" + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/project_cost_manager.txt',
+                                               }
+
+
+
     # GUNICORN SETTINGS
     FLASK_HOST = "127.0.0.1"
     FLASK_PROTOCOL = "http://"
     FLASK_PORT = "5000"
     FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
+
+
 
     # COGNITO
     ENABLE_SSO = False
@@ -32,6 +46,7 @@ class Config(object):
     COGNITO_APP_ID = "<YOUR_APP_ID>"
     COGNITO_ROOT_URL = "<YOUR_WEB_URL>"
     COGNITO_CALLBACK_URL= "<YOUR_CALLBACK_URL>"
+
     # DCV
     DCV_BIN = "/usr/bin/dcv"
     DCV_AUTH_DIR = "/var/run/dcvsimpleextauth"
@@ -40,7 +55,7 @@ class Config(object):
     DCV_MAX_SESSION_ACOUNT = 4
 
     # LDAP
-    LDAP_HOST = "107.21.165.155"
+    LDAP_HOST = "18.232.5.215"
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
@@ -49,7 +64,7 @@ class Config(object):
     #ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
     #ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
     ROOT_DN = 'CN=admin,' + LDAP_BASE_DN
-    ROOT_PW = 'FPEfDWrK'
+    ROOT_PW = '6trXQVL4'
 
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"

@@ -50,7 +50,7 @@ class Files(Resource):
     @admin_api
     def post(self):
         """
-       Create a new file
+        Create a new file
         ---
         tags:
           - Group Management
@@ -66,7 +66,6 @@ class Files(Resource):
         parser.add_argument('file_name', type=str, location='form')
         parser.add_argument('file_content', type=str, location='form')
         args = parser.parse_args()
-        print("Hello")
         try:
             file_name = base64.b64decode(args['file_name']).decode("utf-8")
             file_content = base64.b64decode(args['file_content']).decode("utf-8")
@@ -74,10 +73,13 @@ class Files(Resource):
             return {"success": False,
                     "message": "Unable to decode payload. Make sure you have encoded the data with b64"}, 500
 
-
         if file_name is None or file_content is None:
             return {"success": False,
                     "message": "file_content (str) and file_name (str) parameters are required"}, 400
+
+        if file_name not in config.Config.CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB.values():
+            return {"success": False,
+                    "message": "You can not edit this file using the API"}, 400
 
         with open(file_name, "w") as file:
             file.write(file_content)

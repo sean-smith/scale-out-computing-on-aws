@@ -21,15 +21,6 @@ else
    yum groupinstall "GNOME Desktop" -y
 fi
 
-# If GPU instance, install Nvidia Drivers first
-if [[ "$INSTANCE_TYPE" == "g2" || "$INSTANCE_TYPE" == "g3"  ]]
-then
-    $AWS s3 cp --recursive s3://ec2-linux-nvidia-drivers/latest/ .
-    /bin/sh /root/NVIDIA-Linux-x86_64*.run -q -a -n -X -s
-    NVIDIAXCONFIG=$(which nvidia-xconfig)
-    $NVIDIAXCONFIG --preserve-busid --enable-all-gpus
-fi
-
 # Automatic start Gnome upon reboot
 systemctl set-default graphical.target
 
@@ -47,7 +38,8 @@ DCVGLADMIN=$(which dcvgladmin)
 
 # Uninstall dcv-gl if not GPU instances
 # Note: NVIDIA-CUDA drivers must be installed first
-if [[ "$INSTANCE_TYPE" != "g2" ]] || [[ "$INSTANCE_TYPE" != "g3"  ]]
+GPU_INSTANCE_FAMILY=(g2 g3 g4 p2 p3 p3dn)
+if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_TYPE}" ]];
 then
     $DCVGLADMIN disable
 fi
