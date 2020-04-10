@@ -18,6 +18,7 @@ INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-t
 GPU_INSTANCE_FAMILY=(g2 g3 g4 p2 p3 p3dn)
 if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_TYPE}" ]];
 then
+    echo "Detected GPU instance .. installing the latest NVIDIA driver"
     $AWS s3 cp --recursive s3://ec2-linux-nvidia-drivers/latest/ .
     /bin/sh /root/NVIDIA-Linux-x86_64*.run -q -a -n -X -s
     NVIDIAXCONFIG=$(which nvidia-xconfig)
