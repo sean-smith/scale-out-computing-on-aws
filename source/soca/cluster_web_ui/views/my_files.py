@@ -1,13 +1,14 @@
 import logging
 import config
 from decorators import login_required
-from flask import render_template, request, redirect, session, flash, Blueprint
+from flask import render_template, request, redirect, session, flash, Blueprint, send_file
 from requests import post, get
 import math
 import os
 from datetime import datetime
-from cryptography.fernet import Fernet
 import base64
+from cryptography.fernet import Fernet, InvalidToken, InvalidSignature
+import json
 
 
 logger = logging.getLogger(__name__)
@@ -23,13 +24,36 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
 
+
 def encrypt(file_path):
-    key = base64.b64encode(config.Config.API_ROOT_KEY.encode("utf-8"))
-    cipher_suite = Fernet(key)
-    encoded_text = cipher_suite.encrypt()
-    decoded_text = cipher_suite.decrypt(encoded_text)
+    try:
+        key = config.Config.SOCA_DATA_SHARING_SYMMETRIC_KEY
+        cipher_suite = Fernet(key)
+        payload = {"file_owner": session["user"],
+                   "file_path": file_path}
+
+        encrypted_text = cipher_suite.encrypt(json.dumps(payload).encode("utf-8"))
+        return {"success": True, "message": encrypted_text.decode()}
+    except Exception as err:
+        return {"success": False, "message": "UNABLE_TO_GENERATE_TOKEN"}
+
+
+def decrypt(encrypted_text):
+    try:
+        key = config.Config.SOCA_DATA_SHARING_SYMMETRIC_KEY
+        cipher_suite = Fernet(key)
+        decrypted_text = cipher_suite.decrypt(encrypted_text.encode())
+        return {"success": True, "message": decrypted_text}
+    except InvalidToken:
+        return {"success": False, "message": "Invalid Token"}
+    except InvalidSignature:
+        return {"success": False, "message": "Invalid Signature"}
+    except Exception as err:
+        return {"success": False, "message": str(err)}
+
 
 @my_files.route('/my_files', methods=['GET'])
+@login_required
 def index():
     hierarchy = "/Users/mcrozes/Desktop"
     folders = []
@@ -39,11 +63,35 @@ def index():
         if entry.is_dir():
             folders.append(entry.name)
         elif entry.is_file():
-
-            files[entry.name] = {"st_size": convert_size(entry.stat().st_size),
+            files[entry.name] = {"uid": encrypt(hierarchy+"/"+entry.name)["message"],
+                                 "st_size": convert_size(entry.stat().st_size),
                                  "st_mtime": datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
         else:
             pass
 
-    return render_template('my_files.html', files=files, folders=folders, breadcrumb=hierarchy.split("/"))
+    return render_template('my_files.html', user=session["user"], files=files, folders=folders, breadcrumb=hierarchy.split("/"))
+
+@my_files.route('/download', methods=['GET'])
+@login_required
+def download():
+    uid = request.args.get("uid", None)
+    if uid is None:
+        return redirect("/my_files")
+
+    file_information = decrypt(uid)
+    if file_information["success"] is True:
+        file_info = json.loads(file_information["message"])
+        current_user = session["user"]
+        if current_user == file_info["file_owner"]:
+            return send_file(file_info["file_path"],
+                             as_attachment=True,
+                             attachment_filename=file_info["file_path"].split("/")[-1])
+        else:
+            flash("You do not have the permission to download this file", "error")
+            return redirect("/my_files")
+
+    else:
+        flash("Unable to download "  + file_information["message"], "error")
+        return redirect("/my_files")
+
 

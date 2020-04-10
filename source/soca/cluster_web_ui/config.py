@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 import secrets
+from cryptography.fernet import Fernet
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -17,6 +18,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
     SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
     API_ROOT_KEY = secrets.token_hex(32)
+    SOCA_DATA_SHARING_SYMMETRIC_KEY = Fernet.generate_key()
 
     # List of file admins can edit via web ui
     CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB = {1: "/Users/mcrozes/Desktop/test_file_1.yml",

@@ -49,12 +49,13 @@ def authenticate():
             check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/ldap/sudo',
                                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                         params={"user": user},
-                                        verify=False).json()
-            logger.info(check_sudo_permission)
-            if check_sudo_permission["success"] is True:
+                                        verify=False)
+            if check_sudo_permission.status_code == 200:
                 session["sudoers"] = True
             else:
                 session["sudoers"] = False
+
+
 
             return redirect('/')
 

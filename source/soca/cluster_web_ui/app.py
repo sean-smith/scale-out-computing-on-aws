@@ -41,7 +41,7 @@ app.config.from_object(app_config)
 api = Api(app, decorators=[csrf.exempt])
 
 # LDAP
-api.add_resource(Sudo, '/api/ldap/sudo')
+api.add_resource(Sudo, '/api/v1/ldap/sudo')
 api.add_resource(Authenticate, '/api/ldap/authenticate')
 api.add_resource(Ids, '/api/ldap/ids')
 api.add_resource(User, '/api/ldap/user')
