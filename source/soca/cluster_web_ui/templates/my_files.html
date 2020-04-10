@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     {% include 'common/header.html' %}
+</head>
+
+<body id="page-top">
+
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              <main role="main">
+
+                  <div class="row">
+                  <div class="col-md-12">
+                      <nav aria-label="breadcrumb">
+                          <ol class="breadcrumb">
+                              {% for path in breadcrumb %}
+                              <li class="breadcrumb-item"><a href="#">{{path}}</a></li>
+                              {% endfor %}
+                          </ol>
+                      </nav>
+                  </div>
+
+                  <div class="col-md-3">
+                       {%  for folder in folders %}
+                           <i class="far fa-folder-open"></i> <a href="#">{{ folder }}</a><br>
+                           <i class="far fa-folder-open"></i> <a href="#">{{ folder }}</a><br>
+                      {%  endfor %}
+                  </div>
+                  <div class="col-md-7">
+                   {%  for file_name,file_data in files.items() %}
+                       {% if file_name.endswith('.png') %}
+                           <i class="far fa-file-image"></i>
+                       {% elif file_name.endswith('.zip') %}
+                           <i class="far fa-file-archive"></i>
+                       {% else %}
+                           <i class="far fa-file-code"></i>
+                       {% endif %}
+                       <a href="/download?uid={{ file_data.uid }}">{{ file_name }} </a>: {{ file_data.st_size }} (Last modified: {{ file_data.st_mtime }})<br>
+                   {% endfor %}
+
+                  </div>
+
+
+
+
+
+
+
+                  </div>
+
+
+              </main>
+
+
+
+
+              </div>
+          </div>
+      </div>
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+    {% include 'common/footer.html' %}
+
+</body>
+
+</html>

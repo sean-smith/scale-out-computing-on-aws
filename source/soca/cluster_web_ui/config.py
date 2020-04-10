@@ -16,7 +16,7 @@ class Config(object):
     SESSION_SQLALCHEMY_TABLE = "flask_sessions"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
     SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
-    API_ROOT_KEY = secrets.token_hex(16)
+    API_ROOT_KEY = secrets.token_hex(32)
 
     # List of file admins can edit via web ui
     CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB = {1: "/Users/mcrozes/Desktop/test_file_1.yml",

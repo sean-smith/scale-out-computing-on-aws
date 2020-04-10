@@ -30,7 +30,6 @@ def logout():
         session.pop(param, None)
     return redirect('/')
 
-
 @index.route('/auth', methods=['POST'])
 def authenticate():
     user = request.form.get('user')

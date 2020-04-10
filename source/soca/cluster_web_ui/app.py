@@ -21,6 +21,7 @@ from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
 from views.admin.configuration import configuration
 from views.my_account import my_account
+from views.my_files import my_files
 
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
@@ -62,6 +63,7 @@ app.register_blueprint(admin_users)
 app.register_blueprint(admin_queues)
 app.register_blueprint(admin_groups)
 app.register_blueprint(configuration)
+app.register_blueprint(my_files)
 
 
 @app.route("/api/spec.json")
