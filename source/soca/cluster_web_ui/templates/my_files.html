@@ -5,7 +5,9 @@
      {% include 'common/header.html' %}
     <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
-    <link rel="stylesheet" src="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
+    <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dropzone.js') }}"></script>
+    <link href="{{ url_for('static', filename='css/dropzone.css') }}" rel="stylesheet">
 
 </head>
 
@@ -43,16 +45,41 @@
                               {% for folder_name,path in breadcrumb.items() %}
                               <li class="breadcrumb-item"><a href="/my_files?path={{ path }}">{{folder_name}}</a></li>
                               {% endfor %}
+
                           </ol>
+
                       </nav>
                   </div>
                   <div class="col-md-12">
-                  // Upload section will be available here
-                  <hr>
-                  <style>
-                      /* change size of search */
-                      .dataTables_filter input { width: 500% }
-                  </style>
+
+
+<!-- Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Upload to SOCA</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+          <form action="/upload"  id="dropzone" class="dropzone" style="border: 2px dashed #0087F7;height: 200px">
+  <div class="fallback">
+    <input name="file" type="file" multiple />
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  </div>
+</form>
+          <hr>
+          Do not close the page while uploading<br>
+          It's recommended to use the <a href="/sftp">SOCA SFTP solution</a> when trying to upload large files (>300mb).
+
+      </div>
+
+    </div>
+  </div>
+</div>
                   <table id="list_files_table" class="table row-border" style="width:100%">
         <thead>
             <tr>
@@ -62,9 +89,29 @@
             </tr>
         </thead>
         <tbody>
+        <tr>
+                  <td style="visibility: hidden"></td>
+            <td>
+                <form class="form-inline" method="POST" action="/my_files/create_folder">
+                    <div class="input-group mx-sm-3 mb-2">
+                        <input type="text" size="50" class="form-control" id="folder_name" required placeholder="Name of your folder">
+                        <div class="input-group-append">
+                            <button class="btn btn-success" type="submit">Create Folder</button>
+                        </div>
+                    </div>
+
+                     <div class="form-group mx-sm-3 mb-2">
+                    <button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s) in this directory</button>
+                     </div>
+                </form>
+
+
+            </td>
+
+              </tr>
           {% for folder_name, folder_location in folders.items() %}
               <tr>
-                  <td> <i class="far fa-folder-open fa-2x"></i></td>
+                  <td> <i class="far fa-folder-open fa-lg"></i></td>
                   <td><a href="/my_files?path={{ folder_location }}">{{ folder_name }}</a></td>
 
               </tr>
@@ -73,26 +120,40 @@
              <tr>
              <td>
                           {% if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.jpeg') %}
-                              <i class="far fa-file-image fa-2x"></i>
+                              <i class="far fa-file-image fa-lg"></i>
                           {% elif file_name.endswith('.zip') or file_name.endswith('.tgz') or file_name.endswith('.tar.gz') or file_name.endswith('.rar') or file_name.endswith('.7z') %}
-                              <i class="far fa-file-archive fa-2x"></i>
+                              <i class="far fa-file-archive fa-lg"></i>
                                 {% elif file_name.endswith('.pdf') %}
-                                   <i class="far fa-file-pdf fa-2x"></i>
+                                   <i class="far fa-file-pdf fa-lg"></i>
                               {% elif file_name.endswith('.ppt') or file_name.endswith('.pptx') %}
-                                   <i class="far fa-file-powerpoint fa-2x"></i>
+                                   <i class="far fa-file-powerpoint fa-lg"></i>
                               {% elif file_name.endswith('.csv') %}
-                                   <i class="far fa-file-csv fa-2x"></i>
+                                   <i class="far fa-file-csv fa-lg"></i>
                                {% elif file_name.endswith('.avi') or file_name.endswith('.mkv') or file_name.endswith('.mpg')  %}
-                              <i class="far fa-file-video fa-2x"></i>
+                              <i class="far fa-file-video fa-lg"></i>
                                {% elif file_name.endswith('.txt') or file_name.endswith('.log') or file_name.endswith('.cfg') or file_name.endswith('.conf')  %}
-                              <i class="far fa-file-alt fa-2x"></i>
-
-
+                              <i class="far fa-file-alt fa-lg"></i>
                           {% else %}
-                              <i class="far fa-file-code fa-2x"></i>
+                              <i class="far fa-file-code fa-lg"></i>
                           {% endif %}
              </td>
-                 <td><a href="/download?uid={{ file_data.uid }}">{{ file_name }}</a> (<strong>{{ file_data.st_size }}</strong>) <br> Last Modified: {{ file_data.st_mtime }} </td>
+                 <td>
+
+                     <div class="dropdown show">
+                         <a class="" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                             {{ file_name }}   (<strong>{{ file_data.st_size }}</strong>)
+                         </a>
+                         <div class="float-right">Last Modified: {{ file_data.st_mtime }} </div>
+                         <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                             <a class="dropdown-item" href="/my_files/download?uid={{ file_data.uid }}"><i class="fas fa-file-download"></i> Download</a>
+                             <a class="dropdown-item" href="/my_files/delete?uid={{ file_data.uid }}"><i class="fas fa-trash-alt"></i> Delete</a>
+                             <a class="dropdown-item" href="/job?uid={{ file_data.uid }}"><i class="fas fa-microchip"></i> Use as Input File</a>
+                         </div>
+                     </div>
+
+
+
+                 </td>
 
               </tr>
                       {% endfor %}
@@ -102,10 +163,27 @@
 
     </table>
                   <script>
+                      $("#dropzone").dropzone({
+                          url: "/my_files/upload",
+                          addRemoveLinks : true,
+                          dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploader under {{ path }}',
+                          maxFilesize: 10,
+                          params: {
+                                 path: "{{ path }}"
+                          },
+                          dictResponseError: 'Error uploading file!',
+                          headers: {
+                              'X-CSRFToken': "{{ csrf_token() |safe }}"
+                          }
+                      });
+
+
                       $(document).ready(function() {
                           $('#list_files_table').DataTable({
                               "paging": false,
-                              dom:"<'myfilter'f><'mylength'l>t",
+
+                              //dom:"<'myfilter'f><'mylength'l>t",
+                              dom: '<"toolbar">frtip',
                               language: {
                                   searchPlaceholder: "Search for a file or a folder",
                                   search: ""
@@ -114,7 +192,8 @@
                               fixedColumns: {
                                   heightMatch: 'none'
                               },
-                          })
+                          });
+                              $('.dataTables_filter input[type="search"]').css({'width':'700px','display':'inline-block'});
                       });
                   </script>
 

@@ -26,6 +26,7 @@ def convert_size(size_bytes):
 
 
 def encrypt(file_path):
+    ## handle file with space
     try:
         key = config.Config.SOCA_DATA_SHARING_SYMMETRIC_KEY
         cipher_suite = Fernet(key)
@@ -75,23 +76,28 @@ def index():
         count += 1
 
     # Retrieve files/folders
-    for entry in os.scandir(home_location + path):
-        if entry.is_dir():
-            folders[entry.name] = path+"/"+entry.name
-        elif entry.is_file():
-            files[entry.name] = {"uid": encrypt(path+"/"+entry.name)["message"],
-                                 "st_size": convert_size(entry.stat().st_size),
-                                 "st_mtime": datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
-        else:
-            pass
+    try:
+        for entry in os.scandir(home_location + path):
+            if entry.is_dir():
+                folders[entry.name] = path+"/"+entry.name
+            elif entry.is_file():
+                files[entry.name] = {"uid": encrypt(home_location +"/"+path+"/"+entry.name)["message"],
+                                     "st_size": convert_size(entry.stat().st_size),
+                                     "st_mtime": datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
+            else:
+                pass
+    except Exception as err:
+        flash("Could not locate the directory", "error")
+        return redirect("/my_files")
 
     return render_template('my_files.html', user=session["user"],
                            files=files,
                            folders=folders,
-                           breadcrumb=breadcrumb)
+                           breadcrumb=breadcrumb,
+                           path=path+"/")
 
 
-@my_files.route('/download', methods=['GET'])
+@my_files.route('/my_files/download', methods=['GET'])
 @login_required
 def download():
     uid = request.args.get("uid", None)
@@ -103,15 +109,64 @@ def download():
         file_info = json.loads(file_information["message"])
         current_user = session["user"]
         if current_user == file_info["file_owner"]:
-            return send_file(file_info["file_path"],
+            try:
+                return send_file(file_info["file_path"],
                              as_attachment=True,
                              attachment_filename=file_info["file_path"].split("/")[-1])
+            except Exception as err:
+                flash("Unable to download file. Did you remove it?", "error")
+                return redirect("/my_files")
         else:
             flash("You do not have the permission to download this file", "error")
             return redirect("/my_files")
 
     else:
-        flash("Unable to download "  + file_information["message"], "error")
+        flash("Unable to download " + file_information["message"], "error")
+        return redirect("/my_files")
+
+@my_files.route('/my_files/delete', methods=['GET'])
+@login_required
+def delete():
+    uid = request.args.get("uid", None)
+    if uid is None:
+        return redirect("/my_files")
+
+    home_location = config.Config.USER_HOME + "/"
+    home_location = "/Users/"
+    file_information = decrypt(uid)
+    if file_information["success"] is True:
+        file_info = json.loads(file_information["message"])
+        current_user = session["user"]
+        if current_user == file_info["file_owner"]:
+            try:
+                file_to_delete = file_info["file_path"]
+                path_location = file_info["file_path"].split("/")[-3:-1]  # remove the Home Location and file name
+                os.remove(file_to_delete)
+                flash(file_info["file_path"].split("/")[-1] + " removed from the filesystem", "success")
+                return redirect("/my_files?path=" + "/".join(path_location))
+
+            except Exception as err:
+                flash("Unable to download file. Did you remove it?", "error")
+
+        else:
+            flash("You do not have the permission to download this file", "error")
+            return redirect("/my_files")
+
+    else:
+        flash("Unable to download " + file_information["message"], "error")
         return redirect("/my_files")
 
 
+@my_files.route('/my_files/upload', methods=['POST'])
+@login_required
+def upload():
+    path = request.form["path"]
+    file_list = request.files.getlist("file")
+    if not file_list:
+        return redirect("/my_files")
+    for file in file_list:
+        destination = config.Config.USER_HOME + "/" + path
+        destination = "/Users" + "/" + path + file.filename
+        file.save(destination)
+
+    return "Success", 200
