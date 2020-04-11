@@ -89,7 +89,7 @@
             </tr>
         </thead>
         <tbody>
-        <tr>
+        <!--<tr>
                   <td style="visibility: hidden"></td>
             <td>
                 <form class="form-inline" method="POST" action="/my_files/create_folder">
@@ -108,7 +108,7 @@
 
             </td>
 
-              </tr>
+              </tr>-->
           {% for folder_name, folder_location in folders.items() %}
               <tr>
                   <td> <i class="far fa-folder-open fa-lg"></i></td>
@@ -193,7 +193,9 @@
                                   heightMatch: 'none'
                               },
                           });
-                              $('.dataTables_filter input[type="search"]').css({'width':'700px','display':'inline-block'});
+                          $('.dataTables_filter input[type="search"]').css({'align': 'center','font-weight': '400', 'font-size': '1rem', 'width':'500px','height': '38px', 'display':'inline-block'});
+
+                          $("div.toolbar").html('<div class="float-right"><form class="form-inline" method="POST" action="/my_files/create_folder"><div class="input-group mx-sm-3 mb-2"><input type="text" size="30" class="form-control" id="folder_name" required placeholder="Name of your new folder"><div class="input-group-append"><button class="btn btn-success" type="submit">Create Folder</button></div></div><div class="form-group mx-sm-3 mb-2"><button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s)</button></div></form></div>');
                       });
                   </script>
 
