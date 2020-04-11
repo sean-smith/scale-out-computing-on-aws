@@ -80,6 +80,12 @@
                                    <i class="far fa-file-pdf fa-2x"></i>
                               {% elif file_name.endswith('.ppt') or file_name.endswith('.pptx') %}
                                    <i class="far fa-file-powerpoint fa-2x"></i>
+                              {% elif file_name.endswith('.csv') %}
+                                   <i class="far fa-file-csv fa-2x"></i>
+                               {% elif file_name.endswith('.avi') or file_name.endswith('.mkv') or file_name.endswith('.mpg')  %}
+                              <i class="far fa-file-video fa-2x"></i>
+                               {% elif file_name.endswith('.txt') or file_name.endswith('.log') or file_name.endswith('.cfg') or file_name.endswith('.conf')  %}
+                              <i class="far fa-file-alt fa-2x"></i>
 
 
                           {% else %}
