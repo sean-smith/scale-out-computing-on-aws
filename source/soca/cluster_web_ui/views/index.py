@@ -38,10 +38,10 @@ def authenticate():
     if user is not None and password is not None:
         check_auth = post(config.Config.FLASK_ENDPOINT + '/api/ldap/authenticate',
                           data={"user": user, "password": password},
-                          verify=False).json()
+                          verify=False)
         logger.info(check_auth)
-        if check_auth['success'] is False:
-            flash(check_auth['message'])
+        if check_auth.status_code != 200:
+            flash(check_auth.json()['message'])
             return redirect('/login')
         else:
             session['user'] = user.lower()

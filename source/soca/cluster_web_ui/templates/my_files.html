@@ -40,18 +40,18 @@
                   <div class="col-md-12">
                       <nav aria-label="breadcrumb">
                           <ol class="breadcrumb">
-                              {% for path in breadcrumb %}
-                              <li class="breadcrumb-item"><a href="#">{{path}}</a></li>
+                              {% for folder_name,path in breadcrumb.items() %}
+                              <li class="breadcrumb-item"><a href="/my_files?path={{ path }}">{{folder_name}}</a></li>
                               {% endfor %}
                           </ol>
                       </nav>
                   </div>
                   <div class="col-md-12">
-
+                  // Upload section will be available here
+                  <hr>
                   <style>
                       /* change size of search */
                       .dataTables_filter input { width: 500% }
-
                   </style>
                   <table id="list_files_table" class="table row-border" style="width:100%">
         <thead>
@@ -62,20 +62,26 @@
             </tr>
         </thead>
         <tbody>
-          {% for folder in folders %}
+          {% for folder_name, folder_location in folders.items() %}
               <tr>
                   <td> <i class="far fa-folder-open fa-2x"></i></td>
-                  <td><a href="#">{{ folder }}</a></td>
+                  <td><a href="/my_files?path={{ folder_location }}">{{ folder_name }}</a></td>
 
               </tr>
           {% endfor %}
          {%  for file_name,file_data in files.items() %}
              <tr>
              <td>
-                          {% if file_name.endswith('.png') %}
+                          {% if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.jpeg') %}
                               <i class="far fa-file-image fa-2x"></i>
-                          {% elif file_name.endswith('.zip') %}
+                          {% elif file_name.endswith('.zip') or file_name.endswith('.tgz') or file_name.endswith('.tar.gz') or file_name.endswith('.rar') or file_name.endswith('.7z') %}
                               <i class="far fa-file-archive fa-2x"></i>
+                                {% elif file_name.endswith('.pdf') %}
+                                   <i class="far fa-file-pdf fa-2x"></i>
+                              {% elif file_name.endswith('.ppt') or file_name.endswith('.pptx') %}
+                                   <i class="far fa-file-powerpoint fa-2x"></i>
+
+
                           {% else %}
                               <i class="far fa-file-code fa-2x"></i>
                           {% endif %}

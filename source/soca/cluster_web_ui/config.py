@@ -74,4 +74,5 @@ class Config(object):
     # SSH
     SSH_PRIVATE_KEY_LOCATION = "tmp/ssh"
 
+
 app_config = Config()

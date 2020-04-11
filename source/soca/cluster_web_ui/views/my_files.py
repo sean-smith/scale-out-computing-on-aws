@@ -55,21 +55,41 @@ def decrypt(encrypted_text):
 @my_files.route('/my_files', methods=['GET'])
 @login_required
 def index():
-    hierarchy = "/Users/mcrozes/Desktop"
-    folders = []
+    path = request.args.get("path", None)
+    home_location = config.Config.USER_HOME + "/"
+    home_location = "/Users/"
+    folders = {}
     files = {}
+    breadcrumb = {}
+    if path is None:
+        path = session["user"]
 
-    for entry in os.scandir(hierarchy):
+    # Prevent user to access directory they are not supposed to
+    if path.split('/')[0] != session["user"]:
+        return redirect("/my_files")
+
+    # Build Breadcrumb
+    count = 1
+    for level in path.split("/")[0:]:
+        breadcrumb[level] = "/".join(path.split('/')[:count])
+        count += 1
+
+    # Retrieve files/folders
+    for entry in os.scandir(home_location + path):
         if entry.is_dir():
-            folders.append(entry.name)
+            folders[entry.name] = path+"/"+entry.name
         elif entry.is_file():
-            files[entry.name] = {"uid": encrypt(hierarchy+"/"+entry.name)["message"],
+            files[entry.name] = {"uid": encrypt(path+"/"+entry.name)["message"],
                                  "st_size": convert_size(entry.stat().st_size),
                                  "st_mtime": datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
         else:
             pass
 
-    return render_template('my_files.html', user=session["user"], files=files, folders=folders, breadcrumb=hierarchy.split("/"))
+    return render_template('my_files.html', user=session["user"],
+                           files=files,
+                           folders=folders,
+                           breadcrumb=breadcrumb)
+
 
 @my_files.route('/download', methods=['GET'])
 @login_required

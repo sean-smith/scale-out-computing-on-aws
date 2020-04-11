@@ -1,7 +1,7 @@
 from flask_restful import Resource, reqparse
 import config
 import ldap
-
+from errors import all_errors
 
 class Authenticate(Resource):
     def post(self):
@@ -43,8 +43,7 @@ class Authenticate(Resource):
         user = args["user"]
         password = args["password"]
         if user is None or password is None:
-            return {"success": False,
-                    "message": "user (str) and password (str) parameters are required"}, 400
+            return all_errors('CLIENT_MISSING_PARAMETER', "user (str) and password (str) are required.")
 
         ldap_host = config.Config.LDAP_HOST
         base_dn = config.Config.LDAP_BASE_DN
@@ -53,13 +52,5 @@ class Authenticate(Resource):
             conn = ldap.initialize('ldap://{}'.format(ldap_host))
             conn.bind_s(user_dn, password, ldap.AUTH_SIMPLE)
             return {'success': True, 'message': 'User is valid'}, 200
-
-        except ldap.INVALID_CREDENTIALS:
-            return {'success': False, 'message': 'Invalid user credentials'}, 401
-
-        except ldap.SERVER_DOWN:
-            return {'success': False, 'message': 'Unable to contact LDAP server'}, 500
-
         except Exception as err:
-            return {'success': False, 'message': 'Unknown error: ' + str(err)}, 500
-
+            return all_errors(type(err).__name__, err)
