@@ -82,6 +82,7 @@
         <thead>
             <tr>
                 <th>Type</th>
+                <th>Size</th>
                 <th>Name</th>
 
             </tr>
@@ -110,6 +111,7 @@
           {% for folder_name, folder_data in folders.items() %}
               <tr>
                   <td> <i class="far fa-folder-open fa-lg"></i></td>
+                  <td></td>
                   <td><a href="/my_files?path={{ folder_data.path }}">{{ folder_name }}</a> <a href="/my_files/delete?uid={{ folder_data.uid }}"><i class="fas fa-trash-alt float-right fa-lg" style="color: grey"></i></a> </td>
 
               </tr>
@@ -135,11 +137,14 @@
                               <i class="far fa-file-code fa-lg"></i>
                           {% endif %}
              </td>
+             <td>
+                 {{ file_data.st_size }}
+             </td>
                  <td>
 
                      <div class="dropdown show">
-                         <a class="" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                             {{ file_name }}   (<strong>{{ file_data.st_size }}</strong>)
+                         <a href="/my_files/download?uid={{ file_data.uid }}">
+                             {{ file_name }}
                          </a>
                          <div class="float-right">
                              <a href="/my_files/download?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Download this file" class="fas fa-file-download fa-lg"  style="color: grey"></i></a>
