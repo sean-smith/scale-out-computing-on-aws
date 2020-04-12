@@ -47,18 +47,27 @@ def validate_input_file(file_uid):
 @login_required
 def index():
     app = request.args.get("app", None)
-    input_file = request.args.get("input_file", None)
+    input_file = request.args.get("input_file", False)
     if app is None:
+        if input_file is not False:
+            check_input = validate_input_file(input_file)
+            if check_input["success"] is True:
+                input_file = check_input["message"]
+            else:
+                flash(check_input["message"], "error")
+
         application_profiles = {}
         get_all_application_profiles = ApplicationProfiles.query.all()
         for profile in get_all_application_profiles:
-            application_profiles[profile.id] = {"profile_name": profile.profile_name,
-                                                "forward_input": input_file
-                                                }
-
+            application_profiles[profile.id] = {"profile_name": profile.profile_name}
         return render_template('submit_job.html',
                                user=session["user"],
-                               application_profiles=application_profiles)
+                               application_profiles=application_profiles,
+                               input_file=input_file)
+
+
+
+
     else:
         input_file_info = False
         get_application_profile = ApplicationProfiles.query.filter_by(id=app).first()

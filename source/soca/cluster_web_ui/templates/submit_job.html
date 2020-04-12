@@ -50,13 +50,17 @@
                         </button>
                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                             {% for app_id, app_data in application_profiles.items() %}
-                                {% if app_data.forward_input %}
+                                {% if input_file %}
                                     <a class="dropdown-item" href="/submit_job?app={{app_id}}&input_file={{ app_data.forward_input }}">{{  app_data.profile_name }}</a>
                                 {% else %}
                                     <a class="dropdown-item" href="/submit_job?app={{app_id}}">{{  app_data.profile_name }}</a>
                                 {%endif  %}
                             {% endfor %}
                         </div>
+                          Select your Input:
+                          {{ input_file }}
+
+
 
                   </div>
 

@@ -110,7 +110,7 @@
           {% for folder_name, folder_data in folders.items() %}
               <tr>
                   <td> <i class="far fa-folder-open fa-lg"></i></td>
-                  <td><a href="/my_files?path={{ folder_data.path }}">{{ folder_name }}</a> <a href="/my_files/delete?uid={{ folder_data.uid }}"><i class="fas fa-trash-alt float-right" style="color: grey"></i></a> </td>
+                  <td><a href="/my_files?path={{ folder_data.path }}">{{ folder_name }}</a> <a href="/my_files/delete?uid={{ folder_data.uid }}"><i class="fas fa-trash-alt float-right fa-lg" style="color: grey"></i></a> </td>
 
               </tr>
           {% endfor %}
@@ -141,11 +141,11 @@
                          <a class="" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                              {{ file_name }}   (<strong>{{ file_data.st_size }}</strong>)
                          </a>
-                         <div class="float-right">Last Modified: {{ file_data.st_mtime }} </div>
-                         <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                             <a class="dropdown-item" href="/my_files/download?uid={{ file_data.uid }}"><i class="fas fa-file-download"></i> Download</a>
-                             <a class="dropdown-item" href="/submit_job?input_file={{ file_data.uid }}"><i class="fas fa-microchip"></i> Use as input file for a simulation</a>
-                             <a class="dropdown-item" href="/my_files/delete?uid={{ file_data.uid }}"><i class="fas fa-trash-alt"></i> Delete</a>
+                         <div class="float-right">
+                             <a href="/my_files/download?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Download this file" class="fas fa-file-download fa-lg"  style="color: grey"></i></a>
+                             <a href="/submit_job?input_file={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Use as simulation input" class="fas fa-microchip fa-lg"  style="color: grey"></i></a>
+                             <i data-toggle="tooltip" data-placement="top" title="Last Modified: {{ file_data.st_mtime }}" class="far fa-clock fa-lg" style="color: grey"></i>
+                             <a href="/my_files/delete?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Delete file" class="fas fa-trash-alt fa-lg" style="color: grey"></i></a>
                          </div>
                      </div>
 
@@ -183,10 +183,15 @@
 
 
                       $(document).ready(function() {
+
+                          // enable tooltip
+                          $(function () {
+                              $('[data-toggle="tooltip"]').tooltip()
+                          })
+
+                          // build datatable
                           $('#list_files_table').DataTable({
                               "paging": false,
-
-                              //dom:"<'myfilter'f><'mylength'l>t",
                               dom: '<"toolbar">frtip',
                               language: {
                                   searchPlaceholder: "Search for a file or a folder",
@@ -198,7 +203,6 @@
                               },
                           });
                           $('.dataTables_filter input[type="search"]').css({'align': 'center','font-weight': '400', 'font-size': '1rem', 'width':'500px','height': '38px', 'display':'inline-block'});
-
                           $("div.toolbar").html('<div class="float-right"><form class="form-inline" method="POST" action="/my_files/create_folder"><div class="input-group mx-sm-3 mb-2"><input type="text" size="25" class="form-control" name="folder_name" required placeholder="Name of your new folder"><div class="input-group-append"><input type="hidden" name="path" value="{{ path }}"> <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success" type="submit">Create Folder</button></div></div><div class="form-group mx-sm-3 mb-2"><button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s)</button></div></form></div>');
                       });
                   </script>
