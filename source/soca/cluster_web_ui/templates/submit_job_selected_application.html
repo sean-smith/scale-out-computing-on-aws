@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     {% include 'common/header.html' %}
+
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dropzone.js') }}"></script>
+    <link href="{{ url_for('static', filename='css/dropzone.css') }}" rel="stylesheet">
+
+</head>
+
+<body id="page-top">
+
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              <main role="main">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <br>
+                                {% if category == "success" %}
+                                <div class="alert alert-success">
+                                    <strong>{{ message | safe }} </strong>
+                                </div>
+                                {% else %}
+                                 <div class="alert alert-danger">
+                                    <strong>{{ message | safe }} </strong>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                  <div class="row">
+                      <div class="card shadow mb-4" style="width: 100%">
+                          <div class="card-header py-3">
+                              <h6 class="m-0 font-weight-bold text-primary">Launching your {{ application_parameters.profile_name }} simulation </h6>
+                          </div>
+                          <div class="card-body">
+                              <form>
+                                  <div class="form-group">
+                                    <label for="Input">Input File</label>
+                                      {% if  input_file_info == False %}
+                                           <input type="text" class="form-control" id="input_file"  placeholder="Path to your input file">
+                                      {% else %}
+                                          <input type="text" class="form-control" id="input_file"  value="{{ input_file_info}}">
+                                      {% endif %}
+                                      <small class="form-text text-muted"><a href="/my_files" target="_blank">Upload your input</a> file if needed</small>
+                                  </div>
+                                  <div class="form-group">
+                                    <label for="exampleInputPassword1">How many CPUs do you need?</label>
+                                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+                                  </div>
+                                 <div class="form-group">
+                                    <label for="exampleInputPassword1">How many Storage (in GB?)</label>
+                                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+                                  </div>
+                                  <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                                    <label class="form-check-label" for="exampleCheck1">Check me out</label>
+                                  </div>
+                                  <button type="submit" class="btn btn-primary">Submit</button>
+                              </form>
+                          </div>
+                      </div>
+
+
+
+                        WITH INPUT FILE: {{ input_file_info }} <br>
+
+                        {% for app_id, app_data in application_parameters.items() %}
+                        {{ app }} {{ app_data }} <br>
+                        {% endfor %}
+
+                    {{ get_all_ec2_instances }}
+
+
+                  </div>
+
+              </main>
+
+
+
+
+              </div>
+          </div>
+      </div>
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+
+
+    {% include 'common/footer.html' %}
+
+</body>
+
+</html>

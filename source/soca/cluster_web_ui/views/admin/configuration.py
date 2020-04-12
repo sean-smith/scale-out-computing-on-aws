@@ -10,6 +10,8 @@ configuration = Blueprint('configuration', __name__, template_folder='templates'
 
 
 @configuration.route('/admin/configuration', methods=['GET'])
+@login_required
+@admin_only
 def index():
     try:
         file_selection = int(request.args.get("fid", 1))

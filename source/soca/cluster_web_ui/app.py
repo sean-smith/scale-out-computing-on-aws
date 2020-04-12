@@ -19,9 +19,12 @@ from views.my_api_key import my_api_key
 from views.admin.users import admin_users
 from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
+from views.admin.applications import admin_applications
+
 from views.admin.configuration import configuration
 from views.my_account import my_account
 from views.my_files import my_files
+from views.submit_job import submit_job
 
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
@@ -41,7 +44,7 @@ app.config.from_object(app_config)
 api = Api(app, decorators=[csrf.exempt])
 
 # LDAP
-api.add_resource(Sudo, '/api/v1/ldap/sudo')
+api.add_resource(Sudo, '/api/ldap/sudo')
 api.add_resource(Authenticate, '/api/ldap/authenticate')
 api.add_resource(Ids, '/api/ldap/ids')
 api.add_resource(User, '/api/ldap/user')
@@ -62,8 +65,10 @@ app.register_blueprint(my_account)
 app.register_blueprint(admin_users)
 app.register_blueprint(admin_queues)
 app.register_blueprint(admin_groups)
+app.register_blueprint(admin_applications)
 app.register_blueprint(configuration)
 app.register_blueprint(my_files)
+app.register_blueprint(submit_job)
 
 
 @app.route("/api/spec.json")

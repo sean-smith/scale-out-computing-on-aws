@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     {% include 'common/header.html' %}
+
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dropzone.js') }}"></script>
+    <link href="{{ url_for('static', filename='css/dropzone.css') }}" rel="stylesheet">
+
+</head>
+
+<body id="page-top">
+  <div id="wrapper">
+    {% include 'common/vertical_menu_bar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="content">
+          <br>
+          <div class="container-fluid">
+              {% include 'common/horizontal_menu_bar.html' %}
+              <main role="main">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <br>
+                                {% if category == "success" %}
+                                <div class="alert alert-success">
+                                    <strong>{{ message | safe }} </strong>
+                                </div>
+                                {% else %}
+                                 <div class="alert alert-danger">
+                                    <strong>{{ message | safe }} </strong>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                  <div class="row">
+
+                  <div class="card shadow mb-12">
+                      <div class="card-header py-3">
+                          <h6 class="m-0 font-weight-bold text-primary">Choose your solver</h6>
+                      </div>
+                      <div class="card-body">
+                          <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select your application
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            {% for app_id, app_data in application_profiles.items() %}
+                                {% if app_data.forward_input %}
+                                    <a class="dropdown-item" href="/submit_job?app={{app_id}}&input_file={{ app_data.forward_input }}">{{  app_data.profile_name }}</a>
+                                {% else %}
+                                    <a class="dropdown-item" href="/submit_job?app={{app_id}}">{{  app_data.profile_name }}</a>
+                                {%endif  %}
+                            {% endfor %}
+                        </div>
+
+                  </div>
+
+                      </div>
+                  </div>
+
+
+
+
+                  </div>
+              </main>
+              </div>
+          </div>
+      </div>
+
+  </div>
+
+  <a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+  </a>
+  {% include 'common/footer.html' %}
+
+</body>
+
+</html>

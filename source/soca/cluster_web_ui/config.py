@@ -18,8 +18,14 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
     SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
     API_ROOT_KEY = secrets.token_hex(32)
-    SOCA_DATA_SHARING_SYMMETRIC_KEY = Fernet.generate_key()
 
+
+    # WEB
+    # USER_HOME = "/data/home"
+    USER_HOME = "/Users"
+    APPS_LOCATION = "/apps/"
+    SOCA_DATA_SHARING_SYMMETRIC_KEY = Fernet.generate_key()
+    SOCA_BROWSABLE_TOP_LEVEL_FOLDERS = [USER_HOME, APPS_LOCATION]
     # List of file admins can edit via web ui
     CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB = {1: "/Users/mcrozes/Desktop/test_file_1.yml",
                                                2: "/Users/mcrozes/Desktop/test_file_2",
@@ -61,7 +67,7 @@ class Config(object):
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
-    USER_HOME = "/data/home"
+
 
     #ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
     #ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()

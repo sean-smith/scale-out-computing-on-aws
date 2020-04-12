@@ -53,7 +53,7 @@ class Sudo(Resource):
             if is_sudo.__len__() > 0:
                 return {'success': True, 'message': "User has SUDO permissions."}, 200
             else:
-                return {'success': False, 'message': "User does not have SUDO permissions."}, 203
+                return {'success': False, 'message': "User does not have SUDO permissions."}, 222
 
         except ldap.SERVER_DOWN:
             return {'success': False, 'message': 'LDAP server is down'}, 500
@@ -128,7 +128,7 @@ class Sudo(Resource):
             return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
 
         except ldap.ALREADY_EXISTS:
-            return {"success": False, "message": "User already has the correct permissions configured."}, 203
+            return {"success": False, "message": "User already has the correct permissions configured."}, 221
 
         except Exception as err:
             return {"false": True, "message": "Unknown error: " +str(err)}, 500
@@ -180,7 +180,6 @@ class Sudo(Resource):
                 for key in change_user_key_scope:
                     key.scope = "user"
                     db.session.commit()
-
             return {"success": True, "message": user + " does not have admin permission anymore"}, 200
 
         except ldap.SERVER_DOWN:

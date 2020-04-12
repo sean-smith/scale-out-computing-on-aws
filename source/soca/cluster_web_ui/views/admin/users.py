@@ -38,11 +38,10 @@ def manage_sudo():
                                        headers={"X-SOCA-TOKEN": session["api_key"],
                                                 "X-SOCA-USER": session["user"]},
                                        data={"user": user})
-
                 if give_sudo.status_code == 200:
-                    flash(give_sudo.json(["message"]), "success")
+                    flash("Admin permissions granted", "success")
                 else:
-                    flash("Error: " + give_sudo.json(["message"]), "error")
+                    flash("Error: " + give_sudo.json()["message"], "error")
                 return redirect("/admin/users")
 
             else:
