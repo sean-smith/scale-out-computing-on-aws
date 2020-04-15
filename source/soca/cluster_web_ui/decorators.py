@@ -4,6 +4,8 @@ import config
 from models import ApiKeys
 from flask import request, redirect, session, flash
 from requests import get
+import logging
+logger = logging.getLogger("api_log")
 
 
 # Restricted API can only be accessed using Flask Root API key
@@ -118,6 +120,7 @@ def read_only_api(f):
 def login_required(f):
     @wraps(f)
     def validate_account():
+        logger.info(str(session))
         if "user" in session:
             if "api_key" in session:
                 # If a new API key has been issued,
@@ -142,7 +145,8 @@ def login_required(f):
                 # Retrieve current API key for the user or create a new one
                 check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                     params={"user": session["user"]}).json()
+                                     params={"user": session["user"]},
+                                     verify=False).json()
                 session["api_key"] = check_user_key["message"]
 
             return f()

@@ -74,14 +74,12 @@ def create_new_account():
         uid = request.form.get('uid', None)
         gid = request.form.get('gid', None)
         create_new_user = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
-                               headers={"X-SOCA-TOKEN": session["api_key"],
-                                        "X-SOCA-USER": session["user"]},
+                               headers={"X-SOCA-TOKEN": session["api_key"], "X-SOCA-USER": session["user"]},
                                data={"user": user,
                                      "password": password,
                                      "email": email,
                                      "sudoers": sudoers,
                                      "uid": uid})
-
         if create_new_user.status_code == 200:
             # Create API key
             create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',

@@ -11,7 +11,8 @@ my_api_key = Blueprint('my_api_key', __name__, template_folder='templates')
 def index():
     check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
                          headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                         params={"user": session["user"]}).json()
+                         params={"user": session["user"]},
+                         verify=False).json()
 
     logger.info(str(request) + ": check_user_key: Status: " + str(check_user_key))
     logger.debug("check_user_key: Content: " + str(check_user_key))

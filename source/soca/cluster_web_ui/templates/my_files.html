@@ -8,10 +8,14 @@
     <script src="{{ url_for('static', filename='js/dataTables.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dropzone.js') }}"></script>
     <link href="{{ url_for('static', filename='css/dropzone.css') }}" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+<script>
+    function formatBytes(a,b){if(0==a)return"0 Bytes";var c=1024,d=b||2,e=["Bytes","KB","MB","GB","TB","PB","EB","ZB","YB"],f=Math.floor(Math.log(a)/Math.log(c));return parseFloat((a/Math.pow(c,f)).toFixed(d))+" "+e[f]}
 
+</script>
 </head>
 
-<body id="page-top">
+<body id="page-top" class="sidebar-toggled">
 
   <div id="wrapper">
     {% include 'common/vertical_menu_bar.html' %}
@@ -42,6 +46,7 @@
                   <div class="col-md-12">
                       <nav aria-label="breadcrumb">
                           <ol class="breadcrumb">
+                              <li class="breadcrumb-item"><a href="/my_files"><i class="fas fa-home"></i></a></li>
                               {% for path,folder_name in breadcrumb.items() %}
                               <li class="breadcrumb-item"><a href="/my_files?path={{ path }}">{{folder_name}}</a></li>
                               {% endfor %}
@@ -49,8 +54,6 @@
                           </ol>
 
                       </nav>
-                  </div>
-                  <div class="col-md-12">
 
 
 <!-- Modal -->
@@ -78,102 +81,165 @@
     </div>
   </div>
 </div>
-                  <table id="list_files_table" class="table row-border" style="width:100%">
+                      <div class="row">
+                           <div class="col-md-7">
+                              <input type="text" id="searchFiles"  class="form-control" placeholder="Search for a file or a folder" aria-controls="list_files_table">
+                          </div>
+                          <div class="col-md-3">
+                            <form class="form-inline" method="POST" action="/my_files/create_folder">
+                              <div class="input-group">
+                                  <input type="text" size="25" class="form-control" name="folder_name" required placeholder="Folder Name">
+                                  <div class="input-group-append">
+                                      <input type="hidden" name="path" value="{{ path }}/">
+                                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                      <button class="btn btn-success" type="submit">Create Folder</button>
+                                  </div>
+                              </div>
+                            </form>
+                          </div>
+
+                          <div class="col-md-2">
+                              <button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s)</button>
+                          </div>
+                      </div>
+                      <div class="row">
+
+                          <!-- <div class="col-md-3">
+                          <br>
+                              <h4><i class="far fa-folder-open fa-lg"></i> Folders</h4>
+                              {% if not folders %}
+                                  No folders
+                              {% else %}
+                                  {% for folder_name, folder_data in folders.items() %}
+                                      <a href="/my_files/delete?uid={{ folder_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Delete folder" class="fas fa-trash-alt float-right fa-lg" style="color: grey"></i></a>
+                                      <a href="/my_files?path={{ folder_data.path }}">  {{ folder_name|folder_name_truncate }}</a>
+                                      <br>
+                                  {% endfor %}
+                              {% endif %}
+                          </div> -->
+
+                      <div class="col-md-12">
+                      <br>
+                          <table id="list_files_table" class="table row-border" style="width:100%">
         <thead>
             <tr>
+                <th>Name</th>
                 <th>Type</th>
                 <th>Size</th>
-                <th>Name</th>
-
+                <th>Last Modified</th>
             </tr>
         </thead>
         <tbody>
-        <!--<tr>
-                  <td style="visibility: hidden"></td>
-            <td>
-                <form class="form-inline" method="POST" action="/my_files/create_folder">
-                    <div class="input-group mx-sm-3 mb-2">
-                        <input type="text" size="50" class="form-control" id="folder_name" required placeholder="Name of your folder">
-                        <div class="input-group-append">
-                            <button class="btn btn-success" type="submit">Create Folder</button>
-                        </div>
-                    </div>
-
-                     <div class="form-group mx-sm-3 mb-2">
-                    <button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s) in this directory</button>
-                     </div>
-                </form>
-
-
-            </td>
-
-              </tr>-->
-          {% for folder_name, folder_data in folders.items() %}
-              <tr>
-                  <td> <i class="far fa-folder-open fa-lg"></i></td>
-                  <td></td>
-                  <td><a href="/my_files?path={{ folder_data.path }}">{{ folder_name }}</a> <a href="/my_files/delete?uid={{ folder_data.uid }}"><i class="fas fa-trash-alt float-right fa-lg" style="color: grey"></i></a> </td>
-
-              </tr>
-          {% endfor %}
-         {%  for file_name,file_data in files.items() %}
+         {%  for file_name,file_data in filesystem.items() %}
              <tr>
-             <td>
-                          {% if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.jpeg') %}
-                              <i class="far fa-file-image fa-lg"></i>
-                          {% elif file_name.endswith('.zip') or file_name.endswith('.tgz') or file_name.endswith('.tar.gz') or file_name.endswith('.rar') or file_name.endswith('.7z') %}
-                              <i class="far fa-file-archive fa-lg"></i>
-                                {% elif file_name.endswith('.pdf') %}
-                                   <i class="far fa-file-pdf fa-lg"></i>
-                              {% elif file_name.endswith('.ppt') or file_name.endswith('.pptx') %}
-                                   <i class="far fa-file-powerpoint fa-lg"></i>
-                              {% elif file_name.endswith('.csv') %}
-                                   <i class="far fa-file-csv fa-lg"></i>
-                               {% elif file_name.endswith('.avi') or file_name.endswith('.mkv') or file_name.endswith('.mpg')  %}
-                              <i class="far fa-file-video fa-lg"></i>
-                               {% elif file_name.endswith('.txt') or file_name.endswith('.log') or file_name.endswith('.cfg') or file_name.endswith('.conf')  %}
-                              <i class="far fa-file-alt fa-lg"></i>
-                          {% else %}
-                              <i class="far fa-file-code fa-lg"></i>
-                          {% endif %}
-             </td>
-             <td>
-                 {{ file_data.st_size }}
-             </td>
                  <td>
+                    {% if file_data.type == "folder" %}
 
-                     <div class="dropdown show">
-                         <a href="/my_files/download?uid={{ file_data.uid }}">
-                             {{ file_name }}
-                         </a>
-                         <div class="float-right">
-                             <a href="/my_files/download?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Download this file" class="fas fa-file-download fa-lg"  style="color: grey"></i></a>
-                             <a href="/submit_job?input_file={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Use as simulation input" class="fas fa-microchip fa-lg"  style="color: grey"></i></a>
-                             <i data-toggle="tooltip" data-placement="top" title="Last Modified: {{ file_data.st_mtime }}" class="far fa-clock fa-lg" style="color: grey"></i>
-                             <a href="/my_files/delete?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Delete file" class="fas fa-trash-alt fa-lg" style="color: grey"></i></a>
-                         </div>
+                        <i class="far fa-folder-open fa-lg"></i>
+                        <strong><a href="/my_files?path={{ file_data.path }}"> {{ file_name }}</a></strong>
+                        <div class="float-right">
+                            <a href="/my_files/delete?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Delete the folder" class="fas fa-trash-alt fa-lg"  style="color: grey"></i></a>
+                        </div>
+                    {% else %}
+
+                        {% if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.jpeg') %}
+                            <i class="far fa-file-image fa-lg"></i>
+                        {% elif file_name.endswith('.zip') or file_name.endswith('.tgz') or file_name.endswith('.tar.gz') or file_name.endswith('.rar') or file_name.endswith('.7z') %}
+                            <i class="far fa-file-archive fa-lg"></i>
+                        {% elif file_name.endswith('.pdf') %}
+                            <i class="far fa-file-pdf fa-lg"></i>
+                        {% elif file_name.endswith('.ppt') or file_name.endswith('.pptx') %}
+                            <i class="far fa-file-powerpoint fa-lg"></i>
+                        {% elif file_name.endswith('.csv') %}
+                            <i class="fas fa-file-csv fa-lg"></i>
+                        {% elif file_name.endswith('.avi') or file_name.endswith('.mkv') or file_name.endswith('.mpg')  %}
+                            <i class="far fa-file-video fa-lg"></i>
+                        {% elif file_name.endswith('.txt') or file_name.endswith('.log') or file_name.endswith('.cfg') or file_name.endswith('.conf')  %}
+                            <i class="far fa-file-alt fa-lg"></i>
+                        {% else %}
+                            <i class="far fa-file-code fa-lg"></i>
+                        {% endif %}
+                        <a href="/my_files/download?uid={{ file_data.uid }}">
+                         {{ file_name }}
+                        </a>
+
+                     <div class="float-right">
+                         <a href="/my_files/download?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Download this file" class="fa fa-file-download fa-lg"  style="color: grey"></i></a>
+                         <a href="/submit_job?input_file={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Use as simulation input" class="fas fa-microchip fa-lg"  style="color: grey"></i></a>
+                         <a target="_blank" href="/editor?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Edit this file" class="fas fa-edit fa-lg" style="color: grey"></i></a>
+                         <a  data-toggle="modal" data-target="#deleteModal{{ loop.index }}"><i data-toggle="tooltip" data-placement="top" title="Delete file" style="cursor: pointer" class="fas fa-trash-alt fa-lg" style="color: grey"></i></a>
                      </div>
+                        <!-- Begin Modal DELETE -->
+                        <div class="modal fade" id="deleteModal{{ loop.index }}" tabindex="-1" role="dialog"  aria-hidden="true">
+                          <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">Entering the danger zone</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                  <div class="alert alert-danger">
+                                      You are about to permanently delete a file from the filesystem
+                                  </div>
 
-
-
+                                  <a href="/my_files/delete?uid={{ file_data.uid }}">
+                                      <button type="button" class="btn btn-danger form-control">Delete {{ file_name }}</button>
+                                  </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    {% endif %}
+                 </td>
+                 <td>
+                     {% if file_data.type == "folder" %}
+                         Directory
+                     {% else %}
+                         File
+                     {% endif %}
+                 <td>
+                        {% if file_data.type != "folder" %}
+                           {{ file_data.st_size }}
+                     {% endif %}
+                 </td>
+              <td>
+                  <script>
+                      document.write(moment.unix({{ file_data.st_mtime }}).format('YYYY/MM/DD H:mm:ss'))
+                  </script>
                  </td>
 
-              </tr>
-                      {% endfor %}
+                     </tr>
+         {% endfor %}
 
 
         </tbody>
 
     </table>
+
+                      </div>
+
+                      </div>
+
+
+
+
+
+
+
+
+                  </div>
+
                   <script>
                       Dropzone.autoDiscover = false;
                       $("#drop").dropzone({
                           url: "/my_files/upload",
                           addRemoveLinks : true,
-                          dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploader under {{ path }}',
+                          dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploaded under {{ path }}',
                           maxFilesize: 10,
                           params: {
-                                 path: "{{ path }}"
+                                 path: "{{ path }}/"
                           },
                           dictResponseError: 'Error uploading file!',
                           headers: {
@@ -183,6 +249,7 @@
                               this.on('complete', function () {
                                   location.reload();
                               });
+
                           }
                       });
 
@@ -195,20 +262,24 @@
                           })
 
                           // build datatable
-                          $('#list_files_table').DataTable({
-                              "paging": false,
-                              dom: '<"toolbar">frtip',
+                          dtable = $('#list_files_table').DataTable({
+                              sorting: false,
+                              paging: true,
+                              pagingType: "full_numbers",
+                              lengthMenu: [[100, 300, 500, -1], [100, 300, 500, "All"]],
                               language: {
-                                  searchPlaceholder: "Search for a file or a folder",
-                                  search: ""
+                                emptyTable: "<h4>No files in this directory</h4>",
                               },
-
+                              'sDom': 'tpl',
                               fixedColumns: {
                                   heightMatch: 'none'
                               },
                           });
-                          $('.dataTables_filter input[type="search"]').css({'align': 'center','font-weight': '400', 'font-size': '1rem', 'width':'500px','height': '38px', 'display':'inline-block'});
-                          $("div.toolbar").html('<div class="float-right"><form class="form-inline" method="POST" action="/my_files/create_folder"><div class="input-group mx-sm-3 mb-2"><input type="text" size="25" class="form-control" name="folder_name" required placeholder="Name of your new folder"><div class="input-group-append"><input type="hidden" name="path" value="{{ path }}"> <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-success" type="submit">Create Folder</button></div></div><div class="form-group mx-sm-3 mb-2"><button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s)</button></div></form></div>');
+                          // bind search input
+                          $('#searchFiles').keyup(function(){
+                              dtable.search($(this).val()).draw() ;
+                          })
+                          $('.dataTables_filter input[type="search"]').css({'display':'none'});
                       });
                   </script>
 

@@ -16,15 +16,15 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_SQLALCHEMY_TABLE = "flask_sessions"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
-    SECRET_KEY = os.environ["FLASK_SECRET_KEY"]
-    API_ROOT_KEY = secrets.token_hex(32)
+    SECRET_KEY = os.environ["SOCA_FLASK_SECRET_KEY"]
+    API_ROOT_KEY = os.environ["SOCA_FLASK_API_ROOT_KEY"] #secrets.token_hex(32)
 
 
     # WEB
     # USER_HOME = "/data/home"
     USER_HOME = "/Users"
     APPS_LOCATION = "/apps/"
-    SOCA_DATA_SHARING_SYMMETRIC_KEY = Fernet.generate_key()
+    SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]
     SOCA_BROWSABLE_TOP_LEVEL_FOLDERS = [USER_HOME, APPS_LOCATION]
     # List of file admins can edit via web ui
     CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB = {1: "/Users/mcrozes/Desktop/test_file_1.yml",

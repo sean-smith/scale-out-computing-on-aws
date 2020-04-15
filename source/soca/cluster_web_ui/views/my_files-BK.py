@@ -67,40 +67,36 @@ def demote(user_uid, user_gid):
 
 
 def user_has_permission(path, permission_required, type):
-    print("Checking " + permission_required + " for " + path + " (" + type +")")
     if type not in ["file", "folder"]:
         print("Type must be file or folder")
         return False
-
-    if permission_required not in ["write", "delete", "list", "read"]:
+    if permission_required not in ["create", "delete"]:
         print("permission_required must be create or delete")
         return False
 
-    min_permission_level = {"write": 5,
-                            "read": 4,
-                            "execute": 1,
-                            }
+    if type == "folder":
+        if permission_required == "create":
+            cmd = "mkdir " + path
+        else:
+            cmd = "rmdir " + path
+    else:
+        if permission_required == "create":
+            cmd = "mkdir " + path
+        else:
+            cmd = "rm " + path
+
     user_uid = pwd.getpwnam(session["user"]).pw_uid
     user_gid = pwd.getpwnam(session["user"]).pw_gid
-    # First, make sure user can access the entire folder hierarchy
-    folder_level = 1
-    for folder in path.split("/"):
-        folder_path = "/".join(path.split("/")[:folder_level])
-        if folder_path == "":
-            folder_path = "/"
-        folder_owner = os.stat(folder_path).st_uid
-        folder_group = os.stat(folder_path).st_gid  # next need to check if user belong to group
-        if folder_owner != user_uid:
-            folder_permission = oct(os.stat(folder_path).st_mode)[-3:]
-            group_permission = int(folder_permission[-2])
-            other_permission = int(folder_permission[-1])
-            if other_permission < min_permission_level[permission_required]:
-                print("user do not have " + permission_required + " permission for " + folder_path)
-                return False
-    folder_level += 1
+    print("Check permission for " + permission_required + " on " + path)
+    try:
+        process = subprocess.Popen(cmd.split(), preexec_fn=demote(user_uid, user_gid))
+        print(process)
+    except Exception as err:
+        return (err)
 
-    print("Permissions valid.")
-    return True
+
+
+
 
 def okuser_has_permission(path, permission_required, type):
     if type == "folder" and permission_required == "create":
@@ -133,70 +129,57 @@ def okuser_has_permission(path, permission_required, type):
 @my_files.route('/my_files', methods=['GET'])
 @login_required
 def index():
-    try:
-        path = request.args.get("path", None)
-        filesystem = {}
-        breadcrumb = {}
-        if path is None:
-            path = config.Config.USER_HOME + "/" + session["user"]
+    path = request.args.get("path", None)
+    filesystem = {}
+    breadcrumb = {}
+    if path is None:
+        path = config.Config.USER_HOME.lower() + "/" + session["user"].lower()
+    else:
+        path = path.lower()
+
+    if user_has_permission(path, "read", "folder") is False:
+        if path == config.Config.USER_HOME.lower() + "/" + session["user"].lower():
+            flash("We cannot access to your own home directory. Please ask a admin to rollback your folder ACLs to 750")
+            return redirect("/")
         else:
-            path = path
-
-        # Clean Path
-        if path != "/":
-            if path.endswith("/"):
-                return redirect("/my_files?path=" + path[:-1])
-        if ".." in path:
+            flash("You are not authorized to access this location.", "error")
             return redirect("/my_files")
 
-        if user_has_permission(path, "read", "folder") is False:
-            if path == config.Config.USER_HOME + "/" + session["user"]:
-                flash("We cannot access to your own home directory. Please ask a admin to rollback your folder ACLs to 750")
-                return redirect("/")
-            else:
-                flash("You are not authorized to access this location.", "error")
-                return redirect("/my_files")
+    # Build breadcrumb
+    count = 1
+    for level in path.split("/"):
+        if level == "":
+            breadcrumb["/"] = "root"
+        else:
+            breadcrumb["/".join(path.split('/')[:count])] = level
 
+        count += 1
 
-        # Build breadcrumb
-        count = 1
-        for level in path.split("/"):
-            if level == "":
-                breadcrumb["/"] = "root"
-            else:
-                breadcrumb["/".join(path.split('/')[:count])] = level
+    # Retrieve files/folders
+    try:
+        for entry in os.scandir(path):
+            if not entry.name.startswith("."):
+                filesystem[entry.name] = {"path": path + "/" + entry.name,
+                                          "uid": encrypt(path + "/" + entry.name)["message"],
+                                          "type": "folder" if entry.is_dir() else "file",
+                                          "st_size": convert_size(entry.stat().st_size),
+                                          "st_mtime": entry.stat().st_mtime}#datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
 
-            count += 1
-
-        # Retrieve files/folders
-        try:
-            for entry in os.scandir(path):
-                if not entry.name.startswith("."):
-                    filesystem[entry.name] = {"path": path + "/" + entry.name,
-                                              "uid": encrypt(path + "/" + entry.name)["message"],
-                                              "type": "folder" if entry.is_dir() else "file",
-                                              "st_size": convert_size(entry.stat().st_size),
-                                              "st_mtime": entry.stat().st_mtime}#datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
-
-        except Exception as err:
-            if err.errno == errno.EPERM:
-                flash("Sorry we could not access this location due to a permission error", "error")
-            elif err.errno == errno.ENOENT:
-                flash("Could not locate the directory. Did you delete it ?", "error")
-            else:
-                flash("Could not locate the directory: " +str(err), "error")
-            print(err)
-            return redirect("/my_files")
-
-        return render_template('my_files.html', user=session["user"],
-                               filesystem=OrderedDict(sorted(filesystem.items(), key=lambda t: t[0].lower())),
-                               breadcrumb=breadcrumb,
-                               path=path,
-                               page="my_files")
     except Exception as err:
-        flash("Error, this path probably does not exist", "error")
+        if err.errno == errno.EPERM:
+            flash("Sorry we could not access this location due to a permission error", "error")
+        elif err.errno == errno.ENOENT:
+            flash("Could not locate the directory. Did you delete it ?", "error")
+        else:
+            flash("Could not locate the directory: " +str(err), "error")
         print(err)
         return redirect("/my_files")
+
+    return render_template('my_files.html', user=session["user"],
+                           filesystem=OrderedDict(sorted(filesystem.items(), key=lambda t: t[0].lower())),
+                           breadcrumb=breadcrumb,
+                           path=path,
+                           page="my_files")
 
 
 @my_files.route('/my_files/download', methods=['GET'])
@@ -208,15 +191,15 @@ def download():
 
     file_information = decrypt(uid)
     if file_information["success"] is True:
-        file_info = json.loads(file_information["message"])
-        if user_has_permission(file_info["file_path"], "read", "file") is False:
+        if user_has_permission(file_information["file_path"], "read") is False:
             flash(" You are not authorized to download this file")
             return redirect("/my_files")
 
+        file_info = json.loads(file_information["message"])
         current_user = session["user"]
         if current_user == file_info["file_owner"]:
             try:
-                return send_file(file_info["file_path"],
+                return send_file(config.Config.USER_HOME + "/" + file_info["file_path"],
                                  as_attachment=True,
                                  attachment_filename=file_info["file_path"].split("/")[-1])
             except Exception as err:
@@ -264,11 +247,9 @@ def create():
         folder_name = request.form["folder_name"]
         folder_path = request.form["path"]
         folder_to_create = folder_path + folder_name
-
-        if user_has_permission(folder_path, "write", "folder") is False:
+        if user_has_permission(folder_to_create, "create", "folder") is False:
             flash("You do not have write permission on this folder.", "error")
             return redirect("/my_files?path="+folder_path)
-
 
         access_right = 0o750
         os.makedirs(folder_to_create, access_right)
@@ -279,7 +260,6 @@ def create():
             flash("This folder already exist, choose a different name", "error")
         else:
             flash("Unable to create: " + folder_path + folder_name + ". Error: " + str(err.errno), "error")
-
     except Exception as err:
         print(err)
         flash("Unable to create: " + folder_path + folder_name, "error")
@@ -301,7 +281,7 @@ def delete():
         if current_user == file_info["file_owner"]:
             try:
                 if os.path.isfile(file_info["file_path"]):
-                    if user_has_permission(file_info["file_path"], "write", "file") is True:
+                    if user_has_permission(file_info["file_path"], "delete", "file") is True:
                         flash("File removed", "success")
                     else:
                         flash("You do not have the permission to delete this file.", "error")
@@ -309,8 +289,7 @@ def delete():
                 elif os.path.isdir(file_info["file_path"]):
                     files_in_folder = [f for f in os.listdir(file_info["file_path"]) if not f.startswith('.')]
                     if files_in_folder.__len__() == 0:
-                        if user_has_permission(file_info["file_path"], "write", "folder") is True:
-                            os.rmdir(file_info["file_path"])
+                        if user_has_permission(file_info["file_path"], "delete", "folder") is True:
                             flash("Folder removed.", "success")
                         else:
                             flash("You do not have the permission to delete this folder.", "error")

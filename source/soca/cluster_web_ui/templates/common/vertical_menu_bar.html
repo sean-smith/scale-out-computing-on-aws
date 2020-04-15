@@ -1,5 +1,10 @@
-<ul class="navbar-nav bg-aws sidebar sidebar-dark accordion" id="accordionSidebar">
-      <!-- Divider -->
+{% if page == "my_files" or page == "editor" %}
+    <!-- default collapse -->
+     <ul class="navbar-nav bg-aws sidebar sidebar-dark accordion toggled" id="accordionSidebar">
+{% else %}
+    <ul class="navbar-nav bg-aws sidebar sidebar-dark accordion" id="accordionSidebar">
+{% endif %}
+    <!-- Divider -->
 
       <hr class="sidebar-divider my-0">
 

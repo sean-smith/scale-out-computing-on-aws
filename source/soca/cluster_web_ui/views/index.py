@@ -56,7 +56,6 @@ def authenticate():
                 session["sudoers"] = False
 
 
-
             return redirect('/')
 
     else:

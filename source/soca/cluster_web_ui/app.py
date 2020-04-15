@@ -1,7 +1,9 @@
 import logging.config
-from flask import Flask, request, jsonify
+import subprocess
+from flask import Flask, request, jsonify, render_template
 from flask_restful import Api
 from flask_session import Session
+from flask_socketio import SocketIO
 from flask_restful_swagger import swagger
 from flask_sqlalchemy import SQLAlchemy
 from api.v1.ldap.sudo import Sudo
@@ -70,6 +72,24 @@ app.register_blueprint(configuration)
 app.register_blueprint(my_files)
 app.register_blueprint(submit_job)
 
+# Custom Jinja2 filters
+
+
+@app.template_filter('folder_name_truncate')
+def folder_name_truncate(folder_name):
+    # This make sure folders with long name on /my_files are displayed correctly
+    if folder_name.__len__() < 20:
+        return folder_name
+    else:
+        split_number = [20, 40, 60]
+        for number in split_number:
+            try:
+                if folder_name[number] != "-" and folder_name[number-1] != "-" and folder_name[number+1] != "-":
+                    folder_name = folder_name[:number] + '-' + folder_name[number:]
+            except IndexError:
+                break
+        return folder_name
+app.jinja_env.filters['folder_name_truncate'] = folder_name_truncate
 
 @app.route("/api/spec.json")
 def spec():
@@ -122,7 +142,6 @@ app.logger.addHandler(logger)
 
 with app.test_request_context():
     db.init_app(app)
-    #csrf.init_app(app)
     db.create_all()
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()
@@ -132,3 +151,6 @@ with app.test_request_context():
 
 if __name__ == '__main__':
     app.run()
+    terminal.main()
+
+
