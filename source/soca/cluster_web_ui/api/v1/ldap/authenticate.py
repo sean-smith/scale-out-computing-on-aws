@@ -9,7 +9,7 @@ class Authenticate(Resource):
         Validate a LDAP user/password
         ---
         tags:
-          - LDAP management HELL OWORLD
+          - LDAP management
         parameters:
           - in: body
             name: body

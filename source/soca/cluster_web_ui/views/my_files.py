@@ -122,7 +122,7 @@ def user_has_permission(path, permission_required, type):
                 cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path] = check_folder
             else:
                 check_folder = cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path]
-                print(CACHE_FOLDER_PERMISSION_PREFIX + folder_path + " cached with value " + check_folder)
+                print(CACHE_FOLDER_PERMISSION_PREFIX + folder_path + " cached with value " + str(check_folder))
 
             if CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"] not in cache.keys():
                 print("Should check group membership")
@@ -218,16 +218,16 @@ def index():
         try:
             for entry in os.scandir(path):
                 if not entry.name.startswith("."):
-                    if cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name] not in cache.keys():
+                    if CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name not in cache.keys():
                         filesystem[entry.name] = {"path": path + "/" + entry.name,
                                                   "uid": encrypt(path + "/" + entry.name)["message"],
                                                   "type": "folder" if entry.is_dir() else "file",
                                                   "st_size": convert_size(entry.stat().st_size),
                                                   "st_mtime": entry.stat().st_mtime}#datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
 
-                        cache(CACHE_FOLDER_CONTENT_PREFIX + entry.name).write_to_cache(filesystem[entry.name])
+                        cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name] = filesystem[entry.name]
                     else:
-                        filesystem[path] = cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name]
+                        filesystem[entry.name] = cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name]
 
         except Exception as err:
             if err.errno == errno.EPERM:
