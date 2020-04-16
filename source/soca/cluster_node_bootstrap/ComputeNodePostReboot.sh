@@ -159,15 +159,39 @@ done
 
 if [[ $REQUIRE_REBOOT -eq 1 ]];
 then
-    echo "@reboot chmod 777 $FSX_MOUNTPOINT" | crontab -
+    echo -e "
+    systemctl stop pbs
+    source /etc/environment
+    # Disable HyperThreading
+    if [[ $SOCA_INSTANCE_HYPERTHREADING == "false" ]];
+    then
+        echo "Disabling Hyperthreading"  >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostReboot.log
+        for cpunum in $(cat /sys/devices/system/cpu/cpu*/topology/thread_siblings_list | cut -s -d, -f2- | tr ',' '\n' | sort -un);
+            do
+                echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
+            done
+    fi
+    chmod 777 $FSX_MOUNTPOINT
+    systemctl start pbs
+    " >> /etc/rc.local
+    chmod +x /etc/rc.d/rc.local
+    systemctl enable rc-local
     reboot
 else
     # Mount
     mount -a
     echo "chmod FSX"
     chmod 777 $FSX_MOUNTPOINT
+    # Disable HyperThreading
+    if [[ $SOCA_INSTANCE_HYPERTHREADING == "false" ]];
+    then
+        echo "Disabling Hyperthreading"  >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostReboot.log
+        for cpunum in $(cat /sys/devices/system/cpu/cpu*/topology/thread_siblings_list | cut -s -d, -f2- | tr ',' '\n' | sort -un);
+            do
+                echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
+            done
+    fi
     # Post-Boot routine completed, starting PBS
     systemctl start pbs
 fi
-
 
