@@ -22,6 +22,7 @@ class CustomSOCACache:
             return False
         else:
             if datetime.datetime.utcnow() > self.cached_values[self.key]["valid_until"]:
+                del self.cached_values[self.key]
                 return False
 
         return self.cached_values[self.key]

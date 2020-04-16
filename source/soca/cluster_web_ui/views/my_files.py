@@ -13,10 +13,17 @@ from collections import OrderedDict
 import custom_cache
 import grp
 from werkzeug.utils import secure_filename
+from cachetools import TTLCache
 
 logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
-SOCA_CACHE_PREFIX = "my_files_"
+
+# Set up caching
+cache = TTLCache(maxsize=10000, ttl=config.Config.DEFAULT_CACHE_TIME)
+CACHE_FOLDER_PERMISSION_PREFIX = "my_files_folder_permissions_"
+CACHE_GROUP_MEMBERSHIP_PREFIX = "my_files_group_membership_"
+CACHE_FOLDER_CONTENT_PREFIX = "my_files_folder_content_"
+
 
 def change_ownership(file_path):
     user_info = pwd.getpwnam(session["user"])
@@ -99,8 +106,7 @@ def user_has_permission(path, permission_required, type):
     for folder in folder_hierarchy:
         if folder != "":
             folder_path = "/".join(folder_hierarchy[:folder_level])
-            check_cached_entry = custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + folder_path).is_cached()
-            if check_cached_entry is False:
+            if CACHE_FOLDER_PERMISSION_PREFIX + folder_path not in cache.keys():
                 check_folder = {}
                 check_folder["folder_owner"] = os.stat(folder_path).st_uid
                 check_folder["folder_group_id"] = os.stat(folder_path).st_gid
@@ -112,23 +118,28 @@ def user_has_permission(path, permission_required, type):
                 check_folder["folder_permission"] = oct(os.stat(folder_path).st_mode)[-3:]
                 check_folder["group_permission"] = int(check_folder["folder_permission"][-2])
                 check_folder["other_permission"] = int(check_folder["folder_permission"][-1])
-                custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + folder_path).write_to_cache(check_folder)
+                print("Caching " + CACHE_FOLDER_PERMISSION_PREFIX + folder_path + " with value " + str(check_folder))
+                cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path] = check_folder
             else:
-                check_folder = check_cached_entry["value"]
+                check_folder = cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path]
+                print(CACHE_FOLDER_PERMISSION_PREFIX + folder_path + " cached with value " + check_folder)
 
-            check_cached_group_membership = custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + "group_membership_" + check_folder["folder_group_name"]).is_cached()
-            if check_cached_group_membership is False:
+            if CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"] not in cache.keys():
+                print("Should check group membership")
+                print(check_folder["folder_group_name"])
                 check_group_membership = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                              headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                              params={"group": check_folder["folder_group_name"]})
+
+                print(check_group_membership)
                 if check_group_membership.status_code == 200:
                     group_members = check_group_membership.json()["message"]["members"]
                 else:
                     print("Unable to check group membership because of " + check_group_membership.text)
                     group_members = []
-                custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + "group_membership_" + check_folder["folder_group_name"]).write_to_cache(group_members)
+                cache[CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"]] = group_members
             else:
-                group_members = check_cached_group_membership["value"]
+                group_members = cache[CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"]]
 
             if session["user"] in group_members:
                 user_belong_to_group = True
@@ -159,38 +170,10 @@ def user_has_permission(path, permission_required, type):
                             print("user do not have EXECUTE permission for " + folder_path)
                             return False
 
-
         folder_level += 1
 
     print("Permissions valid.")
     return True
-
-def okuser_has_permission(path, permission_required, type):
-    if type == "folder" and permission_required == "create":
-        path = "/".join(path.split("/")[:-1])
-    can_perform_action = True
-    user_uid = pwd.getpwnam(session["user"]).pw_uid
-    user_gid = pwd.getpwnam(session["user"]).pw_gid
-
-
-    os.setuid(user_uid)
-    os.setgid(user_gid)
-    print("Check permission for " + permission_required + " on " + path)
-
-    if permission_required in ["create", "delete"]:
-
-        if os.access(path, os.W_OK) is False:
-            can_perform_action = False
-    elif permission_required == "read":
-        if os.access(path, os.R_OK) is False:
-            can_perform_action = False
-    elif permission_required == "execute":
-        if os.access(path, os.X_OK) is False:
-            can_perform_action = False
-    else:
-        can_perform_action = False
-
-    return can_perform_action
 
 
 @my_files.route('/my_files', methods=['GET'])
@@ -217,7 +200,7 @@ def index():
                 flash("We cannot access to your own home directory. Please ask a admin to rollback your folder ACLs to 750")
                 return redirect("/")
             else:
-                flash("You are not authorized to access this location.", "error")
+                flash("You are not authorized to access this location. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
                 return redirect("/my_files")
 
 
@@ -235,15 +218,20 @@ def index():
         try:
             for entry in os.scandir(path):
                 if not entry.name.startswith("."):
-                    filesystem[entry.name] = {"path": path + "/" + entry.name,
-                                              "uid": encrypt(path + "/" + entry.name)["message"],
-                                              "type": "folder" if entry.is_dir() else "file",
-                                              "st_size": convert_size(entry.stat().st_size),
-                                              "st_mtime": entry.stat().st_mtime}#datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
+                    if cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name] not in cache.keys():
+                        filesystem[entry.name] = {"path": path + "/" + entry.name,
+                                                  "uid": encrypt(path + "/" + entry.name)["message"],
+                                                  "type": "folder" if entry.is_dir() else "file",
+                                                  "st_size": convert_size(entry.stat().st_size),
+                                                  "st_mtime": entry.stat().st_mtime}#datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
+
+                        cache(CACHE_FOLDER_CONTENT_PREFIX + entry.name).write_to_cache(filesystem[entry.name])
+                    else:
+                        filesystem[path] = cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name]
 
         except Exception as err:
             if err.errno == errno.EPERM:
-                flash("Sorry we could not access this location due to a permission error", "error")
+                flash("Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
             elif err.errno == errno.ENOENT:
                 flash("Could not locate the directory. Did you delete it ?", "error")
             else:
@@ -303,7 +291,7 @@ def upload():
         return redirect("/my_files")
 
     if user_has_permission(path, "write", "folder") is False:
-        flash("You are not authorized to upload in this location")
+        flash("You are not authorized to upload in this location. If you recently changed the permissions, please allow up to 10 minutes for sync")
         return "Unthorized", 401
 
     for file in file_list:
@@ -330,7 +318,7 @@ def create():
         folder_to_create = folder_path + folder_name
 
         if user_has_permission(folder_path, "write", "folder") is False:
-            flash("You do not have write permission on this folder.", "error")
+            flash("You do not have write permission on this folder. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
             return redirect("/my_files?path="+folder_path)
 
         access_right = 0o750
@@ -367,7 +355,7 @@ def delete():
                     if user_has_permission(file_info["file_path"], "write", "file") is True:
                         flash("File removed", "success")
                     else:
-                        flash("You do not have the permission to delete this file.", "error")
+                        flash("You do not have the permission to delete this file. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
 
                 elif os.path.isdir(file_info["file_path"]):
                     files_in_folder = [f for f in os.listdir(file_info["file_path"]) if not f.startswith('.')]
@@ -376,7 +364,7 @@ def delete():
                             os.rmdir(file_info["file_path"])
                             flash("Folder removed.", "success")
                         else:
-                            flash("You do not have the permission to delete this folder.", "error")
+                            flash("You do not have the permission to delete this folder. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
                     else:
                         flash("This folder is not empty.", "error")
                 else:
@@ -390,7 +378,7 @@ def delete():
                 return redirect("/my_files")
 
         else:
-            flash("You do not have the permission to download this file", "error")
+            flash("You do not have the permission to download this file. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
             return redirect("/my_files")
 
     else:

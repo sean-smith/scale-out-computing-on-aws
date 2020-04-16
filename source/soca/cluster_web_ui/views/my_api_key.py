@@ -6,7 +6,6 @@ from requests import get, delete
 logger = logging.getLogger("api_log")
 my_api_key = Blueprint('my_api_key', __name__, template_folder='templates')
 
-
 @my_api_key.route("/my_api_key", methods=["GET"])
 def index():
     check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",

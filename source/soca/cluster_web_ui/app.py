@@ -34,8 +34,6 @@ from models import db
 from flask_swagger import swagger
 from swagger_ui import api_doc
 import config
-from flask_caching import Cache
-
 app = Flask(__name__)
 csrf = CSRFProtect(app)
 csrf.exempt("api")
@@ -73,8 +71,10 @@ app.register_blueprint(configuration)
 app.register_blueprint(my_files)
 app.register_blueprint(submit_job)
 
-# Custom Jinja2 filters
 
+
+
+# Custom Jinja2 filters
 
 @app.template_filter('folder_name_truncate')
 def folder_name_truncate(folder_name):
@@ -142,9 +142,7 @@ app.logger.addHandler(logger)
 #app.logger.debug('this will show in the log')
 
 with app.app_context():
-    cache = Cache(config={'CACHE_TYPE': 'simple'})
     db.init_app(app)
-    cache.init_app(app)
     db.create_all()
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()
