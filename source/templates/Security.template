@@ -239,6 +239,11 @@ Resources:
       #InstanceProfileName: !Sub ${ClusterId}-ComputeNodeInstanceProfile
 
   SpotFleetIAMRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "* is reduced to minimal pattern"
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
