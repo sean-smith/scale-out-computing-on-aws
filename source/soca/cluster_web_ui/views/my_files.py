@@ -76,29 +76,49 @@ def user_has_permission(path, permission_required, type):
         print("permission_required must be create or delete")
         return False
 
-    min_permission_level = {"write": 5,
-                            "read": 4,
+    min_permission_level = {"write": 6,  # Read+Write
+                            "read": 5,  # Read+Execute
                             "execute": 1,
                             }
     user_uid = pwd.getpwnam(session["user"]).pw_uid
     user_gid = pwd.getpwnam(session["user"]).pw_gid
+
     # First, make sure user can access the entire folder hierarchy
     folder_level = 1
-    for folder in path.split("/"):
-        folder_path = "/".join(path.split("/")[:folder_level])
-        if folder_path == "":
-            folder_path = "/"
-        folder_owner = os.stat(folder_path).st_uid
-        folder_group = os.stat(folder_path).st_gid  # next need to check if user belong to group
-        if folder_owner != user_uid:
+    folder_hierarchy = path.split("/")
+
+    if permission_required == "read":
+        last_folder = folder_hierarchy[-1]
+    else:
+        # When we create a new folder, the last existing folder is 2 level up in the array
+        last_folder = folder_hierarchy[-2]
+
+    for folder in folder_hierarchy:
+        if folder != "":
+            folder_path = "/".join(folder_hierarchy[:folder_level])
+            print("Checking permission for " + folder_path)
+            folder_owner = os.stat(folder_path).st_uid
+            folder_group = os.stat(folder_path).st_gid  # next need to check if user belong to group
             folder_permission = oct(os.stat(folder_path).st_mode)[-3:]
             group_permission = int(folder_permission[-2])
             other_permission = int(folder_permission[-1])
-            if other_permission < min_permission_level[permission_required]:
-                print("user do not have " + permission_required + " permission for " + folder_path)
-                return False
-    folder_level += 1
+            print("Permission for Other group: " + str(other_permission))
+            if folder == last_folder:
+                print("LAST FOLDER:" + folder)
+                print(min_permission_level[permission_required])
+                # Last folder, must have at least R or W permission
+                if folder_owner != user_uid:
+                    if other_permission < min_permission_level[permission_required]:
+                        print("user do not have " + permission_required + " permission for " + folder_path)
+                        return False
+            else:
+                # Folder chain, must have at least Execute permission
+                if folder_owner != user_uid:
+                    if other_permission < min_permission_level["execute"]:
+                        print("user do not have EXECUTE permission for " + folder_path)
+                        return False
 
+        folder_level += 1
     print("Permissions valid.")
     return True
 
@@ -268,7 +288,6 @@ def create():
         if user_has_permission(folder_path, "write", "folder") is False:
             flash("You do not have write permission on this folder.", "error")
             return redirect("/my_files?path="+folder_path)
-
 
         access_right = 0o750
         os.makedirs(folder_to_create, access_right)
