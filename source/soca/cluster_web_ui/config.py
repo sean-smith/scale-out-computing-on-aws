@@ -22,6 +22,7 @@ class Config(object):
 
     # WEB
     # USER_HOME = "/data/home"
+    DEFAULT_CACHE_TIME = 500  # 5 minutes
     USER_HOME = "/Users"
     APPS_LOCATION = "/apps/"
     SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]

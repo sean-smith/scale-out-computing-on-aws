@@ -34,6 +34,7 @@ from models import db
 from flask_swagger import swagger
 from swagger_ui import api_doc
 import config
+from flask_caching import Cache
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
@@ -140,17 +141,18 @@ app.logger.addHandler(logger)
 #app.logger.setLevel(logging.DEBUG)
 #app.logger.debug('this will show in the log')
 
-with app.test_request_context():
+with app.app_context():
+    cache = Cache(config={'CACHE_TYPE': 'simple'})
     db.init_app(app)
+    cache.init_app(app)
     db.create_all()
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()
     app.config["SESSION_SQLALCHEMY"] = SQLAlchemy(app)
-    app.config["FLASK_ENDPOINT"] = request.host_url
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16MB max upload
     api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/spec.json", url_prefix="/api/doc", title="SOCA API Documentation")
 
 if __name__ == '__main__':
     app.run()
-    terminal.main()
 
 

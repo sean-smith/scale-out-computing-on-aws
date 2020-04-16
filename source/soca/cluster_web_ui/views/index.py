@@ -1,17 +1,17 @@
 import logging
 import config
 from decorators import login_required
-from flask import render_template, request, redirect, session, flash, Blueprint
+from flask import render_template, request, redirect, session, flash, Blueprint, current_app
 from requests import post, get
+from flask_caching import Cache
 
 logger = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')
 
 
 
-
-
 @index.route('/', methods=['GET'])
+#@cache.cached(timeout=10)
 @login_required
 def home():
     user = session['user']

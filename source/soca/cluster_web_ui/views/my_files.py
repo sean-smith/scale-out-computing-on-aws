@@ -10,10 +10,13 @@ from cryptography.fernet import Fernet, InvalidToken, InvalidSignature
 import json
 import pwd
 from collections import OrderedDict
-import subprocess
+import custom_cache
+import grp
+from werkzeug.utils import secure_filename
+
 logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
-
+SOCA_CACHE_PREFIX = "my_files_"
 
 def change_ownership(file_path):
     user_info = pwd.getpwnam(session["user"])
@@ -72,16 +75,16 @@ def user_has_permission(path, permission_required, type):
         print("Type must be file or folder")
         return False
 
-    if permission_required not in ["write", "delete", "list", "read"]:
-        print("permission_required must be create or delete")
+    if permission_required not in ["write", "read"]:
+        print("permission_required must be write or read")
         return False
 
     min_permission_level = {"write": 6,  # Read+Write
                             "read": 5,  # Read+Execute
-                            "execute": 1,
+                            "execute": 1,  # Min permission to be able to CD into directory
                             }
+
     user_uid = pwd.getpwnam(session["user"]).pw_uid
-    user_gid = pwd.getpwnam(session["user"]).pw_gid
 
     # First, make sure user can access the entire folder hierarchy
     folder_level = 1
@@ -96,29 +99,69 @@ def user_has_permission(path, permission_required, type):
     for folder in folder_hierarchy:
         if folder != "":
             folder_path = "/".join(folder_hierarchy[:folder_level])
-            print("Checking permission for " + folder_path)
-            folder_owner = os.stat(folder_path).st_uid
-            folder_group = os.stat(folder_path).st_gid  # next need to check if user belong to group
-            folder_permission = oct(os.stat(folder_path).st_mode)[-3:]
-            group_permission = int(folder_permission[-2])
-            other_permission = int(folder_permission[-1])
-            print("Permission for Other group: " + str(other_permission))
+            check_cached_entry = custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + folder_path).is_cached()
+            if check_cached_entry is False:
+                check_folder = {}
+                check_folder["folder_owner"] = os.stat(folder_path).st_uid
+                check_folder["folder_group_id"] = os.stat(folder_path).st_gid
+                try:
+                    check_folder["folder_group_name"] = grp.getgrgid(check_folder["folder_group_id"]).gr_name
+                except:
+                    check_folder["folder_group_name"] = "UNKNOWN"
+
+                check_folder["folder_permission"] = oct(os.stat(folder_path).st_mode)[-3:]
+                check_folder["group_permission"] = int(check_folder["folder_permission"][-2])
+                check_folder["other_permission"] = int(check_folder["folder_permission"][-1])
+                custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + folder_path).write_to_cache(check_folder)
+            else:
+                check_folder = check_cached_entry["value"]
+
+            check_cached_group_membership = custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + "group_membership_" + check_folder["folder_group_name"]).is_cached()
+            if check_cached_group_membership is False:
+                check_group_membership = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                                             headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                             params={"group": check_folder["folder_group_name"]})
+                if check_group_membership.status_code == 200:
+                    group_members = check_group_membership.json()["message"]["members"]
+                else:
+                    print("Unable to check group membership because of " + check_group_membership.text)
+                    group_members = []
+                custom_cache.CustomSOCACache(SOCA_CACHE_PREFIX + "group_membership_" + check_folder["folder_group_name"]).write_to_cache(group_members)
+            else:
+                group_members = check_cached_group_membership["value"]
+
+            if session["user"] in group_members:
+                user_belong_to_group = True
+            else:
+                user_belong_to_group = False
+
+            # Verify if user has the required permissions on the folder
             if folder == last_folder:
-                print("LAST FOLDER:" + folder)
-                print(min_permission_level[permission_required])
                 # Last folder, must have at least R or W permission
-                if folder_owner != user_uid:
-                    if other_permission < min_permission_level[permission_required]:
-                        print("user do not have " + permission_required + " permission for " + folder_path)
-                        return False
+                if check_folder["folder_owner"] != user_uid:
+                    if user_belong_to_group is True:
+                        if check_folder["group_permission"] < min_permission_level[permission_required]:
+                            print("user do not have " + permission_required + " permission for " + folder_path)
+                            return False
+                    else:
+                        if check_folder["other_permission"] < min_permission_level[permission_required]:
+                            print("user do not have " + permission_required + " permission for " + folder_path)
+                            return False
             else:
                 # Folder chain, must have at least Execute permission
-                if folder_owner != user_uid:
-                    if other_permission < min_permission_level["execute"]:
-                        print("user do not have EXECUTE permission for " + folder_path)
-                        return False
+                if check_folder["folder_owner"] != user_uid:
+                    if user_belong_to_group is True:
+                        if check_folder["group_permission"] < min_permission_level[permission_required]:
+                            print("user do not have " + permission_required + " permission for " + folder_path)
+                            return False
+                    else:
+                        if (check_folder["other_permission"] < min_permission_level["execute"]):
+                            print("user do not have EXECUTE permission for " + folder_path)
+                            return False
+
 
         folder_level += 1
+
     print("Permissions valid.")
     return True
 
@@ -259,15 +302,16 @@ def upload():
     if not file_list:
         return redirect("/my_files")
 
+    if user_has_permission(path, "write", "folder") is False:
+        flash("You are not authorized to upload in this location")
+        return "Unthorized", 401
+
     for file in file_list:
         try:
-            destination = path + file.filename
-            if user_has_permission(destination, "create", "folder") is False:
-                flash("You are not authorized to upload in this location")
-                return "Unthorized", 401
-            else:
-                file.save(destination)
-                change_ownership(destination)
+            destination = path + secure_filename(file.filename)
+
+            file.save(destination)
+            change_ownership(destination)
         except Exception as err:
             return str(err), 500
 
