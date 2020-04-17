@@ -52,7 +52,6 @@
                               {% endfor %}
 
                           </ol>
-
                       </nav>
 
 
@@ -82,7 +81,7 @@
   </div>
 </div>
                       <div class="row">
-                           <div class="col-md-7">
+                           <div class="col-md-6">
                               <input type="text" id="searchFiles"  class="form-control" placeholder="Search for a file or a folder" aria-controls="list_files_table">
                           </div>
                           <div class="col-md-3">
@@ -100,6 +99,14 @@
 
                           <div class="col-md-2">
                               <button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s)</button>
+
+                          </div>
+                          <div class="col-md-1">
+                              <form action="/my_files/flush_cache" method="post">
+                              <input type="hidden" name="path" value="{{ path }}">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <button data-toggle="tooltip" data-placement="top" title="This folder is cached for better performance and refreshed on a regular basis. If you have made a change via SSH/Graphical session and this is not visible yet, you can manually invalidate the cache to load the latest updates" class="btn btn-primary" type="submit"><i class="fas fa-sync"></i></button>
+                                </form>
                           </div>
                       </div>
                       <div class="row">

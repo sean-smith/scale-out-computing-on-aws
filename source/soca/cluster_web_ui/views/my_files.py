@@ -10,7 +10,6 @@ from cryptography.fernet import Fernet, InvalidToken, InvalidSignature
 import json
 import pwd
 from collections import OrderedDict
-import custom_cache
 import grp
 from werkzeug.utils import secure_filename
 from cachetools import TTLCache
@@ -118,20 +117,15 @@ def user_has_permission(path, permission_required, type):
                 check_folder["folder_permission"] = oct(os.stat(folder_path).st_mode)[-3:]
                 check_folder["group_permission"] = int(check_folder["folder_permission"][-2])
                 check_folder["other_permission"] = int(check_folder["folder_permission"][-1])
-                print("Caching " + CACHE_FOLDER_PERMISSION_PREFIX + folder_path + " with value " + str(check_folder))
                 cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path] = check_folder
             else:
                 check_folder = cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path]
-                print(CACHE_FOLDER_PERMISSION_PREFIX + folder_path + " cached with value " + str(check_folder))
 
             if CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"] not in cache.keys():
-                print("Should check group membership")
-                print(check_folder["folder_group_name"])
                 check_group_membership = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                              headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                              params={"group": check_folder["folder_group_name"]})
 
-                print(check_group_membership)
                 if check_group_membership.status_code == 200:
                     group_members = check_group_membership.json()["message"]["members"]
                 else:
@@ -215,29 +209,29 @@ def index():
             count += 1
 
         # Retrieve files/folders
-        try:
-            for entry in os.scandir(path):
-                if not entry.name.startswith("."):
-                    if CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name not in cache.keys():
+        if CACHE_FOLDER_CONTENT_PREFIX + path not in cache.keys():
+            try:
+                for entry in os.scandir(path):
+                    if not entry.name.startswith("."):
                         filesystem[entry.name] = {"path": path + "/" + entry.name,
-                                                  "uid": encrypt(path + "/" + entry.name)["message"],
+                                                    "uid": encrypt(path + "/" + entry.name)["message"],
                                                   "type": "folder" if entry.is_dir() else "file",
                                                   "st_size": convert_size(entry.stat().st_size),
-                                                  "st_mtime": entry.stat().st_mtime}#datetime.utcfromtimestamp(entry.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}
+                                                  "st_mtime": entry.stat().st_mtime
+                                                  }
+                cache[CACHE_FOLDER_CONTENT_PREFIX + path] = filesystem
 
-                        cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name] = filesystem[entry.name]
-                    else:
-                        filesystem[entry.name] = cache[CACHE_FOLDER_CONTENT_PREFIX + path + "/" + entry.name]
-
-        except Exception as err:
-            if err.errno == errno.EPERM:
-                flash("Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
-            elif err.errno == errno.ENOENT:
-                flash("Could not locate the directory. Did you delete it ?", "error")
-            else:
-                flash("Could not locate the directory: " +str(err), "error")
-            print(err)
-            return redirect("/my_files")
+            except Exception as err:
+                if err.errno == errno.EPERM:
+                    flash("Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+                elif err.errno == errno.ENOENT:
+                    flash("Could not locate the directory. Did you delete it ?", "error")
+                else:
+                    flash("Could not locate the directory: " + str (err), "error")
+                return redirect("/my_files")
+        else:
+            print(path + " is cached")
+            filesystem = cache[CACHE_FOLDER_CONTENT_PREFIX + path]
 
         return render_template('my_files.html', user=session["user"],
                                filesystem=OrderedDict(sorted(filesystem.items(), key=lambda t: t[0].lower())),
@@ -297,6 +291,8 @@ def upload():
     for file in file_list:
         try:
             destination = path + secure_filename(file.filename)
+            if path in cache.keys():
+                del cache["path"]
 
             file.save(destination)
             change_ownership(destination)
@@ -348,43 +344,58 @@ def delete():
     file_information = decrypt(uid)
     if file_information["success"] is True:
         file_info = json.loads(file_information["message"])
-        current_user = session["user"]
-        if current_user == file_info["file_owner"]:
-            try:
-                if os.path.isfile(file_info["file_path"]):
-                    if user_has_permission(file_info["file_path"], "write", "file") is True:
-                        flash("File removed", "success")
-                    else:
-                        flash("You do not have the permission to delete this file. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
-
-                elif os.path.isdir(file_info["file_path"]):
-                    files_in_folder = [f for f in os.listdir(file_info["file_path"]) if not f.startswith('.')]
-                    if files_in_folder.__len__() == 0:
-                        if user_has_permission(file_info["file_path"], "write", "folder") is True:
-                            os.rmdir(file_info["file_path"])
-                            flash("Folder removed.", "success")
-                        else:
-                            flash("You do not have the permission to delete this folder. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
-                    else:
-                        flash("This folder is not empty.", "error")
+        try:
+            if os.path.isfile(file_info["file_path"]):
+                if user_has_permission(file_info["file_path"], "write", "file") is True:
+                    os.remove(file_info["file_path"])
+                    if CACHE_FOLDER_CONTENT_PREFIX + "/".join(file_info["file_path"].split("/")[:-1]) in cache.keys():
+                        del cache[CACHE_FOLDER_CONTENT_PREFIX + "/".join(file_info["file_path"].split("/")[:-1])]
+                    flash("File removed", "success")
                 else:
-                    pass
+                    flash("You do not have the permission to delete this file. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
 
-                return redirect("/my_files?path=" + "/".join(file_info["file_path"].split("/")[:-1]))
+            elif os.path.isdir(file_info["file_path"]):
+                files_in_folder = [f for f in os.listdir(file_info["file_path"]) if not f.startswith('.')]
+                if files_in_folder.__len__() == 0:
+                    if user_has_permission(file_info["file_path"], "write", "folder") is True:
+                        os.rmdir(file_info["file_path"])
+                        if CACHE_FOLDER_CONTENT_PREFIX + "/".join(file_info["file_path"].split("/")[:-1]) in cache.keys():
+                            del cache[CACHE_FOLDER_CONTENT_PREFIX + "/".join(file_info["file_path"].split("/")[:-1])]
+                            print("Removing from cache: " + CACHE_FOLDER_CONTENT_PREFIX + file_info["file_path"])
 
-            except Exception as err:
-                print(err)
-                flash("Unable to download file. Did you remove it?", "error")
-                return redirect("/my_files")
+                        flash("Folder removed.", "success")
+                    else:
+                        flash("You do not have the permission to delete this folder. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+                else:
+                    flash("This folder is not empty.", "error")
+            else:
+                pass
 
-        else:
-            flash("You do not have the permission to download this file. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+            return redirect("/my_files?path=" + "/".join(file_info["file_path"].split("/")[:-1]))
+
+        except Exception as err:
+            print(err)
+            flash("Unable to download file. Did you remove it?", "error")
             return redirect("/my_files")
 
     else:
         flash("Unable to delete " + file_information["message"], "error")
         return redirect("/my_files")
 
+@my_files.route('/my_files/flush_cache', methods=['POST'])
+@login_required
+def flush_cache():
+    path = request.form["path"]
+    if not path:
+        return redirect("/my_files")
+    else:
+        if user_has_permission(path, "read", "folder") is True:
+            if CACHE_FOLDER_CONTENT_PREFIX + path in cache.keys():
+                del cache[CACHE_FOLDER_CONTENT_PREFIX + path]
+                flash("Cache updated with the latest revision of the folder", "success")
+            else:
+                flash("This location is not cached", "error")
+    return redirect("/my_files?path="+path)
 
 @my_files.route('/editor', methods=['GET'])
 @login_required
