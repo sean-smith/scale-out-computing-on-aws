@@ -35,6 +35,9 @@
 
                     <div align="center">
                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% if redirect != false %}
+                            <input type="hidden" name="redirect" value={{ redirect }}>
+                        {% endif %}
                         <button type="submit" class="btn btn-success btn-block">Login</button>
                     </div>
                   </form>

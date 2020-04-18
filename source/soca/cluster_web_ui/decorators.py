@@ -159,7 +159,12 @@ def login_required(f):
                 oauth_url = config.Config.COGNITO_OAUTH_AUTHORIZE_ENDPOINT + '?' + urllib.parse.urlencode(data)
                 return redirect(oauth_url)
             else:
-                return redirect('/login')
+                request_to_forward = request.path
+                if request_to_forward == "/":
+                    return redirect('/login')
+                else:
+                    return redirect('/login?fwd='+request_to_forward)
+
     return validate_account
 
 

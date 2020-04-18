@@ -291,8 +291,8 @@ def upload():
     for file in file_list:
         try:
             destination = path + secure_filename(file.filename)
-            if path in cache.keys():
-                del cache["path"]
+            if CACHE_FOLDER_CONTENT_PREFIX + path in cache.keys():
+                del cache[CACHE_FOLDER_CONTENT_PREFIX + path]
 
             file.save(destination)
             change_ownership(destination)
@@ -418,7 +418,7 @@ def editor():
                    )
         if text.status_code != 200:
             flash(text.json()["message"])
-            return redirect("/my_files")
+            return redirect("/my_files?path=" + "/".join(file_info["file_path"].split("/")[:-1]))
         else:
             file_data = text.json()["message"]
 
