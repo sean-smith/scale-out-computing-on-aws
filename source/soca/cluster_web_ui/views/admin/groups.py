@@ -43,9 +43,6 @@ def index():
 def create_group():
     group_name = request.form.get('group_name')
     members = request.form.getlist('members')
-
-
-
     create_group = post(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
@@ -64,7 +61,7 @@ def create_group():
 @admin_only
 def delete_group():
     group = str(request.form.get('group_to_delete'))
-    if session['user'] == group+"group":  # user group name is <username>group
+    if session['user'] == group:  # user group name is <username>group
         flash("You cannot delete your own group.", "error")
         return redirect('/admin/groups')
 

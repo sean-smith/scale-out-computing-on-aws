@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
 
 # Set up caching
-cache = TTLCache(maxsize=10000, ttl=config.Config.DEFAULT_CACHE_TIME)
+cache = TTLCache(maxsize=10000, ttl=config.Config.DEFAULT_CACHE_TIME)  # default is 500 seconds
 CACHE_FOLDER_PERMISSION_PREFIX = "my_files_folder_permissions_"
 CACHE_GROUP_MEMBERSHIP_PREFIX = "my_files_group_membership_"
 CACHE_FOLDER_CONTENT_PREFIX = "my_files_folder_content_"
@@ -194,7 +194,7 @@ def index():
                 flash("We cannot access to your own home directory. Please ask a admin to rollback your folder ACLs to 750")
                 return redirect("/")
             else:
-                flash("You are not authorized to access this location. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+                flash("You are not authorized to access this location. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
                 return redirect("/my_files")
 
 
@@ -223,7 +223,7 @@ def index():
 
             except Exception as err:
                 if err.errno == errno.EPERM:
-                    flash("Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+                    flash("Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
                 elif err.errno == errno.ENOENT:
                     flash("Could not locate the directory. Did you delete it ?", "error")
                 else:
@@ -283,23 +283,18 @@ def upload():
     file_list = request.files.getlist("file")
     if not file_list:
         return redirect("/my_files")
-
     if user_has_permission(path, "write", "folder") is False:
         flash("You are not authorized to upload in this location. If you recently changed the permissions, please allow up to 10 minutes for sync")
-        return "Unthorized", 401
-
+        return "Unauthorized", 401
     for file in file_list:
         try:
             destination = path + secure_filename(file.filename)
-            if CACHE_FOLDER_CONTENT_PREFIX + path in cache.keys():
-                del cache[CACHE_FOLDER_CONTENT_PREFIX + path]
-
+            if CACHE_FOLDER_CONTENT_PREFIX + path[:-1] in cache.keys():  # remove  trailing slash
+                del cache[CACHE_FOLDER_CONTENT_PREFIX + path[:-1]]
             file.save(destination)
             change_ownership(destination)
         except Exception as err:
             return str(err), 500
-
-    flash("File(s) uploaded", "success")
     return "Success", 200
 
 
@@ -314,7 +309,7 @@ def create():
         folder_to_create = folder_path + folder_name
 
         if user_has_permission(folder_path, "write", "folder") is False:
-            flash("You do not have write permission on this folder. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+            flash("You do not have write permission on this folder. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
             return redirect("/my_files?path="+folder_path)
 
         access_right = 0o750
@@ -352,7 +347,7 @@ def delete():
                         del cache[CACHE_FOLDER_CONTENT_PREFIX + "/".join(file_info["file_path"].split("/")[:-1])]
                     flash("File removed", "success")
                 else:
-                    flash("You do not have the permission to delete this file. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+                    flash("You do not have the permission to delete this file. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
 
             elif os.path.isdir(file_info["file_path"]):
                 files_in_folder = [f for f in os.listdir(file_info["file_path"]) if not f.startswith('.')]
@@ -365,7 +360,7 @@ def delete():
 
                         flash("Folder removed.", "success")
                     else:
-                        flash("You do not have the permission to delete this folder. If you recently changed the permissions, please allow up to 10 minutes for sync", "error")
+                        flash("You do not have the permission to delete this folder. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
                 else:
                     flash("This folder is not empty.", "error")
             else:
@@ -422,15 +417,28 @@ def editor():
         else:
             file_data = text.json()["message"]
 
-        known_extensions = {".txt": "text",
-                            ".log": "text",
-                            ".conf": "text",
-                            ".cfg": "text",
-                            ".csv": "csv",
-                            ".json": "json",
-                            ".yml": "yaml",
-                            ".yaml": "yaml"
+        known_extensions = {
+            "c": "c",
+            "cpp": "cpp",
+            "csv": "csv",
+            "html": "html",
+            "java": "java",
+            "js": "javascript",
+            "json": "json",
+            "md": "markdown",
+            "php": "php",
+            "pl": "perl",
+            "ps": "powershell",
+            "py": "python",
+            "rb": "ruby",
+            "scala": "scala",
+            "sh": "shell",
+            "ts": "typescript",
+            "sql": "sql",
+            "yaml": "yaml",
+            "yml": "yaml",
         }
+
         if file_info["file_path"].split(".")[-1] in known_extensions.keys():
             file_syntax = known_extensions[file_info["file_path"].split(".")[-1]]
         else:
@@ -445,6 +453,6 @@ def editor():
                                api_key=session["api_key"]
                                )
     else:
-        flash("Unable to delete " + file_information["message"], "error")
+        flash("Unable to access the file. Please try again:  " + file_information["message"], "error")
         return redirect("/my_files")
 

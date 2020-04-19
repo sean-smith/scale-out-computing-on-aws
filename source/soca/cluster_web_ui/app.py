@@ -17,13 +17,15 @@ from api.v1.ldap.groups import Groups
 from api.v1.ldap.authenticate import Authenticate
 from api.v1.system.files import Files
 from views.index import index
+from views.ssh import ssh
+from views.sftp import sftp
 from views.my_api_key import my_api_key
 from views.admin.users import admin_users
 from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
 from views.admin.applications import admin_applications
 
-from views.admin.configuration import configuration
+
 from views.my_account import my_account
 from views.my_files import my_files
 from views.submit_job import submit_job
@@ -67,9 +69,10 @@ app.register_blueprint(admin_users)
 app.register_blueprint(admin_queues)
 app.register_blueprint(admin_groups)
 app.register_blueprint(admin_applications)
-app.register_blueprint(configuration)
 app.register_blueprint(my_files)
 app.register_blueprint(submit_job)
+app.register_blueprint(ssh)
+app.register_blueprint(sftp)
 
 
 

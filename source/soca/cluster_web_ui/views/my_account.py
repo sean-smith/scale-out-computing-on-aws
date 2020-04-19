@@ -15,13 +15,11 @@ my_account = Blueprint('my_account', __name__, template_folder='templates')
 @login_required
 def index():
     get_user_ldap_group = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
-                               headers={"X-SOCA-TOKEN": session["api_key"],
-                                        "X-SOCA-USER": session["user"]},
-                               params={"group": session["user"] +"group"})
+                               headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                               params={"group": session["user"]})
 
     get_user_ldap_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                              headers={"X-SOCA-TOKEN": session["api_key"],
-                                       "X-SOCA-USER": session["user"]})
+                              headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
 
     if get_user_ldap_group.status_code == 200:
         group_members = get_user_ldap_group.json()["message"]["members"]
@@ -42,12 +40,11 @@ def index():
 @my_account.route('/manage_group', methods=['POST'])
 @login_required
 def manage_group():
-    group = session["user"] + "group"
+    group = session["user"]
     user = request.form.get('user')
     action = request.form.get('action')
     update_group = put(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
-                             headers={"X-SOCA-TOKEN": session["api_key"],
-                                      "X-SOCA-USER": session["user"]},
+                       headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                              data={"group": group,
                                    "user": user,
                                    "action": action})

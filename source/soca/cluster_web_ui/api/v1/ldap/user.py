@@ -5,7 +5,7 @@ from email.utils import parseaddr
 import config
 import ldap
 from flask_restful import Resource, reqparse
-from requests import get, post
+from requests import get, post, put
 import json
 import logging
 from decorators import private_api, admin_api
@@ -193,13 +193,24 @@ class User(Resource):
             return {"success": False, "message": "Unable to bind LDAP. Please verify cn=Admin credentials"}, 401
 
         try:
-            conn.add_s(dn_user, attrs)
+            # Create group first to prevent GID issue
             create_user_group = post(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                     data={"group": user + "group", "members": user})
-            print(create_user_group)
+                                     data={"group": user, "gid": gid})
             if create_user_group.status_code != 200:
-                return {"success": True, "message": "Added user but unable to create user group: " +str(create_user_group.text)}, 203
+                return {"success": True, "message": "Could not create user group " +str(create_user_group.text)}, 203
+
+            # Assign user
+            conn.add_s(dn_user, attrs)
+
+            # Add user to group
+            update_group = put(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                               headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                               data={"group": user,
+                                     "user": user,
+                                     "action": "add"})
+            if update_group.status_code != 200:
+                return {"success": True, "message": "User/Group created but could not add user to his group"}, 203
 
             return {"success": True, "message": "Added user"}, 200
 

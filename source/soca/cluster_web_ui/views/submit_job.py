@@ -47,7 +47,10 @@ def validate_input_file(file_uid):
 @login_required
 def index():
     app = request.args.get("app", None)
-    input_file = request.args.get("input_file", False)
+    input_file = request.args.get("input_file", None)
+    if input_file is None:
+        flash("What input file do you want to use? <hr> Navigate to the folder where your input file is located then click 'Use as Simulation Input' icon: <i class='fas fa-microchip fa-lg'  style='color: grey'></i>", "info")
+        return redirect("/my_files")
     if app is None:
         if input_file is not False:
             check_input = validate_input_file(input_file)

@@ -26,25 +26,12 @@ class Config(object):
     USER_HOME = "/Users"
     APPS_LOCATION = "/apps/"
     SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]
-    SOCA_BROWSABLE_TOP_LEVEL_FOLDERS = [USER_HOME, APPS_LOCATION]
-    # List of file admins can edit via web ui
-    CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB = {1: "/Users/mcrozes/Desktop/test_file_1.yml",
-                                               2: "/Users/mcrozes/Desktop/test_file_2",
-                                               3: "/Users/mcrozes/Desktop/test_file_3",
-                                               4: "/apps/soca/soca-" + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/queue_mapping.yml',
-                                               5: "/apps/soca/soca-" + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/licenses_mapping.yml',
-                                               6: "/apps/soca/soca-" + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/project_cost_manager.txt',
-                                               }
-
-
 
     # GUNICORN SETTINGS
     FLASK_HOST = "127.0.0.1"
     FLASK_PROTOCOL = "http://"
     FLASK_PORT = "5000"
     FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
-
-
 
     # COGNITO
     ENABLE_SSO = False

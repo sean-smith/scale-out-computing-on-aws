@@ -22,31 +22,31 @@ def index():
             "required": True},
         "binary": {
             "placeholder": "Location of the application binary",
-            "help": "The binary (or executable) to use to launch your application. It's usually located within the 'bin' folder of your app.",
+            "help": "The binary (or executable) path to use to launch your application. It's usually located within the 'bin' folder of your app.",
             "required": True},
         "input_parameter": {
             "placeholder": "Input parameter (Eg: -i , --input)",
-            "help": "The parameters to choose when launching a job",
-            "required": True},
+            "help": "The parameter to choose when launching a job",
+            "required": False},
         "required_parameters": {
             "placeholder": "Required parameters you want your users to configure",
-            "help": "List of parameters you want your users to be aware of. User are not ",
-            "required": True},
+            "help": "Comma separated list of parameters you want your users to specify",
+            "required": False},
         "optional_parameters": {
             "placeholder": "(Optional) List of any additional parameters",
-            "help": "List of parameters you want your users to be aware of. User are not ",
+            "help": "Commad separated list of parameters/commands to be automatically added to the job command on behalf of the users. Users cannot remove/change them.",
             "required": False},
         "scheduler_parameters": {
-            "placeholder": "List of scheduler parameters you want to use bu default.",
-            "help": "<a target='_blank' href='https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/'>See this link</a> for a list of available parameters. <hr> If you want to enable 300 GB scratch disk by default, enter '-l scratch_size=300'",
-            "required": True},
+            "placeholder": "List of scheduler parameters you want to apply to the job.",
+            "help": "<a target='_blank' href='https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/'>See this link</a> for a list of available parameters. <hr> If you want to enable 300 GB scratch disk and EFA by default, enter 'scratch_size=300,efa_support=True'",
+            "required": False},
         "ld_library_path": {
             "placeholder": "(Optional) Append your $LD_LIBRARY_PATH",
-            "help": "The parameters to choose when launching a job",
+            "help": "If your application require specific library, you can append the location to your system $LD_LIBRARY_PATH",
             "required": False},
         "path": {
             "placeholder": "(Optional) Append your $PATH",
-            "help": "The parameters to choose when launching a job",
+            "help": "If your application require specific path, you can append the location to your system $PATH",
             "required": False},
         "help": {
             "placeholder": "(Optional) Link to your own help/wiki",

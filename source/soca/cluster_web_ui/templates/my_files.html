@@ -33,6 +33,10 @@
                                 <div class="alert alert-success">
                                     <strong>{{ message | safe }} </strong>
                                 </div>
+                                {% elif category == "info" %}
+                                 <div class="alert alert-info">
+                                    <strong>{{ message | safe }} </strong>
+                                </div>
                                 {% else %}
                                  <div class="alert alert-danger">
                                     <strong>{{ message | safe }} </strong>
@@ -43,6 +47,7 @@
                     {% endwith %}
 
                   <div class="row">
+
                   <div class="col-md-12">
                       <nav aria-label="breadcrumb">
                           <ol class="breadcrumb">
@@ -70,6 +75,7 @@
         </button>
       </div>
       <div class="modal-body">
+          <div id="update-div" name="update-div"></div>
           <form action="/upload"  id="drop" class="dropzone" style="border: 2px dashed #0087F7;height: 500px">
               <div class="fallback">
                   <input name="file" type="file" multiple />
@@ -176,10 +182,13 @@
                               </div>
                               <div class="modal-body">
                                   <div class="alert alert-danger">
-                                      You are about to permanently delete a file from the filesystem
+                                        <h4 class="alert-heading">Attention</h4>
+
+                                      You are about to permanently delete <strong>{{ file_name }}</strong> from the filesystem. <br>
+                                      This action cannot be reversed.
                                   </div>
                                   <a href="/my_files/delete?uid={{ file_data.uid }}">
-                                      <button type="button" class="btn btn-danger form-control">Delete {{ file_name }}</button>
+                                      <button type="button" class="btn btn-danger form-control">Delete this file</button>
                                   </a>
                               </div>
                             </div>
@@ -227,6 +236,7 @@
 
                   <script>
                       Dropzone.autoDiscover = false;
+
                       $("#drop").dropzone({
                           url: "/my_files/upload",
                           addRemoveLinks : true,
@@ -239,12 +249,15 @@
                           headers: {
                               'X-CSRFToken': "{{ csrf_token() | safe }}"
                           },
-                          init: function () {
-                              this.on('queuecomplete', function () {
-                                  location.reload();
-                              });
-
-                          }
+                          success: function(file, response)
+                          {
+                              $('#update-div').html('<div class="alert alert-success">File(s) uploaded successfully. Page will reload in 5 seconds or <a href="/my_files?path={{ path }}">click here</a> <div>');
+                              setTimeout(() => { location.reload(); }, 5000);
+                          },
+                          errors: function(file, response)
+                          {
+                              $('#update-div').html('<div class="alert alert-danger">Error uploading ' + file.name + ' due to ' + response + '</div>');
+                          },
                       });
 
 
