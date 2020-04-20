@@ -127,6 +127,7 @@ class User(Resource):
         email = args["email"]
         uid = args["uid"]
         gid = args["gid"]
+        print("received param")
         if uid is None or gid is None:
             get_id = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids', verify=False)
             if get_id.status_code == 200:
@@ -134,7 +135,6 @@ class User(Resource):
             else:
                 logger.error("/api/ldap/ids returned error : " + str(get_id.__dict__))
                 return {"success": False, "message": "/api/ldap/ids returned error: " +str(get_id.__dict__)}, 500
-
         if user is None or password is None or sudoers is None or email is None:
             return {"success": False,
                     "message": "user (str), password (str), sudoers (bool) and email (str) parameters are required"},  400
@@ -155,7 +155,7 @@ class User(Resource):
         else:
             if gid in current_ldap_ids["message"]['gid_in_use']:
                 return {"success": False, "message": "UID already in use."}, 203
-
+        print("dsadasds")
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
         except ldap.SERVER_DOWN:
@@ -196,7 +196,8 @@ class User(Resource):
             # Create group first to prevent GID issue
             create_user_group = post(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                     data={"group": user, "gid": gid})
+                                     data={"group": user, "gid": gid},
+                                     verify=False)
             if create_user_group.status_code != 200:
                 return {"success": True, "message": "Could not create user group " +str(create_user_group.text)}, 203
 
@@ -208,7 +209,8 @@ class User(Resource):
                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                data={"group": user,
                                      "user": user,
-                                     "action": "add"})
+                                     "action": "add"},
+                               verify=False)
             if update_group.status_code != 200:
                 return {"success": True, "message": "User/Group created but could not add user to his group"}, 203
 

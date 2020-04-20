@@ -3,7 +3,6 @@ import config
 from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint, current_app
 from requests import post, get
-from flask_caching import Cache
 
 logger = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')

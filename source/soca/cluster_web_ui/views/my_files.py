@@ -124,7 +124,8 @@ def user_has_permission(path, permission_required, type):
             if CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"] not in cache.keys():
                 check_group_membership = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                              headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                             params={"group": check_folder["folder_group_name"]})
+                                             params={"group": check_folder["folder_group_name"]},
+                                             verify=False)
 
                 if check_group_membership.status_code == 200:
                     group_members = check_group_membership.json()["message"]["members"]
@@ -239,7 +240,7 @@ def index():
                                path=path,
                                page="my_files")
     except Exception as err:
-        flash("Error, this path probably does not exist", "error")
+        flash("Error, this path probably does not exist. "+str(err), "error")
         print(err)
         return redirect("/my_files")
 

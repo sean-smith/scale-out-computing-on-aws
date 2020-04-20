@@ -16,10 +16,12 @@ my_account = Blueprint('my_account', __name__, template_folder='templates')
 def index():
     get_user_ldap_group = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                               params={"group": session["user"]})
+                               params={"group": session["user"]},
+                              verify=False)
 
     get_user_ldap_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                              headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+                              headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                              verify=False)
 
     if get_user_ldap_group.status_code == 200:
         group_members = get_user_ldap_group.json()["message"]["members"]
@@ -47,7 +49,8 @@ def manage_group():
                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                              data={"group": group,
                                    "user": user,
-                                   "action": action})
+                                   "action": action},
+                       verify=False)
 
     if update_group.status_code == 200:
         flash("Group update successfully", "success")

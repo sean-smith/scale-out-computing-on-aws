@@ -3,7 +3,6 @@ import subprocess
 from flask import Flask, request, jsonify, render_template
 from flask_restful import Api
 from flask_session import Session
-from flask_socketio import SocketIO
 from flask_restful_swagger import swagger
 from flask_sqlalchemy import SQLAlchemy
 from api.v1.ldap.sudo import Sudo

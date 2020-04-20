@@ -14,7 +14,8 @@ admin_groups = Blueprint('admin_groups', __name__, template_folder='templates')
 @admin_only
 def index():
     get_all_groups = get(config.Config.FLASK_ENDPOINT + "/api/ldap/groups",
-                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                         verify=False)
 
     if get_all_groups.status_code == 200:
         all_groups = get_all_groups.json()["message"].keys()
@@ -23,7 +24,8 @@ def index():
         all_groups = {}
 
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                        verify=False)
 
     if get_all_users.status_code == 200:
         all_users = get_all_users.json()["message"].keys()
@@ -46,7 +48,8 @@ def create_group():
     create_group = post(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
-                            data={"group": group_name, "members": ','.join(members)})
+                            data={"group": group_name, "members": ','.join(members)},
+                        verify=False)
 
     if create_group.status_code == 200:
         flash("Group " + group_name + " created successfully", "success")
@@ -68,7 +71,8 @@ def delete_group():
     group_to_delete = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                              headers={"X-SOCA-TOKEN": session["api_key"],
                                       "X-SOCA-USER": session["user"]},
-                             data={"group": group})
+                             data={"group": group},
+                             verify=False)
 
     if group_to_delete.status_code == 200:
         flash('Group: ' + group + ' has been deleted correctly', "success")
@@ -85,7 +89,8 @@ def check_group():
     check_group = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
                              headers={"X-SOCA-TOKEN": session["api_key"],
                                       "X-SOCA-USER": session["user"]},
-                             params={"group": group})
+                             params={"group": group},
+                      verify=False)
 
 
     if check_group.status_code == 200:
@@ -110,7 +115,8 @@ def manage_group():
                                       "X-SOCA-USER": session["user"]},
                              data={"group": group,
                                      "user": user,
-                                     "action": action})
+                                     "action": action},
+                       verify=False)
 
     if update_group.status_code == 200:
         flash("Group update successfully", "success")

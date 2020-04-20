@@ -15,7 +15,8 @@ admin_users = Blueprint('admin_users', __name__, template_folder='templates')
 @admin_only
 def index():
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY}).json()
+                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                        verify=False).json()
 
     all_users = get_all_users["message"].keys()
     return render_template('admin_users.html', user=session['user'], all_users=all_users)
@@ -37,7 +38,9 @@ def manage_sudo():
                 give_sudo = post(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
                                        headers={"X-SOCA-TOKEN": session["api_key"],
                                                 "X-SOCA-USER": session["user"]},
-                                       data={"user": user})
+                                       data={"user": user},
+                                 verify=False
+                                 )
                 if give_sudo.status_code == 200:
                     flash("Admin permissions granted", "success")
                 else:
@@ -49,7 +52,9 @@ def manage_sudo():
                 remove_sudo = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
                                  headers={"X-SOCA-TOKEN": session["api_key"],
                                           "X-SOCA-USER": session["user"]},
-                                 data={"user": user})
+                                 data={"user": user},
+                                     verify=False
+                                     )
                 if remove_sudo.status_code == 200:
                     flash("Admin permissions revoked", "success")
                 else:
@@ -74,12 +79,16 @@ def create_new_account():
         uid = request.form.get('uid', None)
         gid = request.form.get('gid', None)
         create_new_user = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
-                               headers={"X-SOCA-TOKEN": session["api_key"], "X-SOCA-USER": session["user"]},
+                               headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                data={"user": user,
                                      "password": password,
                                      "email": email,
                                      "sudoers": sudoers,
-                                     "uid": uid})
+                                     "uid": uid},
+                               verify=False
+                               )
+        print("CREATE")
+        logger.info("Create new user: " + str(create_new_user))
         if create_new_user.status_code == 200:
             # Create API key
             create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
@@ -111,7 +120,9 @@ def delete_account():
     delete_user = delete(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
                              headers={"X-SOCA-TOKEN": session["api_key"],
                                       "X-SOCA-USER": session["user"]},
-                             data={"user": user}).json()
+                             data={"user": user},
+                         verify=False
+                         ).json()
 
     if delete_user["success"] is True:
         flash('User: ' + user + ' has been deleted correctly', "success")
