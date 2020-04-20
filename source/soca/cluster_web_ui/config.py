@@ -21,7 +21,7 @@ class Config(object):
 
 
     # WEB
-    # USER_HOME = "/data/home"
+    #USER_HOME = "/data/home"
     DEFAULT_CACHE_TIME = 500  # 5 minutes
     USER_HOME = "/Users"
     APPS_LOCATION = "/apps/"

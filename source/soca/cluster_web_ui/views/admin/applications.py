@@ -62,7 +62,14 @@ def index():
 @login_required
 @admin_only
 def create_application():
-    parameters = ["profile_name", "binary", "input_parameter", "required_parameters", "optional_parameters", "ld_library_path", "path"]
+    parameters = ["profile_name",
+                  "binary",
+                  "input_parameter",
+                  "required_parameters",
+                  "optional_parameters",
+                  "ld_library_path",
+                  "path"]
+
     for parameter in parameters:
         if parameter not in request.form.keys():
             flash("Missing parameters", "error")
@@ -76,10 +83,12 @@ def create_application():
         "profile_name": request.form["profile_name"],
         "binary": request.form["binary"],
         "input_parameter": request.form["input_parameter"],
-        "required_parameters": request.form["required_parameters"],
-        "optional_parameters": request.form["optional_parameters"],
+        "required_parameters": request.form["required_parameters"].split(","),
+        "optional_parameters": request.form["optional_parameters"].split(","),
         "ld_library_path": request.form["ld_library_path"],
-        "path": request.form["path"]
+        "path": request.form["path"],
+        "pre-exec": False if "pre-exec" not in request.form.keys() else True,
+        "post-exec": False if "post-exec" not in request.form.keys() else True,
     })
 
     new_app_profile = ApplicationProfiles(creator=session["user"],

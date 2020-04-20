@@ -19,7 +19,7 @@ class ApplicationProfiles(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     creator = db.Column(db.String(255), nullable=False)
     profile_name = db.Column(db.String(255), nullable=False)
-    profile_parameters = db.Column(db.String(255), nullable=False)
+    profile_parameters = db.Column(db.Text, nullable=False)
     created_on = db.Column(db.DateTime)
     deactivated_on = db.Column(db.DateTime)
 

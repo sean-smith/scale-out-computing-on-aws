@@ -74,12 +74,12 @@
 
 
                         WITH INPUT FILE: {{ input_file_info }} <br>
+                  {{ application_parameters }}
 
-                        {% for app_id, app_data in application_parameters.items() %}
-                        {{ app }} {{ app_data }} <br>
+                        {% for param_name, param_value in application_parameters.items() %}
+                        {{ param_name }} {{ param_value }} <br>
                         {% endfor %}
 
-                    {{ get_all_ec2_instances }}
 
 
                   </div>
