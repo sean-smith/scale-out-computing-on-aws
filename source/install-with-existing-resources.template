@@ -428,6 +428,7 @@ Resources:
         ComputeNodeIAMRole: !GetAtt Security.Outputs.ComputeNodeIAMRole
         ComputeNodeInstanceProfileArn: !GetAtt Security.Outputs.ComputeNodeInstanceProfileArn
         SchedulerIAMRoleArn: !GetAtt Security.Outputs.SchedulerIAMRoleArn
+        SpotFleetIAMRoleArn: !GetAtt Security.Outputs.SpotFleetIAMRoleArn
         SchedulerIAMRole: !GetAtt Security.Outputs.SchedulerIAMRole
         ComputeNodeSecurityGroup: !Ref SecurityGroupIdCompute
         VpcId: !Ref VpcId
