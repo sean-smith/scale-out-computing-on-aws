@@ -125,9 +125,7 @@ class Group(Resource):
         else:
             members = args["members"].split(",")
 
-        get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
-                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                      verify=False)
+        get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids', verify=False)
 
         if get_gid.status_code == 200:
             current_ldap_gids = get_gid.json()
@@ -157,7 +155,8 @@ class Group(Resource):
                         "message": "users must be a valid list"}, 400
 
             get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                verify=False)
 
             if get_all_users.status_code == 200:
                 all_users = get_all_users.json()["message"]
@@ -192,7 +191,8 @@ class Group(Resource):
                                           headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                           data={"group": group,
                                                 "user": member,
-                                                "action": "add"})
+                                                "action": "add"},
+                                          verify=False)
                 if add_member_to_group.status_code != 200:
                     users_not_added.append(member)
 
@@ -338,7 +338,8 @@ class Group(Resource):
         group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
 
         get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                            headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY})
+                            headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                            verify=False)
 
         if get_all_users.status_code == 200:
             all_users = get_all_users.json()["message"]

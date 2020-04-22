@@ -87,13 +87,12 @@ def create_new_account():
                                      "uid": uid},
                                verify=False
                                )
-        print("CREATE")
-        logger.info("Create new user: " + str(create_new_user))
         if create_new_user.status_code == 200:
             # Create API key
             create_user_key = get(config.Config.FLASK_ENDPOINT + '/api/user/api_key',
-                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                      params={"user": user}, verify=False)
+                                  headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                  params={"user": user},
+                                  verify=False)
             if create_user_key.status_code == 200:
                 if create_user_key.json()["success"] is False:
                     flash("User created but unable to generate API token: " + create_user_key.json()["message"], "error")

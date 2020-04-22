@@ -71,7 +71,7 @@
 
                                                     <!-- Modal modalBinary -->
                                                     <div class="modal fade" id="modal{{ parameter_name }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                                      <div class="modal-dialog" role="document">
+                                                      <div class="modal-dialog modal-lg" role="document">
                                                         <div class="modal-content">
                                                           <div class="modal-body">
                                                             {{ parameter_info.help | safe }}
@@ -88,12 +88,12 @@
                                           <br>
                                       {% endfor %}
                                       <div class="form-group form-check">
-                                            <input type="checkbox" onchange="checkBoxValidator()" class="form-check-input" name="pre-exec" id="pre-execcheckbox">
-                                            <label class="form-check-label" for="pre-exec">I want my user to be able to edit Pre-Exec section</label>
+                                            <input type="checkbox" onchange="checkBoxValidator()" class="form-check-input" name="pre_exec" id="pre-execcheckbox">
+                                            <label class="form-check-label" for="pre_exec">I want my user to be able to edit Pre-Exec section</label>
                                       </div>
                                       <div class="form-group form-check">
-                                            <input type="checkbox" onchange="checkBoxValidator()" class="form-check-input" name="post-exec" id="post-execcheckbox">
-                                            <label class="form-check-label" for="post-exec">I want my user to be able to edit Post-Exec section</label>
+                                            <input type="checkbox" onchange="checkBoxValidator()" class="form-check-input" name="post_exec" id="post-execcheckbox">
+                                            <label class="form-check-label" for="post_exec">I want my user to be able to edit Post-Exec section</label>
                                       </div>
                                       <div align="center">
 

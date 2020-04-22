@@ -136,20 +136,13 @@ logger = logging.getLogger("api_log")
 logging.config.dictConfig(dict_config)
 app.logger.addHandler(logger)
 
-
-
-#gunicorn_logger = logging.getLogger('gunicorn.error')
-#app.logger.handlers.extend(gunicorn_logger.handlers)
-#app.logger.setLevel(logging.DEBUG)
-#app.logger.debug('this will show in the log')
-
 with app.app_context():
     db.init_app(app)
     db.create_all()
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()
     app.config["SESSION_SQLALCHEMY"] = SQLAlchemy(app)
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16MB max upload
+    #app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
     api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/spec.json", url_prefix="/api/doc", title="SOCA API Documentation")
 
 if __name__ == '__main__':

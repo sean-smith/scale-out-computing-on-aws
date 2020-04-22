@@ -127,7 +127,6 @@ class User(Resource):
         email = args["email"]
         uid = args["uid"]
         gid = args["gid"]
-        print("received param")
         if uid is None or gid is None:
             get_id = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids', verify=False)
             if get_id.status_code == 200:
@@ -148,14 +147,13 @@ class User(Resource):
             uid = current_ldap_ids["message"]['proposed_uid']
         else:
             if uid in current_ldap_ids["message"]['uid_in_use']:
-                return {"success": False, "message": "UID already in use."}, 203
+                return {"success": False, "message": "UID already in use."}, 215
 
         if gid is None:
             gid = current_ldap_ids["message"]['proposed_gid']
         else:
             if gid in current_ldap_ids["message"]['gid_in_use']:
-                return {"success": False, "message": "UID already in use."}, 203
-        print("dsadasds")
+                return {"success": False, "message": "UID already in use."}, 215
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
         except ldap.SERVER_DOWN:

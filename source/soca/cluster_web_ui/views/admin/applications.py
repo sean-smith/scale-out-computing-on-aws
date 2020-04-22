@@ -30,14 +30,116 @@ def index():
             "required": False},
         "required_parameters": {
             "placeholder": "Required parameters you want your users to configure",
-            "help": "Comma separated list of parameters you want your users to specify",
+            "help": """Comma separated list of parameters you want your user to specify. If needed you can specify a label using <kbd>=</kbd>.
+            <hr>
+            <h5> Example without label</h5> 
+            <div class="row">
+                <div class="col-md-4">
+                    What you configure: <br> <code>-a,-b,--param_name</code> 
+                </div>
+                <div class="col-md-8">
+                    What users see: <br> 
+                    <div class="form-group">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">-a</div>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Enter value for -a parameter">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">-b</div>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Enter value for -b parameter">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">--param_name</div>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Enter value for --param_name parameter">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <h5> Example with label</h5> 
+            <div class="row">
+                <div class="col-md-4">
+                    What you configure: <br> <code>-a=Process Count,-b=Model Size,--param_name=Version</code> 
+                </div>
+                <div class="col-md-8">
+                    What users see: <br> 
+                    <div class="form-group">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">Process Count</div>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Enter value for Process Count (-a) parameter">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">Model Size</div>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Enter value for Model Size (-b) parameter">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">Version</div>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Enter value for Version (--param_name) parameter">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            """,
             "required": False},
+        "instance_type": {
+            "placeholder": "Comma separated list of instance type(s) you want your user to choose.",
+            "help": """
+            Comma separated list of instance type(s) you want your user to be able to choose. If needed you can specify a label using <kbd>=</kbd>.
+            <hr>
+            <h5> Example without label</h5> 
+            <div class="row">
+                <div class="col-md-6">
+                    What you configure: <br> <code>c5.large,r5.large,m5.large</code> 
+                </div>
+                <div class="col-md-6">
+                    What users see: <br> <select class="form-control"><option>c5.large</option><option>m5.large</option><option>r5.large</option></select> 
+                </div>
+            </div>
+            <hr>
+            <h5> Example with label</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    What you configure: <br>
+                    <code>c5.large=CPU Optimized,r5.large=High Memory,m5.large=General Purpose</code>
+                </div>
+                <div class="col-md-6">          
+                    What users see:<br>
+                    <select class="form-control"><option>CPU Optimized</option><option>High Memory</option><option>General Purpose</option></select> 
+                </div>
+             </div>
+            """,
+            "required": True},
         "optional_parameters": {
             "placeholder": "(Optional) List of any additional parameters",
             "help": "Commad separated list of parameters/commands to be automatically added to the job command on behalf of the users. Users cannot remove/change them.",
             "required": False},
         "scheduler_parameters": {
-            "placeholder": "List of scheduler parameters you want to apply to the job.",
+            "placeholder": "(Optional) List of scheduler parameters you want to apply to the job.",
             "help": "<a target='_blank' href='https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/'>See this link</a> for a list of available parameters. <hr> If you want to enable 300 GB scratch disk and EFA by default, enter 'scratch_size=300,efa_support=True'",
             "required": False},
         "ld_library_path": {
@@ -68,7 +170,8 @@ def create_application():
                   "required_parameters",
                   "optional_parameters",
                   "ld_library_path",
-                  "path"]
+                  "path",
+                  "help"]
 
     for parameter in parameters:
         if parameter not in request.form.keys():
@@ -87,8 +190,9 @@ def create_application():
         "optional_parameters": request.form["optional_parameters"].split(","),
         "ld_library_path": request.form["ld_library_path"],
         "path": request.form["path"],
-        "pre-exec": False if "pre-exec" not in request.form.keys() else True,
-        "post-exec": False if "post-exec" not in request.form.keys() else True,
+        "help": request.form["help"],
+        "pre_exec": False if "pre_exec" not in request.form.keys() else True,
+        "post_exec": False if "post_exec" not in request.form.keys() else True,
     })
 
     new_app_profile = ApplicationProfiles(creator=session["user"],

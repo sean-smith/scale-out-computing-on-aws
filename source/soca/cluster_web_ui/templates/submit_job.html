@@ -38,31 +38,35 @@
                     {% endwith %}
 
                   <div class="row">
+                    <div class="col-md-12">
+                        <div class="card shadow mb-6">
+                            <div class="card-header py-3">
+                              <h6 class="m-0 font-weight-bold text-primary">Choose your solver</h6>
+                            </div>
+                            <div class="card-body">
+                                  <form action="/submit_job", method="post">
+                                      <div class="form-group col-md-6">
+                                          <label for="walltime"> Select your application</label>
+                                          <select class="form-control" name='app' id="app">
+                                              {% for app_id, app_data in application_profiles.items() %}
+                                                  <option value="{{app_id}}">{{  app_data.profile_name }}</option>
+                                              {% endfor %}
+                                          </select>
+                                      </div>
+                                  <div align="center">
+                                      <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+                                      <input type="hidden" name="input_file" value="{{input_file}}">
+                                              <button type="submit"  class="btn btn-primary">
+                                                  Select this application
+                                              </button>
+                                             </div>
 
-                  <div class="card shadow mb-12">
-                      <div class="card-header py-3">
-                          <h6 class="m-0 font-weight-bold text-primary">Choose your solver</h6>
-                      </div>
-                      <div class="card-body">
-                          <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Select your application
-                        </button>
-                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                            {% for app_id, app_data in application_profiles.items() %}
-                                {% if input_file %}
-                                    <a class="dropdown-item" href="/submit_job?app={{app_id}}&input_file={{ app_data.forward_input }}">{{  app_data.profile_name }}</a>
-                                {% else %}
-                                    <a class="dropdown-item" href="/submit_job?app={{app_id}}">{{  app_data.profile_name }}</a>
-                                {%endif  %}
-                            {% endfor %}
-                        </div>
-                  </div>
+                                  </form>
+                            </div>
 
-                      </div>
-                  </div>
+                    </div>
 
-
+                    </div>
 
 
                   </div>

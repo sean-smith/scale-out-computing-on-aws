@@ -22,7 +22,7 @@ class Ids(Resource):
           501:
            description: Unknown error (followed by trace)
         """
-
+        prn
         uid_in_use = []
         gid_in_use = []
         try:
@@ -39,8 +39,6 @@ class Ids(Resource):
         UID = 5000
         GID = 5000
         MAX_IDS = 65533  # 65534 is for "nobody" and 65535 is reserved
-
-        print(get_all_ids)
 
         for uid in get_all_ids:
             uid_temp = int(uid[1].get('uidNumber')[0])

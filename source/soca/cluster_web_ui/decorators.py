@@ -120,7 +120,6 @@ def read_only_api(f):
 def login_required(f):
     @wraps(f)
     def validate_account():
-        logger.info(str(session))
         if "user" in session:
             if "api_key" in session:
                 # If a new API key has been issued,

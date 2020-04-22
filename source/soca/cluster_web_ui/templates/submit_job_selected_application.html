@@ -45,27 +45,107 @@
                           </div>
                           <div class="card-body">
                               <form>
+                                  {% if application_parameters.help %}
+                                      <div class="alert alert-primary">
+                                      Documentation available at: <a href="{{ application_parameters.help }}" target="_blank">{{ application_parameters.help }}</a>
+                                      </div>
+                                  {% endif %}
+
+                                  <h3> Job Information</h3>
+                                  <div class="form-group row">
+                                      <label for="job_name" class="col-sm-2 col-form-label">Job Name:</label>
+                                      <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="job_name" value="{{ input_name }}">
+                                      </div>
+                                  </div>
+                                  <div class="form-group row">
+                                      <label for="job_project" class="col-sm-2 col-form-label">Job Project:</label>
+                                      <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="job_project" placeholder="(Optional) Project assigned to this simulation">
+                                      </div>
+                                  </div>
+                              <div class="form-group row">
+                                      <label for="job_project" class="col-sm-2 col-form-label">Job Queue:</label>
+                                      <div class="col-sm-10">
+                                          <select class="form-control" name='job_queue' id="job_queue">
+                                                  <option value="f">queue</option>
+
+                                          </select>
+                                      </div>
+                                  </div>
+                              <div class="form-group row">
+                                      <label for="job_project" class="col-sm-2 col-form-label">Number of CPUs:</label>
+                                      <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="job_cpus" placeholder="Number of CPUs to allocate for this simulation">
+                                      </div>
+                              </div>
+
+
+                                  <hr>
+                                  <h3> Job Parameters</h3>
                                   <div class="form-group">
-                                    <label for="Input">Input File</label>
-                                      {% if  input_file_info == False %}
-                                           <input type="text" class="form-control" id="input_file"  placeholder="Path to your input file">
+                                      <div class="input-group mb-2">
+                                          <div class="input-group-prepend">
+                                              <div class="input-group-text">Input file</div>
+                                          </div>
+                                          <input disabled type="text" class="form-control"  name="input_file" id="input_file" value="{{ input_path }}">
+                                      </div>
+                                  </div>
+
+                                  {% for user_params in application_parameters.required_parameters  %}
+                                      <div class="form-group">
+                                          <div class="input-group mb-2">
+                                              <div class="input-group-prepend">
+                                                  <div class="input-group-text">{{ user_params }}</div>
+                                              </div>
+                                              <input type="text" class="form-control"  name="required_parameters_{{ user_params }}" id="required_parameters_{{ user_params }}" placeholder="Enter value for {{ user_params }} parameter">
+                                          </div>
+                                      </div>
+                                  {% endfor %}
+
+                                  {% if application_parameters.ld_library_path %}
+                                    <div class="form-group">
+                                          <div class="input-group mb-2">
+                                              <div class="input-group-prepend">
+                                                  <div class="input-group-text">Added following path to $LD_LIBRARY_PATH</div>
+                                              </div>
+                                              <input type="text" class="form-control"  disabled value="{{  application_parameters.ld_library_path }}">
+                                          </div>
+                                      </div>
+                                  {% endif %}
+
+                                  {% if application_parameters.path %}
+                                    <div class="form-group">
+                                          <div class="input-group mb-2">
+                                              <div class="input-group-prepend">
+                                                  <div class="input-group-text">Added following path to $path</div>
+                                              </div>
+                                              <input type="text" class="form-control"  disabled value="{{  application_parameters.path }}">
+                                          </div>
+                                      </div>
+                                  {% endif %}
+
+                                  <div class="form-group">
+                                      <label for="pre_exec">This code will be executed <strong>BEFORE</strong> your simulation</label>
+                                      <br>
+                                      {% if application_parameters.pre_exec == True %}
+                                          <textarea class="form-control" id="pre_exec" rows="5"></textarea>
                                       {% else %}
-                                          <input type="text" class="form-control" id="input_file"  value="{{ input_file_info}}">
+                                          <span class="badge badge-warning">Feature disabled by admin for this application</span>
                                       {% endif %}
-                                      <small class="form-text text-muted"><a href="/my_files" target="_blank">Upload your input</a> file if needed</small>
                                   </div>
+
                                   <div class="form-group">
-                                    <label for="exampleInputPassword1">How many CPUs do you need?</label>
-                                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+                                      <label for="pre_exec">This code will be executed <strong>AFTER</strong> your simulation</label>:
+                                      <br>
+                                      {% if application_parameters.post_exec == True %}
+                                          <textarea class="form-control" id="post_exec" rows="5"></textarea>
+                                      {% else %}
+                                          <span class="badge badge-warning">Feature disabled by admin for this application</span>
+                                      {% endif %}
                                   </div>
-                                 <div class="form-group">
-                                    <label for="exampleInputPassword1">How many Storage (in GB?)</label>
-                                    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
-                                  </div>
-                                  <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="exampleCheck1">
-                                    <label class="form-check-label" for="exampleCheck1">Check me out</label>
-                                  </div>
+
+
                                   <button type="submit" class="btn btn-primary">Submit</button>
                               </form>
                           </div>
@@ -73,12 +153,6 @@
 
 
 
-                        WITH INPUT FILE: {{ input_file_info }} <br>
-                  {{ application_parameters }}
-
-                        {% for param_name, param_value in application_parameters.items() %}
-                        {{ param_name }} {{ param_value }} <br>
-                        {% endfor %}
 
 
 

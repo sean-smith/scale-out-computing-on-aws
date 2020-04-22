@@ -8,6 +8,9 @@ logger = logging.getLogger(__name__)
 index = Blueprint('index', __name__, template_folder='templates')
 
 
+@index.route('/ping', methods=['GET'])
+def ping():
+    return "Alive", 200
 
 @index.route('/', methods=['GET'])
 @login_required

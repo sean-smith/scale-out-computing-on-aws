@@ -5,26 +5,12 @@ from flask import render_template, request, redirect, session, flash, Blueprint
 from cryptography.fernet import Fernet, InvalidToken, InvalidSignature
 import json
 import base64
-#from my_files import decrypt, user_has_permission
+from views.my_files import decrypt, user_has_permission
 from models import ApplicationProfiles
 import boto3
 
 logger = logging.getLogger(__name__)
 submit_job = Blueprint('submit_job', __name__, template_folder='templates')
-
-
-def decrypt(encrypted_text):
-    try:
-        key = config.Config.SOCA_DATA_SHARING_SYMMETRIC_KEY
-        cipher_suite = Fernet(key)
-        decrypted_text = cipher_suite.decrypt(encrypted_text.encode())
-        return {"success": True, "message": decrypted_text}
-    except InvalidToken:
-        return {"success": False, "message": "Invalid Token"}
-    except InvalidSignature:
-        return {"success": False, "message": "Invalid Signature"}
-    except Exception as err:
-        return {"success": False, "message": str(err)}
 
 
 
@@ -50,20 +36,14 @@ def index():
                                input_file=input_file)
     else:
         # input and app specified
-        input_file_info = False
+        input_file_info = request.args.get('input_file')
         get_application_profile = ApplicationProfiles.query.filter_by(id=app).first()
         if get_application_profile:
-            '''if input_file is not None:
-                file_info = validate_input_file(input_file)
-                if file_info["success"] is True:
-                    input_file_info = file_info["message"]
-                else:
-                    flash(file_info["message"], "error")
-                    input_file_info = False'''
+
 
             application_parameters = json.loads(base64.b64decode(get_application_profile.profile_parameters))
-            print(application_parameters)
-            client_ec2 = boto3.client("ec2")
+
+            #client_ec2 = boto3.client("ec2")
             #get_all_ec2_instances = client_ec2._service_model.shape_for('InstanceType').enum
 
             return render_template('submit_job_selected_application.html',
@@ -74,5 +54,40 @@ def index():
         else:
             flash("Application not found.", "error")
             return redirect("/submit_job")
+
+
+@submit_job.route('/submit_job', methods=['POST'])
+@login_required
+def job_submission():
+    if "app" not in request.form or "input_file" not in request.form:
+        flash("Missing required parameters.", "error")
+        return redirect("/submit_job")
+
+    app = request.form["app"]
+    input_file_info = request.form['input_file']
+    get_application_profile = ApplicationProfiles.query.filter_by(id=app).first()
+    if get_application_profile:
+        file_info = decrypt(input_file_info)
+        if file_info["success"] != True:
+            flash("Unable to read this file because of " + str(file_info), "error")
+            return redirect("/submit_job")
+
+
+        application_parameters = json.loads(base64.b64decode(get_application_profile.profile_parameters))
+
+        input_path = json.loads(file_info["message"])["file_path"]
+        input_name = input_path.split("/")[-1]
+        #client_ec2 = boto3.client("ec2")
+        #get_all_ec2_instances = client_ec2._service_model.shape_for('InstanceType').enum
+
+        return render_template('submit_job_selected_application.html',
+                                   user=session["user"],
+                                   application_parameters=application_parameters,
+                                   input_path=input_path,
+                                   input_name=input_name)
+                                   #get_all_ec2_instances=get_all_ec2_instances)
+    else:
+        flash("Application not found.", "error")
+        return redirect("/submit_job")
 
 

@@ -7,10 +7,12 @@
 ##
 
 source /etc/environment
-GUNICORN_BIN="/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/gunicorn"
-GUNICORN_BIND='0.0.0.0:8443'
-GUNICORN_WORKERS=3
-GUNICORN_APP='app:app'
+UWSGI_BIN="/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/uwsgi"
+UWSGI_BIND='0.0.0.0:8443'
+
+UWSGI_PROCESSES=5
+UWSGI_THREADS=$(cat  /proc/cpuinfo | grep processor | wc -l)
+UWSGI_FILE='wsgi.py'
 
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
@@ -20,7 +22,7 @@ fi
 cd `dirname "$0"`
 status ()
     {
-    status_check_process=`ps aux | grep gunicorn | grep $GUNICORN_APP | awk '{print $2}'`
+    status_check_process=`ps aux | grep uwsgi | grep $UWSGI_FILE | awk '{print $2}'`
     }
 
 if [[ $# -eq 0 ]] ; then
@@ -46,9 +48,13 @@ case "$1" in
             fi
 
             export SOCA_FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
+
+            # Creating unique, random and temp credentials
             export SOCA_FLASK_FERNET_KEY=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | openssl base64)
             export SOCA_FLASK_API_ROOT_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-            $GUNICORN_BIN $GUNICORN_APP -b $GUNICORN_BIND --workers $GUNICORN_WORKERS --log-level debug --certfile cert.crt --keyfile cert.key --log-file application_output.log --daemon
+
+            # Launching process
+            $UWSGI_BIN --master --https $UWSGI_BIND,cert.crt,cert.key --wsgi-file $UWSGI_FILE --processes $UWSGI_PROCESSES --threads $UWSGI_THREADS --daemonize application.log enable-threads
 
         else
            echo 'SOCA is already running with PIDs: ' $status_check_process
