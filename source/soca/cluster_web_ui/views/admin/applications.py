@@ -18,18 +18,18 @@ def index():
     form_builder = {
         "profile_name": {
             "placeholder": "Name of your application profile",
-            "help": "Name or your profile (must be smaller than 255 characters) <br> Choose a friendly naming convention such as 'My Application (version 1)' ",
+            "help": "Name or your profile. Choose a friendly naming convention such as 'My Application (version 1)'",
             "required": True},
         "binary": {
-            "placeholder": "Location of the application binary",
-            "help": "The binary (or executable) path to use to launch your application. It's usually located within the 'bin' folder of your app.",
+            "placeholder": "Where is your application binary located?",
+            "help": "The binary (or executable) path to use to launch your application. It's usually located within the 'bin' folder of your software.",
             "required": True},
         "input_parameter": {
-            "placeholder": "Input parameter (Eg: -i , --input)",
-            "help": "The parameter to choose when launching a job",
+            "placeholder": "What is the input parameter of your application?",
+            "help": "The parameter to choose when launching a job (usually it's -i, --input, -job ...)",
             "required": False},
         "required_parameters": {
-            "placeholder": "Required parameters you want your users to configure",
+            "placeholder": "What parameters you want your users to configure?",
             "help": """Comma separated list of parameters you want your user to specify. If needed you can specify a label using <kbd>=</kbd>.
             <hr>
             <h5> Example without label</h5> 
@@ -106,8 +106,48 @@ def index():
             
             """,
             "required": False},
+        "queue_name": {
+            "placeholder": "Comma separated list of queues your users can use. Left blank for all",
+            "help": """
+                Comma separated list of queues you want your user to be able to choose. Left blank to list all queues
+                <hr>
+                <h5> Example with no queue enforced</h5> 
+                <div class="row">
+                    <div class="col-md-6">
+                        What you configure: <br> Nothing, left the entry blank
+                    </div>
+                    <div class="col-md-6">
+                        What users see: <br> <select class="form-control"><option>queue 1</option><option>...</option><option>queue N</option></select> 
+                    </div>
+                </div>
+                <hr>
+                <h5> Example with only 1 queue</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        What you configure: <br>
+                        <code>queue1</code>
+                    </div>
+                    <div class="col-md-6">          
+                        What users see:<br>
+                        Nothing. Only one queue is selected so user will be forced to use it
+                    </div>
+                 </div>
+                 <hr>
+                 <h5> Example with multiple queues</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        What you configure: <br>
+                        <code>queue1,queue2,queue3</code>
+                    </div>
+                    <div class="col-md-6">          
+                        What users see:<br> <select class="form-control"><option>queue 1</option><option>queue2</option><option>queue3</option></select> 
+
+                    </div>
+                 </div>
+                """,
+        "required": False},
         "instance_type": {
-            "placeholder": "Comma separated list of instance type(s) you want your user to choose.",
+            "placeholder": "Comma separated list of instance type(s) you want your users to choose.",
             "help": """
             Comma separated list of instance type(s) you want your user to be able to choose. If needed you can specify a label using <kbd>=</kbd>.
             <hr>
@@ -135,12 +175,12 @@ def index():
             """,
             "required": True},
         "optional_parameters": {
-            "placeholder": "(Optional) List of any additional parameters",
-            "help": "Commad separated list of parameters/commands to be automatically added to the job command on behalf of the users. Users cannot remove/change them.",
+            "placeholder": "(Optional) List of any additional parameters to append to the solver command",
+            "help": "Comma separated list of parameters/commands to be automatically added to the job command on behalf of the users. Users cannot remove/change them.",
             "required": False},
         "scheduler_parameters": {
             "placeholder": "(Optional) List of scheduler parameters you want to apply to the job.",
-            "help": "<a target='_blank' href='https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/'>See this link</a> for a list of available parameters. <hr> If you want to enable 300 GB scratch disk and EFA by default, enter 'scratch_size=300,efa_support=True'",
+            "help": "<a target='_blank' href='https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/'>See this link</a> for a list of available parameters. <hr> <h3>Example</h3> If you want to enable 300 GB scratch disk and EFA by default, enter <code>scratch_size=300,efa_support=True</code>",
             "required": False},
         "ld_library_path": {
             "placeholder": "(Optional) Append your $LD_LIBRARY_PATH",
@@ -154,7 +194,6 @@ def index():
             "placeholder": "(Optional) Link to your own help/wiki",
             "help": "Specify a link (such as wiki or internal documentation) your users access to learn more about this application.",
             "required": False},
-
     }
 
     return render_template('admin_applications.html', user=session['user'],form_builder=form_builder)
