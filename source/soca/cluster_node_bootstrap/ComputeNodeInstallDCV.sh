@@ -7,7 +7,7 @@ AWS=$(which aws)
 INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-type | cut -d. -f1`
 
 
-# Install Gnome
+# Install Gnome & Mate Desktop
 if [[ $SOCA_BASE_OS == "rhel7" ]]
 then
    yum groupinstall "Server with GUI" -y
@@ -15,6 +15,8 @@ then
 elif [[ $SOCA_BASE_OS == "amazonlinux2" ]]
 then
    yum install -y $(echo ${DCV_AMAZONLINUX_PKGS[*]})
+   amazon-linux-extras install mate-desktop1.x
+   bash -c 'echo PREFERRED=/usr/bin/mate-session > /etc/sysconfig/desktop'
 
 else
     # Centos7
