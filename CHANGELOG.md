@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - NVIDIA drivers are now automatically installed when a GPU instance is provisioned
+- Deployed MATE Desktop for DCV for Amazon Linux 2
 
 ## [2.0.0] - 2020-03-18
 ### Added
