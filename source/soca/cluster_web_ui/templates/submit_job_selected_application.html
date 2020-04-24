@@ -44,7 +44,7 @@
                               <h6 class="m-0 font-weight-bold text-primary">Launching your {{ application_parameters.profile_name }} simulation </h6>
                           </div>
                           <div class="card-body">
-                              <form>
+                              <form action="/submit_job/send" method="post">
                                   {% if application_parameters.help %}
                                       <div class="alert alert-primary">
                                       Documentation available at: <a href="{{ application_parameters.help }}" target="_blank">{{ application_parameters.help }}</a>
@@ -55,7 +55,7 @@
                                   <div class="form-group row">
                                       <label for="job_name" class="col-sm-2 col-form-label">Job Name:</label>
                                       <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="job_name" value="{{ input_name }}">
+                                        <input type="text" class="form-control" required id="job_name" value="{{ input_name }}">
                                       </div>
                                   </div>
                                   <div class="form-group row">
@@ -64,19 +64,31 @@
                                         <input type="text" class="form-control" id="job_project" placeholder="(Optional) Project assigned to this simulation">
                                       </div>
                                   </div>
-                              <div class="form-group row">
-                                      <label for="job_project" class="col-sm-2 col-form-label">Job Queue:</label>
-                                      <div class="col-sm-10">
-                                          <select class="form-control" name='job_queue' id="job_queue">
-                                                  <option value="f">queue</option>
+                                  <div class="form-group row">
+                                          <label for="job_project" class="col-sm-2 col-form-label">Job Queue:</label>
+                                          <div class="col-sm-10">
+                                              <select class="form-control" name='job_queue' id="job_queue">
+                                                      <option value="f">queue</option>
 
-                                          </select>
-                                      </div>
+                                              </select>
+                                          </div>
+                                  </div>
+                                  <div class="form-group row">
+                                          <label for="job_project" class="col-sm-2 col-form-label">Instance Type</label>
+                                          <div class="col-sm-10">
+                                              <select class="form-control" name='instance_type' id="instance_type">
+                                                   {% for instance in application_parameters.instance_type %}
+                                                      <option value="{{ instance }}">{{ instance }}</option>
+                                                  {%  endfor %}
+                                              </select>
+                                          </div>
                                   </div>
                               <div class="form-group row">
                                       <label for="job_project" class="col-sm-2 col-form-label">Number of CPUs:</label>
                                       <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="job_cpus" placeholder="Number of CPUs to allocate for this simulation">
+                                        <input type="text" aria-describedby="cpuHelp" class="form-control" required id="job_cpus" placeholder="Number of CPUs to allocate for this simulation">
+                                              <small id="cpuHelp" class="form-text text-muted">Number of nodes is automatically calculated based on the CPUs count and the instance type</small>
+
                                       </div>
                               </div>
 
@@ -88,17 +100,19 @@
                                           <div class="input-group-prepend">
                                               <div class="input-group-text">Input file</div>
                                           </div>
-                                          <input disabled type="text" class="form-control"  name="input_file" id="input_file" value="{{ input_path }}">
+                                          <input disabled type="text" class="form-control" required  name="input_file" id="input_file" value="{{ input_path }}">
                                       </div>
                                   </div>
 
                                   {% for user_params in application_parameters.required_parameters  %}
+                                      {% set user_params_name = user_params.split('=') %}
+
                                       <div class="form-group">
                                           <div class="input-group mb-2">
                                               <div class="input-group-prepend">
-                                                  <div class="input-group-text">{{ user_params }}</div>
+                                                  <div class="input-group-text">{{ user_params_name[-1] }}</div>
                                               </div>
-                                              <input type="text" class="form-control"  name="required_parameters_{{ user_params }}" id="required_parameters_{{ user_params }}" placeholder="Enter value for {{ user_params }} parameter">
+                                              <input type="text" required class="form-control"  name="required_parameters_{{ user_params_name[0] }}" id="required_parameters_{{ user_params_name[0] }}" placeholder="Enter value for {{ user_params_name[0] }} parameter">
                                           </div>
                                       </div>
                                   {% endfor %}
@@ -126,6 +140,16 @@
                                   {% endif %}
 
                                   <div class="form-group">
+                                      <label for="pre_exec">This code will appended to the <strong>SOLVER COMMAND</strong></label>
+                                      <br>
+                                      {% if application_parameters.user_customization == True %}
+                                          <textarea class="form-control" id="pre_exec" rows="5"></textarea>
+                                      {% else %}
+                                          <span class="badge badge-warning">Feature disabled by admin for this application</span>
+                                      {% endif %}
+                                  </div>
+
+                                  <div class="form-group">
                                       <label for="pre_exec">This code will be executed <strong>BEFORE</strong> your simulation</label>
                                       <br>
                                       {% if application_parameters.pre_exec == True %}
@@ -145,7 +169,7 @@
                                       {% endif %}
                                   </div>
 
-
+                                  <input type="hidden" value="{{ csrf_token() }}" name="csrf_token"></input>
                                   <button type="submit" class="btn btn-primary">Submit</button>
                               </form>
                           </div>

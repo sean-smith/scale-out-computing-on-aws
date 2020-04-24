@@ -88,19 +88,18 @@
                                           <br>
                                       {% endfor %}
                                       <div class="form-group form-check">
-                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="pre-exec" id="pre-exec">
+                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="pre_exec" id="pre_exec">
                                             <label class="form-check-label" for="pre_exec">I want my user to be able to edit Pre-Exec section</label>
                                       </div>
                                       <div class="form-group form-check">
-                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="post-exec" id="post-exec">
+                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="post_exec" id="post_exec">
                                             <label class="form-check-label" for="post_exec">I want my user to be able to edit Post-Exec section</label>
                                       </div>
                                       <div class="form-group form-check">
-                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="user-customization" id="user-customization">
-                                            <label class="form-check-label" for="post_exec">I want my user to be able to customize the solver command</label>
+                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="user_customization" id="user_customization">
+                                            <label class="form-check-label" for="user_customization">I want my user to be able to customize the solver command</label>
                                       </div>
                                       <div align="center">
-
                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                           <button type="submit" class="btn btn-success btn-lg">Create application profile</button>
                                       </div>
@@ -114,13 +113,13 @@
 #PBS -N %JOB_NAME_CONFIGURED_BY_USER_VIA_DROPDOWN%
 #PBS -P %JOB_PROJECT_CONFIGURED_BY_USER_VIA_DROPDOWN%
 <div id="scheduler_parameters"></div>
-<div id="pre-exec-preview"></div>
+<div id="pre_exec-preview"></div>
 <div id="path"></div><div id="ld_library_path"></div>
 # [Begin] Command to be executed<br><div style="display: inline-block">
-<span id="binary"></span> <span id="input_parameter"></span><span id="required_parameters"></span><span id="optional_parameters"></span><span id="user-customization-preview"></span>
+<span id="binary"></span> <span id="input_parameter"></span><span id="required_parameters"></span><span id="optional_parameters"></span><span id="user_customization-preview"></span>
 </div>
 <br># [End] Command to be execute<br>
-<div id="post-exec-preview"></div>
+<div id="post_exec-preview"></div>
  </pre>
 
                                    <script>

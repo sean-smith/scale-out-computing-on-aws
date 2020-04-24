@@ -91,3 +91,7 @@ def job_submission():
         return redirect("/submit_job")
 
 
+@submit_job.route('/submit_job/send', methods=['POST'])
+@login_required
+def send_job():
+    return str(request.form)

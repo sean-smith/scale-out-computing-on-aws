@@ -18,11 +18,43 @@ def index():
     form_builder = {
         "profile_name": {
             "placeholder": "Name of your application profile",
-            "help": "Name or your profile. Choose a friendly naming convention such as 'My Application (version 1)'",
+            "help": "Name or your profile. Choose a friendly naming convention such as 'My Software'",
             "required": True},
         "binary": {
             "placeholder": "Where is your application binary located?",
-            "help": "The binary (or executable) path to use to launch your application. It's usually located within the 'bin' folder of your software.",
+            "help": """Comma separated list of the binary (or executable) path(s) to use to launch your application. It's usually located within the 'bin' folder of your software. <br>
+            We recommend you adding a label using <kbd>=</kbd>
+            <hr>
+            <h5> Example without label</h5> 
+            <div class="row">
+                <div class="col-md-6">
+                    What you configure: <br> <code>/path/to/bin1</code> 
+                    <br>
+                </div>
+                <div class="col-md-6">
+                    What users see: <br> <select class="form-control"><option>/path/to/bin1</option></select> 
+                    <br>
+                </div>
+                <div class="col-md-6">
+                    What you configure: <br> <code>/path/to/bin1,/path/to/bin2,/path/to/bin3</code> 
+                </div>
+                <div class="col-md-6">
+                    What users see: <br> <select class="form-control"><option>/path/to/bin1</option><option>/path/to/bin2</option><option>/path/to/bin3</option></select> 
+                </div>     
+            </div>
+            <hr>
+            <h5> Example with label</h5> 
+            <div class="row">
+                <div class="col-md-6">
+                    What you configure: <br> <code>/path/to/bin1=Version 2020,/path/to/bin2=Version 2019,/path/to/bin3=Beta</code> 
+                </div>
+                <div class="col-md-6">
+                    What users see: <br> <select class="form-control"><option>Version 2020</option><option>Version 2019</option><option>Beta</option></select> 
+                </div>      
+            </div>
+            
+            
+            """,
             "required": True},
         "input_parameter": {
             "placeholder": "What is the input parameter of your application?",
@@ -203,40 +235,26 @@ def index():
 @login_required
 @admin_only
 def create_application():
-    parameters = ["profile_name",
-                  "binary",
-                  "input_parameter",
-                  "required_parameters",
-                  "optional_parameters",
-                  "ld_library_path",
-                  "path",
-                  "help"]
+    profile_info = {}
+    form_params_to_ignore = ["csrf_token"]
+    checkboxes = ["pre_exec", "post_exec", "user_customization"]
 
-    for parameter in parameters:
-        if parameter not in request.form.keys():
-            flash("Missing parameters", "error")
-            return redirect("/admin/applications")
-    if request.form["profile_name"].__len__() > 255:
-        flash("Profile name must be lower than 255 characters", "error")
-        return redirect("/admin/applications")
+    for checkbox in checkboxes:
+        if checkbox in request.form.keys():
+            profile_info[checkbox] = True
+        else:
+            profile_info[checkbox] = False
 
-    # encode parameters to simplify DB storage
-    profile_info = json.dumps({
-        "profile_name": request.form["profile_name"],
-        "binary": request.form["binary"],
-        "input_parameter": request.form["input_parameter"],
-        "required_parameters": request.form["required_parameters"].split(","),
-        "optional_parameters": request.form["optional_parameters"].split(","),
-        "ld_library_path": request.form["ld_library_path"],
-        "path": request.form["path"],
-        "help": request.form["help"],
-        "pre_exec": False if "pre_exec" not in request.form.keys() else True,
-        "post_exec": False if "post_exec" not in request.form.keys() else True,
-    })
+    for parameter in request.form.keys():
+        if parameter not in form_params_to_ignore and parameter not in profile_info.keys():
+            if "," in request.form[parameter]:
+                profile_info[parameter] = request.form[parameter].split(',')
+            else:
+                profile_info[parameter] = request.form[parameter]
 
     new_app_profile = ApplicationProfiles(creator=session["user"],
                                           profile_name=request.form["profile_name"],
-                                          profile_parameters=base64.b64encode(profile_info.encode()),
+                                          profile_parameters=base64.b64encode(json.dumps(profile_info).encode()),
                                           created_on=datetime.datetime.utcnow())
     db.session.add(new_app_profile)
     db.session.commit()
