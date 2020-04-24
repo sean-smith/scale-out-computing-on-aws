@@ -58,20 +58,15 @@
                                       <form method="post" action="/admin/applications/create">
                                       {%  for parameter_name, parameter_info in form_builder.items() %}
                                           <div class="form-row">
-                                          {% if parameter_info.type == "input" or parameter_info.type == "textarea" %}
                                               <div class="col-md-10">
-                                                {% if parameter_info.type == "input" %}
-                                                      {% if parameter_info.required == True %}
-                                                          <input required type="text" onchange="generateExample('{{ parameter_name}}', this.value)" name="{{ parameter_name }}" class="form-control" placeholder="{{ parameter_info.placeholder }}">
-                                                      {%  else %}
-                                                          <input type="text" onchange="generateExample('{{ parameter_name}}', this.value)" name="{{ parameter_name }}" class="form-control" placeholder="{{ parameter_info.placeholder }}">
-                                                      {% endif %}
-                                                    <br>
-                                                {% else %}
-                                                    <textarea onchange="generateExample('{{ parameter_name}}', this.value)" class="form-control" name="{{ parameter_name }}"  placeholder="{{ parameter_info.placeholder }}"></textarea><br>
-                                                {% endif %}
+                                                  {% if parameter_info.required == True %}
+                                                      <input required type="text" onchange="generateExample('{{ parameter_name}}', this.value)" name="{{ parameter_name }}" class="form-control" placeholder="{{ parameter_info.placeholder }}">
+                                                  {%  else %}
+                                                      <input type="text" onchange="generateExample('{{ parameter_name}}', this.value)" name="{{ parameter_name }}" class="form-control" placeholder="{{ parameter_info.placeholder }}">
+                                                  {% endif %}
                                               </div>
                                               <div class="col-md-2">
+
                                                     <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal{{ parameter_name }}">
                                                       Help
                                                     </button>
@@ -91,40 +86,21 @@
                                                     </div>
                                                     <!-- end modal -->
                                               </div>
-                                          {% endif %}
-
-
-                                          {% if parameter_info.type == "checkbox" %}
-                                              <div class="form-group form-check">
-                                                  <input type="checkbox" onchange="checkBox{{ parameter_name }}(this.id)" class="form-check-input" name="{{ parameter_name }}" id="{{ parameter_name}}">
-                                                  <label class="form-check-label" for="pre_exec">{{ parameter_info.placeholder }}</label>
-                                              </div>
-                                              <script>
-                                                 function checkBox{{ parameter_name }}(idName)
-                                                 {
-                                                     switch (document.getElementById(idName).checked) {
-                                                         case true:
-                                                             document.getElementById(idName +"-preview").innerHTML = "{{ parameter_info.help | safe }}";
-                                                             break;
-                                                         case false:
-                                                             document.getElementById(idName +"-preview").innerHTML = "";
-                                                             break;
-                                                     }
-
-                                        }
-                                              </script>
-                                          {% endif %}
-
-                                          </div> <!-- form row -->
-
-
-
-
-
+                                        </div> <!-- form row -->
+                                          <br>
                                       {% endfor %}
-
-
-
+                                      <div class="form-group form-check">
+                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="pre_exec" id="pre_exec">
+                                            <label class="form-check-label" for="pre_exec">I want my user to be able to edit Pre-Exec section</label>
+                                      </div>
+                                      <div class="form-group form-check">
+                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="post_exec" id="post_exec">
+                                            <label class="form-check-label" for="post_exec">I want my user to be able to edit Post-Exec section</label>
+                                      </div>
+                                      <div class="form-group form-check">
+                                            <input type="checkbox" onchange="checkBoxPreview(this.id)" class="form-check-input" name="user_customization" id="user_customization">
+                                            <label class="form-check-label" for="user_customization">I want my user to be able to customize the solver command</label>
+                                      </div>
                                       <div align="center">
                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                           <button type="submit" class="btn btn-success btn-lg">Create application profile</button>
@@ -139,18 +115,33 @@
 #PBS -N %JOB_NAME_CONFIGURED_BY_USER_VIA_DROPDOWN%
 #PBS -P %JOB_PROJECT_CONFIGURED_BY_USER_VIA_DROPDOWN%
 <div id="scheduler_parameters"></div>
-<div id="user_pre_exec-preview"></div>
-<div id="admin_pre_exec"></div>
+<div id="pre_exec-preview"></div>
 <div id="path"></div><div id="ld_library_path"></div>
 # [Begin] Command to be executed<br><div style="display: inline-block">
 <span id="binary"></span> <span id="input_parameter"></span><span id="required_parameters"></span><span id="optional_parameters"></span><span id="user_customization-preview"></span>
 </div>
 <br># [End] Command to be execute<br>
-<div id="admin_post_exec"></div>
-<div id="user_post_exec-preview"></div>
+<div id="post_exec-preview"></div>
  </pre>
 
                                    <script>
+
+                                        function checkBoxPreview(idName)
+                                       {
+                                           switch (document.getElementById(idName).checked) {
+                                               case true:
+                                                   if (idName == "pre-exec" || idName == "post-exec")
+                                                   {
+                                                       document.getElementById(idName +"-preview").innerHTML = "#\n# " + idName +" section that can be edited by users \n#";
+                                                   }
+                                                   else {document.getElementById(idName +"-preview").innerHTML = " %COMMAND_SPECIFIED_BY_USER%";}
+                                                   break;
+                                               case false:
+                                                   document.getElementById(idName +"-preview").innerHTML = "";
+                                                   break;
+                                             }
+
+                                        }
 
 
                                   function generateExample(idName, idValue) {
@@ -187,13 +178,14 @@
                                               textValue = idValue + " %INPUT_FILE_PROVIDED_BY_USER% \\ <br>"
                                               break;
 
-                                          default:
+                                          case "optional_parameters":
                                               textValue = idValue;
                                               break;
                                       }
 
-                                       if (idValue != "") {document.getElementById(idName).innerHTML = textValue;}
-                                       else{ document.getElementById(idName).innerHTML = "";}
+                                       if (textValue != "") {
+                                              document.getElementById(idName).innerHTML = textValue;
+                                       }
 
                                   }
                               </script>

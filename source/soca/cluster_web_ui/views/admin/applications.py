@@ -17,13 +17,15 @@ admin_applications = Blueprint('admin_applications', __name__, template_folder='
 def index():
     form_builder = {
         "profile_name": {
-            "placeholder": "Name of your application profile",
-            "help": "Name or your profile. Choose a friendly naming convention such as 'My Software'",
-            "required": True},
+            "placeholder": "How would your name this profile?",
+            "help": "Choose a friendly naming convention such as 'My Software'. <br> It's recommended to not hardcode any version name, but instead offload version selection to the 'Where is the binary located' section",
+            "required": True,
+            "type": "input"},
+
         "binary": {
             "placeholder": "Where is your application binary located?",
             "help": """Comma separated list of the binary (or executable) path(s) to use to launch your application. It's usually located within the 'bin' folder of your software. <br>
-            We recommend you adding a label using <kbd>=</kbd>
+            We recommend you adding a label using <kbd>^</kbd>
             <hr>
             <h5> Example without label</h5> 
             <div class="row">
@@ -46,23 +48,25 @@ def index():
             <h5> Example with label</h5> 
             <div class="row">
                 <div class="col-md-6">
-                    What you configure: <br> <code>/path/to/bin1=Version 2020,/path/to/bin2=Version 2019,/path/to/bin3=Beta</code> 
+                    What you configure: <br> <code>/path/to/bin1^Version 2020,/path/to/bin2^Version 2019,/path/to/bin3^Beta</code> 
                 </div>
                 <div class="col-md-6">
                     What users see: <br> <select class="form-control"><option>Version 2020</option><option>Version 2019</option><option>Beta</option></select> 
                 </div>      
             </div>
-            
-            
             """,
-            "required": True},
+            "required": True,
+            "type": "input"
+        },
         "input_parameter": {
             "placeholder": "What is the input parameter of your application?",
-            "help": "The parameter to choose when launching a job (usually it's -i, --input, -job ...)",
-            "required": False},
+            "help": "The parameter to choose when launching a job. <br> This parameter is unique to each application, but it's usually named  <kbd>-i</kbd> <kbd>--input</kbd> or even <kbd>-job</kbd>",
+            "required": False,
+            "type": "input"
+        },
         "required_parameters": {
             "placeholder": "What parameters you want your users to configure?",
-            "help": """Comma separated list of parameters you want your user to specify. If needed you can specify a label using <kbd>=</kbd>.
+            "help": """Comma separated list of parameters you want your user to specify. If needed you can specify a label using <kbd>^</kbd>.
             <hr>
             <h5> Example without label</h5> 
             <div class="row">
@@ -103,7 +107,7 @@ def index():
             <h5> Example with label</h5> 
             <div class="row">
                 <div class="col-md-4">
-                    What you configure: <br> <code>-a=Process Count,-b=Model Size,--param_name=Version</code> 
+                    What you configure: <br> <code>-a^Process Count,-b^Model Size,--param_name^Version</code> 
                 </div>
                 <div class="col-md-8">
                     What users see: <br> 
@@ -137,7 +141,9 @@ def index():
             </div>
             
             """,
-            "required": False},
+            "required": False,
+            "type": "input"
+        },
         "queue_name": {
             "placeholder": "Comma separated list of queues your users can use. Left blank for all",
             "help": """
@@ -177,7 +183,9 @@ def index():
                     </div>
                  </div>
                 """,
-        "required": False},
+        "required": False,
+        "type": "input"
+        },
         "instance_type": {
             "placeholder": "Comma separated list of instance type(s) you want your users to choose.",
             "help": """
@@ -197,7 +205,7 @@ def index():
             <div class="row">
                 <div class="col-md-6">
                     What you configure: <br>
-                    <code>c5.large=CPU Optimized,r5.large=High Memory,m5.large=General Purpose</code>
+                    <code>c5.large^CPU Optimized,r5.large^High Memory,m5.large^General Purpose</code>
                 </div>
                 <div class="col-md-6">          
                     What users see:<br>
@@ -205,27 +213,58 @@ def index():
                 </div>
              </div>
             """,
-            "required": True},
+            "required": True,
+            "type": "input"
+        },
         "optional_parameters": {
             "placeholder": "(Optional) List of any additional parameters to append to the solver command",
             "help": "Comma separated list of parameters/commands to be automatically added to the job command on behalf of the users. Users cannot remove/change them.",
-            "required": False},
+            "required": False,
+            "type": "input"
+        },
         "scheduler_parameters": {
             "placeholder": "(Optional) List of scheduler parameters you want to apply to the job.",
             "help": "<a target='_blank' href='https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/'>See this link</a> for a list of available parameters. <hr> <h3>Example</h3> If you want to enable 300 GB scratch disk and EFA by default, enter <code>scratch_size=300,efa_support=True</code>",
-            "required": False},
-        "ld_library_path": {
-            "placeholder": "(Optional) Append your $LD_LIBRARY_PATH",
-            "help": "If your application require specific library, you can append the location to your system $LD_LIBRARY_PATH",
-            "required": False},
-        "path": {
-            "placeholder": "(Optional) Append your $PATH",
-            "help": "If your application require specific path, you can append the location to your system $PATH",
-            "required": False},
+            "required": False,
+            "type": "input"
+        },
         "help": {
             "placeholder": "(Optional) Link to your own help/wiki",
             "help": "Specify a link (such as wiki or internal documentation) your users access to learn more about this application.",
-            "required": False},
+            "required": False,
+            "type": "input"
+        },
+        "admin_pre_exec": {
+            "placeholder": "(Optional) Add any command to be executed before the solver (eg: export LD_LIBRARY_PATH...)",
+            "help": "List of commands executed before the solver that cannot be changed by the users",
+            "required": False,
+            "type": "textarea"
+        },
+        "admin_post_exec": {
+            "placeholder": "(Optional) Add any command to be executed after the solver (eg: compress output, send to S3...)",
+            "help": "List of commands executed after the solver that cannot be changed by the users",
+            "required": False,
+            "type": "textarea"
+        },
+        "user_post_exec": {
+            "placeholder": "I want my user to be able to edit Post-Exec section",
+            "help": "# Post-Exec section that can be edited by users #",
+            "required": False,
+            "type": "checkbox"
+        },
+        "user_pre_exec": {
+            "placeholder": "I want my user to be able to edit Pre-Exec section",
+            "help": "# Pre-Exec section that can be edited by users #",
+            "required": False,
+            "type": "checkbox"
+        },
+        "user_customization": {
+            "placeholder": "I want my user to be able to customize the solver command",
+            "help": " %COMMAND_SPECIFIED_BY_USER%",
+            "required": False,
+            "type": "checkbox"
+        },
+
     }
 
     return render_template('admin_applications.html', user=session['user'],form_builder=form_builder)
