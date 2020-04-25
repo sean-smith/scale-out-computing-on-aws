@@ -40,7 +40,7 @@ def index():
         get_application_profile = ApplicationProfiles.query.filter_by(id=app).first()
         if get_application_profile:
             profile_form = base64.b64decode(get_application_profile.profile_form)
-            profile_job = base64.b64decode(get_application_profile.profile_job)
+            profile_job = get_application_profile.profile_job
 
             return render_template('submit_job_selected_application.html',
                                    user=session["user"],
@@ -69,7 +69,7 @@ def job_submission():
         profile_form = base64.b64decode(get_application_profile.profile_form).decode()
 
 
-        profile_job = base64.b64decode(get_application_profile.profile_job)
+        profile_job = get_application_profile.profile_job
 
         input_path = json.loads(file_info["message"])["file_path"]
         input_name = input_path.split("/")[-1]
@@ -90,4 +90,17 @@ def job_submission():
 @submit_job.route('/submit_job/send', methods=['POST'])
 @login_required
 def send_job():
-    return str(request.form)
+    # get all parameters
+    #Unable to read the job script due to: 'utf-8' codec can't decode byte 0xf6 in position 1: invalid start byte
+
+    try:
+        job_to_submit = base64.b64decode(request.form["job_script"]).decode()
+    except Exception as err:
+        flash("Unable to read the job script due to: " + str(err), "error")
+        return redirect("/my_files")
+
+    for param in request.form:
+        if param != "csrf_token":
+            job_to_submit = job_to_submit.replace("%" + param + "%", request.form[param])
+
+    return "<br>".join(job_to_submit.split("\n"))

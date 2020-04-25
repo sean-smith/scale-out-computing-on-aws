@@ -44,31 +44,19 @@
                               <form action="/submit_job/send" method="post">
                                   <div class="form-build"></div>
                                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                  <input type="hidden" name="job_script" value="{{ profile_job }}">
                                   <button type="submit" class="btn btn-success">Submit job</button>
-
-
                               </form>
                           </div>
                       </div>
                       <script>
-
                           jQuery($ => {
                                 formBuilder = $('.form-build').formRender({
-                                        dataType: 'json',
-                                        formData: {{ profile_form | safe }}
-                                    }
-                                )
+                                     dataType: 'json',
+                                    formData: {{ profile_form | safe }}
+                                })
                            })
-
-
                       </script>
-
-
-
-
-
-
-
                   </div>
 
               </main>
