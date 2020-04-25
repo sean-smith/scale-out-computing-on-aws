@@ -3,9 +3,27 @@
 
 <head>
      {% include 'common/header.html' %}
-     <script src="{{ url_for('static', filename='js/form-builder.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/form-render.min.js') }}"></script>
-
+     <script src="{{ url_for('static', filename='vendor/jquery-formbuilder/form-builder.min.js') }}"></script>
+     <script src="{{ url_for('static', filename='vendor/jquery-ui/jquery-ui.min.js') }}"></script>
+    <style>
+    .job_preview {
+        background: #2D2D30;
+        padding: 1em;
+        margin: .5em 0;
+        overflow: auto;
+        color: #ccc;
+        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        font-size: 1em;
+        text-align: left;
+        white-space: pre;
+        word-spacing: normal;
+        word-break: normal;
+        word-wrap: normal;
+        line-height: 1.5;
+        -moz-tab-size: 4;
+        -o-tab-size: 4;
+        tab-size: 4}
+    </style>
 </head>
 
 <body id="page-top">
@@ -37,13 +55,12 @@
                     {% endwith %}
                   <div class="col-md-12">
                   <nav>
-                     <nav>
                       <div class="nav nav-tabs" id="nav-tab" role="tablist">
                           <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-add" role="tab" aria-controls="nav-home" aria-selected="true">Create new application profile</a>
                           <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-edit" role="tab" aria-controls="nav-contact" aria-selected="false">Edit application profile</a>
 
                       </div>
-                     </nav>
+                  </nav>
 
                       <div class="tab-content" id="nav-tabContent">
                           <div class="tab-pane fade show active" id="nav-add" role="tabpanel" aria-labelledby="nav-home-tab">
@@ -53,232 +70,85 @@
                                   <h6 class="m-0 font-weight-bold text-primary">Create a new application profile</h6>
                               </div>
                               <div class="card-body">
-                              <div class="row">
-                                  <div class="col-md-6">
-                                      <form method="post" action="/admin/applications/create">
-                                      {%  for parameter_name, parameter_info in form_builder.items() %}
-                                          <div class="form-row">
-                                          {% if parameter_info.type == "input" or parameter_info.type == "textarea" %}
-                                              <div class="col-md-10">
-                                                {% if parameter_info.type == "input" %}
-                                                      {% if parameter_info.required == True %}
-                                                          <input required type="text" onchange="generateExample('{{ parameter_name}}', this.value)" name="{{ parameter_name }}" class="form-control" placeholder="{{ parameter_info.placeholder }}">
-                                                      {%  else %}
-                                                          <input type="text" onchange="generateExample('{{ parameter_name}}', this.value)" name="{{ parameter_name }}" class="form-control" placeholder="{{ parameter_info.placeholder }}">
-                                                      {% endif %}
-                                                    <br>
-                                                {% else %}
-                                                    <textarea onchange="generateExample('{{ parameter_name}}', this.value)" class="form-control" name="{{ parameter_name }}"  placeholder="{{ parameter_info.placeholder }}"></textarea><br>
-                                                {% endif %}
-                                              </div>
-                                              <div class="col-md-2">
-                                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal{{ parameter_name }}">
-                                                      Help
-                                                    </button>
-
-                                                    <!-- Modal modalBinary -->
-                                                    <div class="modal fade" id="modal{{ parameter_name }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                                      <div class="modal-dialog modal-lg" role="document">
-                                                        <div class="modal-content">
-                                                          <div class="modal-body">
-                                                            {{ parameter_info.help | safe }}
-                                                          </div>
-                                                          <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                    <!-- end modal -->
-                                              </div>
-                                          {% endif %}
-
-
-                                          {% if parameter_info.type == "checkbox" %}
-                                              <div class="form-group form-check">
-                                                  <input type="checkbox" onchange="checkBox{{ parameter_name }}(this.id)" class="form-check-input" name="{{ parameter_name }}" id="{{ parameter_name}}">
-                                                  <label class="form-check-label" for="pre_exec">{{ parameter_info.placeholder }}</label>
-                                              </div>
-                                              <script>
-                                                 function checkBox{{ parameter_name }}(idName)
-                                                 {
-                                                     switch (document.getElementById(idName).checked) {
-                                                         case true:
-                                                             document.getElementById(idName +"-preview").innerHTML = "{{ parameter_info.help | safe }}";
-                                                             break;
-                                                         case false:
-                                                             document.getElementById(idName +"-preview").innerHTML = "";
-                                                             break;
-                                                     }
-
-                                        }
-                                              </script>
-                                          {% endif %}
-
-                                          </div> <!-- form row -->
-
-
-
-
-
-                                      {% endfor %}
-
-
-
-                                      <div align="center">
-                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                          <button type="submit" class="btn btn-success btn-lg">Create application profile</button>
+                                  <nav>
+                                      <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                                          <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-designform" role="tab" aria-controls="nav-designform" aria-selected="true">Step1: Design the form</a>
+                                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-designscript" role="tab" aria-controls="nav-designscript" aria-selected="false">Step2: Design the job script</a>
+                                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-save" role="tab" aria-controls="nav-sav" aria-selected="false">Step3: Create the profile</a>
                                       </div>
-                                  </form>
-                                  <br><br>
+                                  </nav>
 
+                                  <div class="tab-content" id="nav-tabContent">
+                                      <div class="tab-pane fade show active" id="nav-designform" role="tabpanel" aria-labelledby="nav-designform">
+                                          <br>
+                                          <div class="alert alert-info">
+                                              Drag & Drop form components based on your own requirements. <br>
+                                              We have generated a test template for you, feel free to edit it as needed
+                                          </div>
+                                          <!-- Form Builder -->
+                                          <div class="form-build"></div>
+                                          <!-- Form Builder -->
+                                      </div> <!-- nav form -->
+
+                                      <div class="tab-pane fade show" id="nav-designscript" role="tabpanel" aria-labelledby="nav-designscript">
+                                          <br>
+                                          <div class="alert alert-info">
+                                          Edit the template below to match the variables you have created on your form or simply write code that cannot be changed by the user (eg: automatically configure a license server variable, system $PATH etc ...). To read the value from your form, simply reference the component name within <kbd>%</kbd>.
+                                              <br>For example, if your form input name is <code>my_param</code> then retrieve the value via <kbd>%my_param%</kbd>
+                                          </div>
+                                          <textarea class="form-control job_preview " id="job-script" rows="30">
+#!/bin/bash
+
+#PBS -q %queue_name%
+#PBS -N %job_name%
+#PBS -P %project_name%
+#PBS -l instance_type=%instance_type% # https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
+#PBS -l walltime=%walltime%
+
+## [Begin: Commands to be added before the solver. This cannot be changed by the users]
+export PATH=...
+export LD_LIBRARY_PATH=...
+export LICENSE_SERVER=27000@mylicenseserver
+## [End: Commands to be added before the solver. This cannot be changed by the users]
+
+%user_pre_exec%
+
+## [Begin: Actual solver command]
+%binary_location% %input_file% \
+    --param1 %param1% \
+    --param2 %param2% \
+    --param3 %param3% \
+    # Enter  here any command to be added to the solver command that changed be edited by the users #
+## [End: Actual solver command]
+
+
+%user_post_exec%
+
+## [Begin: Commands to be added after the solver. This cannot be changed by the users]
+Compress output, send output to S3 etc ...
+## [End: Commands to be added after the solver. This cannot be changed by the users]
+                                          </textarea>
+                                      </div> <!-- nav script -->
+
+                                      <div class="tab-pane fade show" id="nav-save" role="tabpanel" aria-labelledby="nav-save">
+                                          <br>
+                                          <form method="post" action="/admin/applications/create">
+                                              <div class="form-group">
+                                                  <label for="profile_name">How do you want to name this application profile?</label>
+                                                  <input type="text" class="form-control" onchange="prepareInput()" name="profile_name" required>
+                                              </div>
+                                              <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
+                                              <input type="hidden" value="" id="submit_job_script" name="submit_job_script">
+                                              <input type="hidden" value="" id="submit_job_form" name="submit_job_form">
+                                              <div align="center">
+                                                  <button type="submit" class="btn btn-success">Create this application</button>
+                                              </div>
+                                          </form>
+                                      </div> <!-- nav save -->
+
+                                  </div>
                               </div>
-                              <div class="col-md-6">
-                                                                     <pre class="language-bash">
-#PBS -q %QUEUE_CONFIGURED_BY_USER_VIA_DROPDOWN%
-#PBS -N %JOB_NAME_CONFIGURED_BY_USER_VIA_DROPDOWN%
-#PBS -P %JOB_PROJECT_CONFIGURED_BY_USER_VIA_DROPDOWN%
-<div id="scheduler_parameters"></div>
-<div id="user_pre_exec-preview"></div>
-<div id="admin_pre_exec"></div>
-<div id="path"></div><div id="ld_library_path"></div>
-# [Begin] Command to be executed<br><div style="display: inline-block">
-<span id="binary"></span> <span id="input_parameter"></span><span id="required_parameters"></span><span id="optional_parameters"></span><span id="user_customization-preview"></span>
-</div>
-<br># [End] Command to be execute<br>
-<div id="admin_post_exec"></div>
-<div id="user_post_exec-preview"></div>
- </pre>
-
-                                   <script>
-
-
-                                  function generateExample(idName, idValue) {
-                                      textValue = ""
-                                      switch (idName) {
-                                          case "scheduler_parameters":
-                                              schedulerParams = idValue.split(',');
-                                              for (i = 0; i < schedulerParams.length; i++) {
-                                                  if (i == 0) {
-                                                      textValue += "#PBS -l " + schedulerParams[i]
-                                                  } else {
-                                                      textValue += "," + schedulerParams[i]
-                                                  }
-                                              }
-                                              break
-
-                                          case "binary":
-                                          case "required_parameters":
-                                              paramToSpecify = idValue.split(',');
-                                              for (i = 0; i < paramToSpecify.length; i++) {
-                                                  textValue += " " + paramToSpecify[i] + " %VALUE_SPECIFIED_BY_USER% \\ <br>"
-                                              }
-                                              break;
-
-                                          case "path":
-                                              textValue = "export PATH=$PATH:" + idValue;
-                                              break;
-
-                                          case "ld_library_path":
-                                              textValue = "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:" + idValue
-                                              break;
-
-                                          case "input_parameter":
-                                              textValue = idValue + " %INPUT_FILE_PROVIDED_BY_USER% \\ <br>"
-                                              break;
-
-                                          default:
-                                              textValue = idValue;
-                                              break;
-                                      }
-
-                                       if (idValue != "") {document.getElementById(idName).innerHTML = textValue;}
-                                       else{ document.getElementById(idName).innerHTML = "";}
-
-                                  }
-                              </script>
-                              </div>
-
-
-                 <div class="card card-body">
-
-                                      <h4>How it works?</h4><br>
-                                      Assuming your folder structure is
-                                      <pre>
-└── /apps
-    └── /mysoftware
-        ├── /bin
-        |    └── solver
-        ├── /libs
-        └── .....
-                                      </pre>
-                                      And you submit a job using the following command: <br>
-                                      <div class="inline" style="color: black">
-                                          <code style="color: black">
-                                          /apps/mysoftware/bin/solver <span style="background-color: lightcoral">--input</span> %INPUT_FILE%
-                                          <span style="background-color: lightgreen">--cpus</span> 50
-                                          <span style="background-color: lightblue">--type=explicit doubleprecision</span>
-                                          <span style="background-color: lightyellow">--logs=mylog.txt</span>
-                                          </code>
-                                      </div>
-                                      <br>
-
-                                      With the following parameters:
-                                      <li style="color: black"><span style="background-color: lightcoral">red</span> is the name for the input parameter</li>
-                                      <li style="color: black"><span style="background-color: lightgreen">green</span>: is a parameter user must specify</li>
-                                      <li style="color: black"><span style="background-color: lightblue">blue</span>: parameters you want to configure on behalf of the users (cannot be changed)</li>
-                                      <li style="color: black"><span style="background-color: lightyellow">yellow</span>: Other parameter(s) your user can set if they want to</li>
-
-                                      <br>
-                                      Then your application profile will looks like:
-                                      <li style="color: black">Application Binary: <code>/apps/mysoftware/bin/solver</code></li>
-                                      <li style="color: black">Input parameter: <code>--input</code></li>
-                                      <li style="color: black">Required parameters user has to configure: <code>--cpus</code></li>
-                                      <li style="color: black">Required parameters configured on behalf of the user: <code>--type=explicit doubleprecision</code></li>
-                                      <li style="color: black">(Optional) List of scheduler parameters: <code>scratch_size=500,instance_ami=ami-1234abcde</code></li>
-                                      <li style="color: black">(Optional) $PATH: <code>/apps/mysoftware/bin</code></li>
-                                      <li style="color: black">(Optional) $LD_LIBRARY_PATH: <code>/apps/mysoftware/libs</code></li>
-                                      <li style="color: black">(Optional) $LD_LIBRARY_PATH: <code>https://wiki.mycompany.com/</code></li>
-
-                                      <br>
-                                      Job submitted will then looks like:
-                                        <pre>
-<code class="language-bash">
-#PBS -q %QUEUE_CONFIGURED_BY_USER%
-#PBS -N %JOB_NAME_CONFIGURED_BY_USER%
-#PBS -P %JOB_PROJECT_CONFIGURED_BY_USER%
-#PBS -l scratch_size=500,instance_ami=ami-1234abcde
-# (Optional) Pre Execution
-# Any command specified by the user during job submission
-
-# Configure environment
-cd %PATH_WHERE_INPUT_FILE_IS_LOCATED%
-export PATH=$PATH:/apps/mysoftware/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/mysoftware/libs
-
-# Run command
-/apps/mysoftware/bin/solver --input %INPUT_FILE_CONFIGURED_BY_USER% \
-    --cpus %VALUE_CONFIGURED_BY_USER%  \
-    --type=explicit doubleprecision ## FOLLOWED BY OPTIONAL PARAMETERS CONFIGURED BY USER SUCH AS --logs=mylog.txt
-
-# (Optional) Post Execution
-# Any command specified by the user post job submission
-</code></pre>
-
-                                      <div class="alert alert-primary">
-                                          <strong>Note:</strong> Scheduler resources are optional. If not set the job will use the value specified by default at the queue level.
-                                      </div>
-
-
-                      </div>
-
-
-
-
-                    </div>
-
-                      </div>
-  </div>
+                          </div>
 
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
@@ -286,6 +156,226 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/apps/mysoftware/libs
 
 
     {% include 'common/footer.html' %}
+
+                              <script>
+                                  function prepareInput(){
+                                      getJobScriptData = btoa($('#job-script').val());
+                                      getFormBuilderData = btoa(formBuilder.actions.getData('json', true));
+                                      document.getElementById("submit_job_script").value = getJobScriptData;
+                                      document.getElementById("submit_job_form").value = getFormBuilderData;
+                                  }
+
+
+
+                         jQuery($ => {
+                             var options = {
+                                 dataType: 'json',
+                                 editOnAdd: true,
+                                 fieldRemoveWarn: true,
+                                 disableFields: ['date', 'file'],
+                                 disabledActionButtons: ['save', 'clear', 'dataf'],
+                                 disabledAttrs: ['access', 'className'],
+                                 defaultFields:
+                                 [
+  {
+    "type": "header",
+    "subtype": "h4",
+    "label": "Job information"
+  },
+  {
+    "type": "select",
+    "required": true,
+    "label": "What version of the solver do you want to use ? (binary_location)",
+    "description": "Path to the solver executable/binary. It's usually located within the \"bin\" folder of your installation directory",
+    "className": "form-control",
+    "name": "binary_location",
+    "multiple": false,
+    "values": [
+      {
+        "label": "Version 2020",
+        "value": "/apps/software/version2020/bin/solver.exe"
+      },
+      {
+        "label": "Version 2019 ",
+        "value": "/apps/software/version19/bin/solver.exe"
+      },
+      {
+        "label": "BETA",
+        "value": "/apps/software/versionBETA/bin/solver.exe"
+      }
+    ]
+  },
+  {
+    "type": "select",
+    "required": true,
+    "label": "What type of instance do you want to use? (instance_type)",
+    "className": "form-control",
+    "name": "instance_type",
+    "multiple": false,
+    "values": [
+      {
+        "label": "Small ( 2 CPUs, 32GB RAM)",
+        "value": "r5.xlarge"
+      },
+      {
+        "label": "Medium ( 4 CPUs, 64 GB RAM)",
+        "value": "r5.2xlarge"
+      },
+      {
+        "label": "Large ( 8 CPUs, 128 GB RAM)",
+        "value": "r5.4xlarge"
+      },
+      {
+        "label": "Graphic ( 8 V100, 48 CPUs, 768 GB RAM)",
+        "value": "p3dn.24xlarge"
+      }
+    ]
+  },
+  {
+    "type": "select",
+    "required": true,
+    "label": "What queue do you want to use? (queue_name)",
+    "className": "form-control",
+    "name": "queue_name",
+    "multiple": false,
+    "values": [
+      {
+        "label": "Queue 1 (Low Priority)",
+        "value": "queue1",
+        "selected": true
+      },
+      {
+        "label": "Queue 2 (High Priority)",
+        "value": "queue2"
+      }
+    ]
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "Job Name (job_name)",
+    "className": "form-control",
+    "name": "job_name",
+    "subtype": "text",
+    "maxlength": 255
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "Input location (input_file)",
+    "placeholder": "This entry will automatically be pre-populated with the absolute path of the input file",
+    "className": "form-control",
+    "name": "input_file",
+    "subtype": "text",
+    "maxlength": 255
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "How many CPUs do you want ? (cpus)",
+    "placeholder": "Number of EC2 instance will automatically be calculated based on Instance Type and CPUs count",
+    "className": "form-control",
+    "name": "cpus",
+    "subtype": "text",
+    "maxlength": 255
+  },
+  {
+    "type": "select",
+    "required": true,
+    "label": "Do you want to limit how long the job will be running? (walltime)",
+    "className": "form-control",
+    "name": "walltime",
+    "multiple": false,
+    "values": [
+      {
+        "label": "No Limit",
+        "value": "99:99:99",
+        "selected": true
+      },
+      {
+        "label": "No more than 1 hour",
+        "value": "00:01:00"
+      },
+      {
+        "label": "No more than 5 hours",
+        "value": "00:05:00"
+      },
+      {
+        "label": "No more than 1 day",
+        "value": "1:00:00"
+      },
+      {
+        "label": "No more than 1 month",
+        "value": "31:00:00"
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "subtype": "h4",
+    "label": "Application parameters"
+  },
+  {
+    "type": "paragraph",
+    "subtype": "p",
+    "label": "For documentation, please refer to <a href='#'>wiki.mycompany.tld/documentation/how-to-launch-this-application</a>"
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "--param1",
+    "placeholder": "Enter value for param1",
+    "className": "form-control",
+    "name": "param1",
+    "subtype": "text"
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "--param2",
+    "placeholder": "Enter value for param2",
+    "className": "form-control",
+    "name": "param2",
+    "subtype": "text"
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "--param3",
+    "placeholder": "Enter value for param3",
+    "className": "form-control",
+    "name": "param3",
+    "subtype": "text"
+  },
+  {
+    "type": "textarea",
+    "required": false,
+    "label": "User code to be executed BEFORE the solver command (user_pre_exec)",
+    "placeholder": "Enter shell code here",
+    "className": "form-control",
+    "name": "user_pre_exec",
+    "subtype": "textarea",
+    "rows": 3
+  },
+  {
+    "type": "textarea",
+    "required": false,
+    "label": "User code to be executed AFTER the solver command (user_post_exec)",
+    "placeholder": "enter shell code here",
+    "className": "form-control",
+    "name": "user_post_exec",
+    "subtype": "textarea",
+    "rows": 3
+  }
+]
+
+
+
+                             };
+                             formBuilder = $('.form-build').formBuilder(options)
+
+                         })
+                      </script>
 
 
 
