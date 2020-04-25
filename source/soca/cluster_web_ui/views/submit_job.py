@@ -41,7 +41,6 @@ def index():
         if get_application_profile:
             profile_form = base64.b64decode(get_application_profile.profile_form)
             profile_job = get_application_profile.profile_job
-
             return render_template('submit_job_selected_application.html',
                                    user=session["user"],
                                    profile_form=profile_form,
