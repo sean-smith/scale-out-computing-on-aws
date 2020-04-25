@@ -39,18 +39,13 @@ def index():
         input_file_info = request.args.get('input_file')
         get_application_profile = ApplicationProfiles.query.filter_by(id=app).first()
         if get_application_profile:
-
-
-            application_parameters = json.loads(base64.b64decode(get_application_profile.profile_parameters))
-
-            #client_ec2 = boto3.client("ec2")
-            #get_all_ec2_instances = client_ec2._service_model.shape_for('InstanceType').enum
+            profile_form = base64.b64decode(get_application_profile.profile_form)
+            profile_job = base64.b64decode(get_application_profile.profile_job)
 
             return render_template('submit_job_selected_application.html',
                                    user=session["user"],
-                                   application_parameters=application_parameters,
-                                   input_file_info=input_file_info)
-                                   #get_all_ec2_instances=get_all_ec2_instances)
+                                   profile_form=profile_form,
+                                   profile_job=profile_job)
         else:
             flash("Application not found.", "error")
             return redirect("/submit_job")
@@ -71,18 +66,19 @@ def job_submission():
         if file_info["success"] != True:
             flash("Unable to read this file because of " + str(file_info), "error")
             return redirect("/submit_job")
+        profile_form = base64.b64decode(get_application_profile.profile_form).decode()
 
 
-        application_parameters = json.loads(base64.b64decode(get_application_profile.profile_parameters))
+        profile_job = base64.b64decode(get_application_profile.profile_job)
 
         input_path = json.loads(file_info["message"])["file_path"]
         input_name = input_path.split("/")[-1]
-        #client_ec2 = boto3.client("ec2")
-        #get_all_ec2_instances = client_ec2._service_model.shape_for('InstanceType').enum
 
         return render_template('submit_job_selected_application.html',
+                                   profile_name=get_application_profile.profile_name,
                                    user=session["user"],
-                                   application_parameters=application_parameters,
+                                   profile_form=profile_form,
+                                   profile_job=profile_job,
                                    input_path=input_path,
                                    input_name=input_name)
                                    #get_all_ec2_instances=get_all_ec2_instances)

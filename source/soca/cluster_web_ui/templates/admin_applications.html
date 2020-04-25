@@ -168,13 +168,14 @@ Compress output, send output to S3 etc ...
 
 
                          jQuery($ => {
+
                              var options = {
                                  dataType: 'json',
                                  editOnAdd: true,
                                  fieldRemoveWarn: true,
                                  disableFields: ['date', 'file'],
-                                 disabledActionButtons: ['save', 'clear', 'dataf'],
-                                 disabledAttrs: ['access', 'className'],
+                                 disabledActionButtons: ['save', 'clear', 'data'],
+                                 disabledAttrs: ['access', 'className', 'multiple'], // https://github.com/kevinchappell/formBuilder/issues/1030
                                  defaultFields:
                                  [
   {
