@@ -58,6 +58,7 @@
                       <div class="nav nav-tabs" id="nav-tab" role="tablist">
                           <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-add" role="tab" aria-controls="nav-home" aria-selected="true">Create new application profile</a>
                           <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-edit" role="tab" aria-controls="nav-contact" aria-selected="false">Edit application profile</a>
+                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-delete" role="tab" aria-controls="nav-delete" aria-selected="false">Delete application profile</a>
 
                       </div>
                   </nav>
@@ -83,7 +84,7 @@
                                           <br>
                                           <div class="alert alert-info">
                                               Drag & Drop form components based on your own requirements. <br>
-                                              We have generated a test template for you, feel free to edit it as needed
+                                              We have generated a test template for you, customize it as needed or <strong><a style="cursor:pointer;color: #ff5252" id="clear-all-fields">click here to start from scratch.</a></strong>
                                           </div>
                                           <!-- Form Builder -->
                                           <div class="form-build"></div>
@@ -93,10 +94,12 @@
                                       <div class="tab-pane fade show" id="nav-designscript" role="tabpanel" aria-labelledby="nav-designscript">
                                           <br>
                                           <div class="alert alert-info">
-                                          Edit the template below to match the variables you have created on your form or simply write code that cannot be changed by the user (eg: automatically configure a license server variable, system $PATH etc ...). To read the value from your form, simply reference the component name within <kbd>%</kbd>.
-                                              <br>For example, if your form input name is <code>my_param</code> then retrieve the value via <kbd>%my_param%</kbd>
+                                          Edit the test template below to match the variables you have created on your form or simply write code that cannot be changed by the user. To read values from your form, simply reference the component name between <kbd>%</kbd>(e.g if your form input name is <code>my_param</code>, retrieve the value via <kbd>%my_param%</kbd>)
                                           </div>
                                           <textarea class="form-control job_preview " id="job-script" rows="30">
+{% if action == "edit" %}
+{{ profile_job | safe }}
+{% else %}
 #!/bin/bash
 
 #PBS -q %queue_name%
@@ -106,9 +109,7 @@
 #PBS -l walltime=%walltime%
 
 ## [Begin: Commands to be added before the solver. This cannot be changed by the users]
-export PATH=...
-export LD_LIBRARY_PATH=...
-export LICENSE_SERVER=27000@mylicenseserver
+export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...
 ## [End: Commands to be added before the solver. This cannot be changed by the users]
 
 %user_pre_exec%
@@ -127,28 +128,140 @@ export LICENSE_SERVER=27000@mylicenseserver
 ## [Begin: Commands to be added after the solver. This cannot be changed by the users]
 Compress output, send output to S3 etc ...
 ## [End: Commands to be added after the solver. This cannot be changed by the users]
-                                          </textarea>
+                                          {% endif %}</textarea>
+                                      <div class="alert alert-primary">
+                                          PBS parameters are optional. If not set, your job will using the default settings configure for your queue (if no queue is specified, the job will use <code>normal</code> queue). Refer to <a href="https://awslabs.github.io/scale-out-computing-on-aws/tutorials/create-your-own-queue/#option1-i-want-to-use-the-same-settings-as-an-existing-queue" target="_blank"> this link for more.</a>
+                                          </div>
                                       </div> <!-- nav script -->
 
                                       <div class="tab-pane fade show" id="nav-save" role="tabpanel" aria-labelledby="nav-save">
                                           <br>
-                                          <form method="post" action="/admin/applications/create">
-                                              <div class="form-group">
-                                                  <label for="profile_name">How do you want to name this application profile?</label>
-                                                  <input type="text" class="form-control" onchange="prepareInput()" name="profile_name" required>
-                                              </div>
-                                              <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
-                                              <input type="hidden" value="" id="submit_job_script" name="submit_job_script">
-                                              <input type="hidden" value="" id="submit_job_form" name="submit_job_form">
-                                              <div align="center">
-                                                  <button type="submit" class="btn btn-success">Create this application</button>
-                                              </div>
-                                          </form>
+                                          {% if action == "edit" %}
+                                              <form method="post" action="/admin/applications/create">
+                                                  <div class="form-group">
+                                                      <label for="profile_name">How do you want to name this application profile?</label>
+                                                      <input type="text" class="form-control"  name="profile_name" required value="{{ profile_name }}">
+                                                  </div>
+                                                  <div class="input-group">
+                                                         <div class="custom-file">
+                                                             <input type="file" class="custom-file-input" id="thumbnail" accept="image/png, image/jpeg, image/jpg">
+                                                             <label class="custom-file-label" for="thumbnail">Select an image (jpg or png) to use as thumbnail. Leave blank to use the existing thumbnail</label>
+                                                         </div>
+                                                         <script>
+                                                             $(".custom-file-input").on("change", function() {
+                                                                 var fileName = $(this).val().split("\\").pop();
+                                                                 $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+                                                             });
+                                                         </script>
+                                                     </div>
+                                                   <div class="form-check">
+                                                    <input type="checkbox" onchange="prepareInput()" class="form-check-input" id="checkValidation" required>
+                                                    <label class="form-check-label" for="checkValidation">I want to update this application</label>
+                                                  </div>
+                                                  <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
+                                                  <input type="hidden" value="" id="submit_job_script" name="submit_job_script">
+                                                  <input type="hidden" value="" id="submit_job_form" name="submit_job_form">
+                                                  <input type="hidden" value="{{ app_id }}" id="app_id" name="app_id">
+                                                  <input type="hidden" value="" id="thumbnail_b64" name="thumbnail_b64">
+                                                  <input type="hidden" value="edit" id="action" name="action">
+
+                                                  <div align="center">
+                                                      <button type="submit" class="btn btn-success">Update this application</button>
+                                                  </div>
+                                              </form>
+
+
+                                          {% else %}
+                                              <form method="post" action="/admin/applications/create"  enctype="multipart/form-data">
+                                                  <div class="form-group">
+                                                      <label for="profile_name">How do you want to name this application profile?</label>
+                                                      <input type="text" class="form-control" onchange="prepareInput()" name="profile_name" required >
+                                                  </div>
+                                                  <div class="form-group">
+                                                      <label for="profile_name">Do you want to specify a thumbnail (this will scaled to 150*150px)?</label>
+                                                     <div class="input-group">
+                                                         <div class="custom-file">
+                                                             <input type="file" class="custom-file-input" id="thumbnail" accept="image/png, image/jpeg, image/jpg">
+                                                             <label class="custom-file-label" for="thumbnail">Select an image (jpg or png) to use as thumbnail</label>
+                                                         </div>
+                                                         <script>
+                                                             $(".custom-file-input").on("change", function() {
+                                                                 var fileName = $(this).val().split("\\").pop();
+                                                                 $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+                                                             });
+                                                         </script>
+                                                     </div>
+
+                                                  </div>
+                                                  <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
+                                                  <input type="hidden" value="" id="submit_job_script" name="submit_job_script">
+                                                  <input type="hidden" value="" id="submit_job_form" name="submit_job_form">
+                                                  <input type="hidden" value="create" id="action" name="action">
+                                                  <input type="hidden" value="" id="thumbnail_b64" name="thumbnail_b64">
+                                                  <div align="center">
+                                                      <button type="submit" class="btn btn-success">Create this application</button>
+                                                  </div>
+                                              </form>
+                                          {% endif %}
                                       </div> <!-- nav save -->
 
                                   </div>
                               </div>
                           </div>
+                          </div> <!-- add -->
+
+                          <div class="tab-pane fade show" id="nav-edit" role="tabpanel" aria-labelledby="nav-home-tab">
+                              <div class="card shadow mb-4">
+                                  <div class="card-header py-3">
+                                      <h6 class="m-0 font-weight-bold text-primary">Edit an existing application</h6>
+                                  </div>
+                                  <div class="card-body">
+                                      <form action="/admin/applications/edit" method="post">
+                                          <div class="form-group col-md-6">
+                                              <label for="walltime"> Select the application to edit</label>
+                                              <select class="form-control" name='app' id="app">
+                                                  {% for app_id, app_data in application_profiles.items() %}
+                                                      <option value="{{app_id}}">{{  app_data.profile_name }}</option>
+                                                  {% endfor %}
+                                              </select>
+                                          </div>
+                                          <div align="center">
+                                              <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+                                              <button type="submit"  class="btn btn-primary">Edit</button>
+                                          </div>
+                                      </form>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div class="tab-pane fade show" id="nav-delete" role="tabpanel" aria-labelledby="nav-home-tab">
+                              <div class="card shadow mb-4">
+                                  <div class="card-header py-3">
+                                      <h6 class="m-0 font-weight-bold text-primary">Delete an existing application</h6>
+                                  </div>
+                                  <div class="card-body">
+                                      <form action="/admin/applications/delete" method="post">
+                                          <div class="form-group col-md-6">
+                                              <label for="walltime"> Select the application to delete</label>
+                                              <select class="form-control" name='app' id="app">
+                                                  {% for app_id, app_data in application_profiles.items() %}
+                                                      <option value="{{app_id}}">{{  app_data.profile_name }}</option>
+                                                  {% endfor %}
+                                              </select>
+                                          </div>
+                                      <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input"  required>
+                                                    <label class="form-check-label" for="checkValidation">I want to delete this application</label>
+                                                  </div>
+                                          <div align="center">
+                                              <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+                                              <button type="submit" class="btn btn-danger">Delete</button>
+                                          </div>
+                                      </form>
+                                  </div>
+                              </div>
+                          </div>
+
 
   <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
@@ -164,6 +277,17 @@ Compress output, send output to S3 etc ...
                                       document.getElementById("submit_job_script").value = getJobScriptData;
                                       document.getElementById("submit_job_form").value = getFormBuilderData;
                                   }
+                                  function ConvertImageToB64() {
+                                      if (this.files && this.files[0]) {
+                                          var FR= new FileReader();
+                                          FR.addEventListener("load", function(e) {
+                                              document.getElementById("thumbnail").src = e.target.result;
+                                              document.getElementById("thumbnail_b64").value = e.target.result;
+                                          });
+                                          FR.readAsDataURL( this.files[0] );
+                                      }
+                                  }
+                                  document.getElementById("thumbnail").addEventListener("change", ConvertImageToB64);
 
 
 
@@ -177,6 +301,9 @@ Compress output, send output to S3 etc ...
                                  disabledActionButtons: ['save', 'clear', 'data'],
                                  disabledAttrs: ['access', 'className', 'multiple'], // https://github.com/kevinchappell/formBuilder/issues/1030
                                  defaultFields:
+                                     {% if action == "edit" %}
+                                     {{ profile_form | safe  }}
+                                     {% else %}
                                  [
   {
     "type": "header",
@@ -215,20 +342,16 @@ Compress output, send output to S3 etc ...
     "multiple": false,
     "values": [
       {
-        "label": "Small ( 2 CPUs, 32GB RAM)",
-        "value": "r5.xlarge"
+        "label": "Small ( 1 CPUs, 8GB RAM)",
+        "value": "m5.large"
       },
       {
-        "label": "Medium ( 4 CPUs, 64 GB RAM)",
-        "value": "r5.2xlarge"
+        "label": "Medium ( 2 CPUs, 16 GB RAM)",
+        "value": "m5.xlarge"
       },
       {
-        "label": "Large ( 8 CPUs, 128 GB RAM)",
-        "value": "r5.4xlarge"
-      },
-      {
-        "label": "Graphic ( 8 V100, 48 CPUs, 768 GB RAM)",
-        "value": "p3dn.24xlarge"
+        "label": "Large ( 4 CPUs, 32 GB RAM)",
+        "value": "m5.2xlarge"
       }
     ]
   },
@@ -242,12 +365,12 @@ Compress output, send output to S3 etc ...
     "values": [
       {
         "label": "Queue 1 (Low Priority)",
-        "value": "queue1",
+        "value": "low",
         "selected": true
       },
       {
         "label": "Queue 2 (High Priority)",
-        "value": "queue2"
+        "value": "high"
       }
     ]
   },
@@ -264,10 +387,10 @@ Compress output, send output to S3 etc ...
     "type": "text",
     "required": true,
     "label": "Input location (input_file)",
-    "placeholder": "This entry will automatically be pre-populated with the absolute path of the input file",
+    "placeholder": "(Do not delete) This entry will automatically be pre-populated with the absolute path of the input file.",
     "className": "form-control",
     "name": "input_file",
-    "description": "input_file is a reserved name on SOCA. The value will automatically be replaced by the input location provided by the user. You MUST have it and parameter name MUSt be input_name",
+    "description": "input_file is a reserved name on SOCA. The value will automatically be replaced by the input location provided by the user. You MUST have it and parameter name MUST be input_name",
     "subtype": "text",
     "maxlength": 255
   },
@@ -370,11 +493,15 @@ Compress output, send output to S3 etc ...
     "rows": 3
   }
 ]
+                             {% endif %}
 
 
 
                              };
                              formBuilder = $('.form-build').formBuilder(options)
+                             document.getElementById('clear-all-fields').onclick = function() {
+                                      formBuilder.actions.clearFields();
+                                  };
 
                          })
                       </script>

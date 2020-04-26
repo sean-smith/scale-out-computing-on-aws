@@ -4,10 +4,6 @@
 <head>
      {% include 'common/header.html' %}
 
-    <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dataTables.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dropzone.js') }}"></script>
-    <link href="{{ url_for('static', filename='css/dropzone.css') }}" rel="stylesheet">
 
 </head>
 
@@ -28,6 +24,10 @@
                                 <div class="alert alert-success">
                                     <strong>{{ message | safe }} </strong>
                                 </div>
+                                {% elif category == "info" %}
+                                 <div class="alert alert-info">
+                                    <strong>{{ message | safe }} </strong>
+                                </div>
                                 {% else %}
                                  <div class="alert alert-danger">
                                     <strong>{{ message | safe }} </strong>
@@ -36,40 +36,46 @@
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
-
-                  <div class="row">
-                    <div class="col-md-12">
-                        <div class="card shadow mb-6">
-                            <div class="card-header py-3">
-                              <h6 class="m-0 font-weight-bold text-primary">Choose your solver</h6>
-                            </div>
-                            <div class="card-body">
-                                  <form action="/submit_job", method="post">
-                                      <div class="form-group col-md-6">
-                                          <label for="walltime"> Select your application</label>
-                                          <select class="form-control" name='app' id="app">
-                                              {% for app_id, app_data in application_profiles.items() %}
-                                                  <option value="{{app_id}}">{{  app_data.profile_name }}</option>
-                                              {% endfor %}
-                                          </select>
-                                      </div>
-                                  <div align="center">
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="card shadow mb-6">
+                          <div class="card-header py-3">
+                              <h6 class="m-0 font-weight-bold text-primary">What application do you want to run?</h6>
+                          </div>
+                          <div class="card-body">
+                              <form action="/submit_job" method="post" class="form-inline">
+                                      <select class="form-control mb-2 mr-sm-2" name='app' id="app" required>
+                                          {% for app_id, app_data in application_profiles.items() %}
+                                              <option value="{{app_id}}">{{  app_data.profile_name }}</option>
+                                          {% endfor %}
+                                      </select>
                                       <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
                                       <input type="hidden" name="input_file" value="{{input_file}}">
-                                              <button type="submit"  class="btn btn-primary">
-                                                  Select this application
-                                              </button>
-                                             </div>
+                                      <button type="submit"  class="btn btn-primary mb-2">Select this application</button>
+                              </form>
+                          <hr>
 
-                                  </form>
-                            </div>
+                              <h3>Browse all applications</h3><br>
 
-                    </div>
-
-                    </div>
-
-
+                          <div class="row">
+                                  {% for app_id, app_data in application_profiles.items() %}
+                                      <div class="col-md-auto" style="margin-top: 5px">
+                                          <form action="/submit_job" method="post">
+                                              <input type="image" style="width: 150px;" class="card" src="{{ app_data.profile_thumbnail }}">
+                                              <div align="center">
+                                                  {{  app_data.profile_name }}
+                                              </div>
+                                              <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+                                              <input type="hidden" name="input_file" value="{{input_file}}">
+                                              <input type="hidden" name="app" value="{{app_id}}">
+                                          </form>
+                                      </div>
+                                  {% endfor %}
+                              </div>
+                          </div>
+                      </div>
                   </div>
+              </div>
               </main>
               </div>
           </div>

@@ -7,6 +7,7 @@ import json
 import base64
 from views.my_files import decrypt, user_has_permission
 from models import ApplicationProfiles
+from collections import OrderedDict
 import boto3
 
 logger = logging.getLogger(__name__)
@@ -19,21 +20,17 @@ submit_job = Blueprint('submit_job', __name__, template_folder='templates')
 def index():
     app = request.args.get("app", None)
     input_file = request.args.get("input_file", None)
-    if input_file is None:
-        # User must specify input first
-        flash("What input file do you want to use? <hr> Navigate to the folder where your input file is located then click 'Use as Simulation Input' icon: <i class='fas fa-microchip fa-lg'  style='color: grey'></i>", "info")
-        return redirect("/my_files")
-
     if app is None:
-        # Input specified but not app
         application_profiles = {}
         get_all_application_profiles = ApplicationProfiles.query.all()
         for profile in get_all_application_profiles:
-            application_profiles[profile.id] = {"profile_name": profile.profile_name}
+            application_profiles[profile.id] = {"profile_name": profile.profile_name,
+                                                "profile_thumbnail": profile.profile_thumbnail}
+
         return render_template('submit_job.html',
                                user=session["user"],
-                               application_profiles=application_profiles,
-                               input_file=input_file)
+                               application_profiles=OrderedDict(sorted(application_profiles.items(), key=lambda x: x[1]['profile_name'].lower())),
+                               input_file=False if input_file is None else input_file)
     else:
         # input and app specified
         input_file_info = request.args.get('input_file')

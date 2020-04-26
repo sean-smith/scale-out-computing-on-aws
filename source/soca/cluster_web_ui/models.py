@@ -21,6 +21,7 @@ class ApplicationProfiles(db.Model):
     profile_name = db.Column(db.String(255), nullable=False)
     profile_form = db.Column(db.Text, nullable=False)
     profile_job = db.Column(db.Text, nullable=False)
+    profile_thumbnail = db.Column(db.Text, nullable=False)
     created_on = db.Column(db.DateTime)
     deactivated_on = db.Column(db.DateTime)
 

@@ -13,6 +13,7 @@ from collections import OrderedDict
 import grp
 from werkzeug.utils import secure_filename
 from cachetools import TTLCache
+from models import ApplicationProfiles
 
 logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
@@ -234,9 +235,15 @@ def index():
             print(path + " is cached")
             filesystem = cache[CACHE_FOLDER_CONTENT_PREFIX + path]
 
+        application_profiles = {}
+        get_all_application_profiles = ApplicationProfiles.query.all()
+        for profile in get_all_application_profiles:
+            application_profiles[profile.id] = {"profile_name": profile.profile_name}
+
         return render_template('my_files.html', user=session["user"],
                                filesystem=OrderedDict(sorted(filesystem.items(), key=lambda t: t[0].lower())),
                                breadcrumb=breadcrumb,
+                               application_profiles=application_profiles,
                                path=path,
                                page="my_files")
     except Exception as err:
