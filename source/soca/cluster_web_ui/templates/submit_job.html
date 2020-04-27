@@ -39,31 +39,33 @@
               <div class="row">
                   <div class="col-md-12">
                       <div class="card shadow mb-6">
-                          <div class="card-header py-3">
-                              <h6 class="m-0 font-weight-bold text-primary">What application do you want to run?</h6>
-                          </div>
                           <div class="card-body">
-                              <form action="/submit_job" method="post" class="form-inline">
-                                      <select class="form-control mb-2 mr-sm-2" name='app' id="app" required>
+                              <form id="search-application">
+                                <input class="form-control" type="text" placeholder="What sofware do you want to run?" aria-label="Search">
+                              </form>
+                              <hr>
+
+
+                             <!-- <h4 style="display: inline">
+                              <form action="/submit_job" method="post" class="form-inline" style="display: inline">
+                                      <select class="form-control" name='app' id="app" required>
                                           {% for app_id, app_data in application_profiles.items() %}
                                               <option value="{{app_id}}">{{  app_data.profile_name }}</option>
                                           {% endfor %}
                                       </select>
                                       <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
                                       <input type="hidden" name="input_file" value="{{input_file}}">
-                                      <button type="submit"  class="btn btn-primary mb-2">Select this application</button>
-                              </form>
-                          <hr>
-
-                              <h3>Browse all applications</h3><br>
+                                      <button type="submit"  class="btn btn-primary">Select this application</button>
+                              </form> or choose your application from the calalog</h4>
+                              <br><br>>-->
 
                           <div class="row">
                                   {% for app_id, app_data in application_profiles.items() %}
-                                      <div class="col-md-auto" style="margin-top: 5px">
+                                      <div name="application-card" id="{{ application }}" class="col-md-auto" style="margin-top: 5px">
                                           <form action="/submit_job" method="post">
                                               <input type="image" style="width: 150px;" class="card" src="{{ app_data.profile_thumbnail }}">
                                               <div align="center">
-                                                  {{  app_data.profile_name }}
+                                                  <app_name>{{  app_data.profile_name }}</app_name>
                                               </div>
                                               <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
                                               <input type="hidden" name="input_file" value="{{input_file}}">
@@ -87,6 +89,22 @@
     <i class="fas fa-angle-up"></i>
   </a>
   {% include 'common/footer.html' %}
+
+  <script>
+    const searchBar = document.forms['search-application'].querySelector('input');
+    searchBar.addEventListener('keyup', function(e) {
+        const term = e.target.value.toLocaleLowerCase();
+        const software_list = document.getElementsByTagName('app_name');
+        Array.from(software_list).forEach(function(software_list) {
+            const title = software_list.textContent;
+            if (title.toLowerCase().indexOf(term) != -1) {
+                software_list.parentElement.parentElement.style.display = 'block';
+            } else {
+                software_list.parentElement.parentElement.style.display = 'none';
+            }
+        });
+});
+</script>
 
 </body>
 
