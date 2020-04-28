@@ -21,16 +21,16 @@ class Config(object):
 
 
     # WEB
-    #USER_HOME = "/data/home"
+    USER_HOME = "/data/home"
     DEFAULT_CACHE_TIME = 500  # 5 minutes
     APPS_LOCATION = "/apps/"
     SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]
 
-    # GUNICORN SETTINGS
-    #FLASK_HOST = "127.0.0.1"
-    #FLASK_PROTOCOL = "https://"
-    #FLASK_PORT = "8443"
-    #FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
+    # UWSGI SETTINGS
+    FLASK_HOST = "127.0.0.1"
+    FLASK_PROTOCOL = "https://"
+    FLASK_PORT = "8443"
+    FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
 
     # COGNITO
     ENABLE_SSO = False
@@ -50,14 +50,10 @@ class Config(object):
     DCV_MAX_SESSION_ACOUNT = 4
 
     # LDAP
-    #LDAP_HOST = "127.0.0.1"
+    LDAP_HOST = "127.0.0.1"
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
-
-
-    ##ROOT_DN = 'CN='+open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip()+',' + LDAP_BASE_DN
-    ##ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
 
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"
@@ -66,14 +62,14 @@ class Config(object):
     SSH_PRIVATE_KEY_LOCATION = "tmp/ssh"
 
     # Dev mickael test
-    LDAP_HOST = "52.7.198.13"
-    ROOT_DN = 'CN=admin,' + LDAP_BASE_DN
-    ROOT_PW = 'ylS.aCiW'
-    FLASK_HOST = "127.0.0.1"
-    FLASK_PROTOCOL = "http://"
-    FLASK_PORT = "5000"
-    FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
-    USER_HOME = "/Users"
+    #LDAP_HOST = "52.7.198.13"
+    #ROOT_DN = 'CN=admin,' + LDAP_BASE_DN
+    #ROOT_PW = 'ylS.aCiW'
+    #FLASK_HOST = "127.0.0.1"
+    #FLASK_PROTOCOL = "http://"
+    #FLASK_PORT = "5000"
+    #FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
+    #USER_HOME = "/Users"
 
 
 app_config = Config()

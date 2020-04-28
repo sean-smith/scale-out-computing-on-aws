@@ -91,6 +91,7 @@
   {% include 'common/footer.html' %}
 
   <script>
+      /* search bar autocomplete */
     const searchBar = document.forms['search-application'].querySelector('input');
     searchBar.addEventListener('keyup', function(e) {
         const term = e.target.value.toLocaleLowerCase();
