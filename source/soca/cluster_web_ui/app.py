@@ -6,6 +6,7 @@ from flask_session import Session
 from flask_restful_swagger import swagger
 from flask_sqlalchemy import SQLAlchemy
 from api.v1.scheduler.pbspro.job import Job
+from api.v1.scheduler.pbspro.jobs import Jobs
 from api.v1.ldap.sudo import Sudo
 from api.v1.ldap.ids import Ids
 from api.v1.ldap.user import User
@@ -24,6 +25,7 @@ from views.admin.users import admin_users
 from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
 from views.admin.applications import admin_applications
+from views.my_jobs import my_jobs
 
 
 from views.my_account import my_account
@@ -60,6 +62,8 @@ api.add_resource(Reset, '/api/user/reset_password')
 # System
 api.add_resource(Files, '/api/system/files')
 api.add_resource(Job, '/api/scheduler/job')
+api.add_resource(Jobs, '/api/scheduler/jobs')
+
 
 
 
@@ -75,6 +79,7 @@ app.register_blueprint(my_files)
 app.register_blueprint(submit_job)
 app.register_blueprint(ssh)
 app.register_blueprint(sftp)
+app.register_blueprint(my_jobs)
 
 
 

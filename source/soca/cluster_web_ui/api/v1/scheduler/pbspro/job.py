@@ -62,7 +62,7 @@ class Job(Resource):
         parser.add_argument('payload', type=str, location='form')
         args = parser.parse_args()
         try:
-            payload = base64.b64decode(str(args['payload'])).decode()
+            payload = base64.b64decode(args['payload']).decode()
         except KeyError:
             return {"succes": False, "message": "payload (str) parameter is required"}, 500
         except UnicodeError:

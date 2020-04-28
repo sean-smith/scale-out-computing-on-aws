@@ -5,6 +5,7 @@ from flask import render_template, request, redirect, session, flash, Blueprint
 from cryptography.fernet import Fernet, InvalidToken, InvalidSignature
 import json
 import base64
+from requests import post
 from views.my_files import decrypt, user_has_permission
 from models import ApplicationProfiles
 from collections import OrderedDict
@@ -86,9 +87,6 @@ def job_submission():
 @submit_job.route('/submit_job/send', methods=['POST'])
 @login_required
 def send_job():
-    # get all parameters
-    #Unable to read the job script due to: 'utf-8' codec can't decode byte 0xf6 in position 1: invalid start byte
-
     try:
         job_to_submit = base64.b64decode(request.form["job_script"]).decode()
     except Exception as err:
@@ -99,4 +97,15 @@ def send_job():
         if param != "csrf_token":
             job_to_submit = job_to_submit.replace("%" + param + "%", request.form[param])
 
-    return "<br>".join(job_to_submit.split("\n"))
+    payload = base64.b64encode(job_to_submit.encode()).decode()
+    send_to_to_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
+                        headers={"X-SOCA-TOKEN": session["api_key"],
+                                "X-SOCA-USER": session["user"]},
+                        data={"payload": payload},
+                        verify=False)
+    if send_to_to_queue.status_code == 200:
+        flash("Job submitted to the queue with ID: " + send_to_to_queue.json()["message"], "success")
+    else:
+        flash("Error during job submission: " + send_to_to_queue.json()["message"], "error")
+
+    return redirect("/my_jobs")
