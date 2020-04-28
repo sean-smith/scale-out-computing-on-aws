@@ -212,6 +212,8 @@ class User(Resource):
             if update_group.status_code != 200:
                 return {"success": True, "message": "User/Group created but could not add user to his group"}, 203
 
+            ## Now need to create home
+
             return {"success": True, "message": "Added user"}, 200
 
         except ldap.ALREADY_EXISTS:

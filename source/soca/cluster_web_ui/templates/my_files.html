@@ -83,7 +83,7 @@
           </form>
           <hr>
           Do not close the page while uploading<br>
-          It's recommended to use the <a href="/sftp">SOCA SFTP solution</a> when trying to upload large files (>300mb).
+          Upload limited to 500 MB. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files.
 
       </div>
 
@@ -208,8 +208,10 @@
                      {% endif %}
                  </td>
               <td>
+                  <div id="ts{{  file_data.uid }}"></div>
                   <script>
-                      document.write(moment.unix({{ file_data.st_mtime }}).format('YYYY/MM/DD H:mm:ss'))
+                      document.getElementById('ts{{  file_data.uid }}').innerHTML = moment.unix({{ file_data.st_mtime }}).format('YYYY/MM/DD H:mm:ss')
+
                   </script>
                  </td>
 
@@ -241,7 +243,7 @@
                           url: "/my_files/upload",
                           addRemoveLinks : true,
                           dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploaded under {{ path }}',
-                          maxFilesize: 10,
+                          maxFilesize: 500, // 500 MB
                           params: {
                                  path: "{{ path }}/"
                           },
@@ -256,7 +258,9 @@
                           },
                           errors: function(file, response)
                           {
-                              $('#update-div').html('<div class="alert alert-danger">Error uploading ' + file.name + ' due to ' + response + '</div>');
+                              console.log("ERROR " + file)
+                              console.log(response)
+                              $('#update-div').html('<div class="alert alert-danger">Error uploading ' + file.name + ' because of ' + response + '</div>');
                           },
                       });
 

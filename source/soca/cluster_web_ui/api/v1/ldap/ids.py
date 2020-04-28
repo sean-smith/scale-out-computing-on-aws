@@ -22,7 +22,6 @@ class Ids(Resource):
           501:
            description: Unknown error (followed by trace)
         """
-        prn
         uid_in_use = []
         gid_in_use = []
         try:
