@@ -28,11 +28,10 @@ def delete_job():
         return redirect("/my_jobs")
 
     get_job_for_user = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
-                         headers={"X-SOCA-USER": session["user"],
-                                  "X-SOCA-TOKEN": session["api_key"]},
-                         data={"job_id": job_id_to_delete},
-                         verify=False)
-    print(get_job_for_user.json()["message"])
+                              headers={"X-SOCA-USER": session["user"],
+                                       "X-SOCA-TOKEN": session["api_key"]},
+                              params={"job_id": job_id_to_delete},
+                              verify=False)
     if get_job_for_user.status_code == 200:
         flash("Job deleted successfully", "success")
     else:
