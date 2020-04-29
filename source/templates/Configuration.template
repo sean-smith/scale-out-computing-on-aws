@@ -438,7 +438,11 @@ Resources:
 
 
   SOCABackupVault:
-    DependsOn: SOCABackupRole
+    DependsOn:
+      - SOCABackupRole
+      - SocaBackupIamRole
+      - SOCABackupRestoreIamRole
+
     Type: AWS::Backup::BackupVault
     Properties:
       BackupVaultName: !Sub Vault-${ClusterId}
