@@ -106,6 +106,6 @@ def send_job():
     if send_to_to_queue.status_code == 200:
         flash("Job submitted to the queue with ID: " + send_to_to_queue.json()["message"], "success")
     else:
-        flash("Error during job submission: " + send_to_to_queue.json()["message"], "error")
+        flash("Error during job submission: " + str(send_to_to_queue.json()["message"]), "error")
 
     return redirect("/my_jobs")

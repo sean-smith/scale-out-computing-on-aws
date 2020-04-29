@@ -8,6 +8,7 @@ from decorators import private_api
 from requests import get
 import json
 import shlex
+import sys
 logger = logging.getLogger("soca_api")
 
 
@@ -82,11 +83,23 @@ class Job(Resource):
 
             submit_job_command = config.Config.PBS_QSUB + " " + qsub_script
             try:
-                launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command])
+                launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command], stderr=subprocess.PIPE)
                 job_id = ((launch_job.decode('utf-8')).rstrip().lstrip()).split('.')[0]
                 return {"success": True, "message": str(job_id)}, 200
+            except subprocess.CalledProcessError as e:
+                return {"succes": False,
+                        "message": {
+                            "error": "Unable to submit the job. Your job script is invalid (eg: malformed, syntax error...)",
+                            "stderr": '{}'.format(e.stderr.decode(sys.getfilesystemencoding())),
+                            "stdout": '{}'.format(e.output.decode(sys.getfilesystemencoding())),
+                            "job_script": str(payload)}
+                        }, 500
+
             except Exception as err:
-                return {"succes": False, "message": "Unable to execute qsub command: " + str(err)}, 500
+                return {"succes": False, "message": {"error": "Unable to run Qsub command.",
+                                                     "trace": err,
+                                                     "job_script": str(payload)}}, 500
+
 
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500
