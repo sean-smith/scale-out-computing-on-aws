@@ -21,6 +21,11 @@ submit_job = Blueprint('submit_job', __name__, template_folder='templates')
 def index():
     app = request.args.get("app", None)
     input_file = request.args.get("input_file", None)
+    if input_file is None or input_file == "":
+        # User must specify input first
+        flash("What input file do you want to use? <hr> Navigate to the folder where your input file is located then click 'Use as Simulation Input' icon: <i class='fas fa-microchip fa-lg'  style='color: grey'></i>","info")
+        return redirect("/my_files")
+
     if app is None:
         application_profiles = {}
         get_all_application_profiles = ApplicationProfiles.query.all()
@@ -61,7 +66,7 @@ def job_submission():
     if get_application_profile:
         file_info = decrypt(input_file_info)
         if file_info["success"] != True:
-            flash("Unable to read this file because of " + str(file_info), "error")
+            flash("Unable to use this file as an input (maybe the file was removed or you do not have permission to access it. <br> Please try again or use a different model. Error is: " + str(file_info), "error")
             return redirect("/submit_job")
         profile_form = base64.b64decode(get_application_profile.profile_form).decode()
 
