@@ -8,12 +8,54 @@ from flask_restful import Resource, reqparse
 from requests import get, post, put
 import json
 import logging
+import subprocess
 from decorators import private_api, admin_api
 from flask import session
+import sys
 import shutil
 import ldap.modlist as modlist
 import datetime
+from cryptography.hazmat.primitives import serialization as crypto_serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend as crypto_default_backend
+
 logger = logging.getLogger("soca_api")
+
+def create_home(username):
+    try:
+        user_home = config.Config.USER_HOME
+        key = rsa.generate_private_key(backend=crypto_default_backend(), public_exponent=65537, key_size=2048)
+        private_key = key.private_bytes(
+            crypto_serialization.Encoding.PEM,
+            crypto_serialization.PrivateFormat.TraditionalOpenSSL,
+            crypto_serialization.NoEncryption())
+        public_key = key.public_key().public_bytes(
+            crypto_serialization.Encoding.OpenSSH,
+            crypto_serialization.PublicFormat.OpenSSH
+        )
+        private_key_str = private_key.decode('utf-8')
+        public_key_str = public_key.decode('utf-8')
+        # Create user directory structure and permissions
+        user_path = user_home + '/' + username + '/.ssh'
+        os.makedirs(user_path)
+        print(private_key_str, file=open(user_path + '/id_rsa', 'w'))
+        print(public_key_str, file=open(user_path + '/id_rsa.pub', 'w'))
+        print(public_key_str, file=open(user_path + '/authorized_keys', 'w'))
+        shutil.chown(user_home + '/' + username, user=username, group=username)
+        shutil.chown(user_home + '/' + username + '/.ssh', user=username, group=username)
+        shutil.chown(user_home + '/' + username + '/.ssh/authorized_keys', user=username, group=username)
+        shutil.chown(user_home + '/' + username + '/.ssh/id_rsa', user=username, group=username)
+        shutil.chown(user_home + '/' + username + '/.ssh/id_rsa.pub', user=username, group=username)
+        os.chmod(user_home + '/' + username + '/.ssh', 0o700)
+        os.chmod(user_home + '/' + username + '/.ssh/id_rsa', 0o600)
+        os.chmod(user_home + '/' + username + '/.ssh/authorized_keys', 0o600)
+        return True
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return e
 
 
 class User(Resource):
@@ -212,7 +254,9 @@ class User(Resource):
             if update_group.status_code != 200:
                 return {"success": True, "message": "User/Group created but could not add user to his group"}, 203
 
-            ## Now need to create home
+            # Create home directory
+            if create_home(user) is False:
+                return {"success": False, "message": "User added but unable to create home directory"}, 500
 
             return {"success": True, "message": "Added user"}, 200
 
