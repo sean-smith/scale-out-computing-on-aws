@@ -196,6 +196,7 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub ${ClusterId}
+      KmsKeyId: "aws/secretsmanager"
       Description: !Sub Contain all settings for ${ClusterId}
       SecretString: !Sub '{"VpcId": "${VpcId}",
       "PublicSubnet1": "${PublicSubnet1}",

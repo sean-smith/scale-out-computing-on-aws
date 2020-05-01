@@ -4,6 +4,7 @@ deployment/global-s3-assets/
 ^source/dist/
 ^source/templates/
 ^source/solution-for-scale-out-computing-on-aws.template
+^source/soca/cluster_web_ui/static/*
 ^.idea/
 CODE_OF_CONDUCT.md:4
 CONTRIBUTING.md:50
