@@ -61,6 +61,7 @@ class Config(object):
     PBS_QSTAT = "/opt/pbs/bin/qstat"
     PBS_QDEL = "/opt/pbs/bin/qdel"
     PBS_QSUB = "/opt/pbs/bin/qsub"
+    PBS_QMGR = "/opt/pbs/bin/qmgr"
     # SSH
     SSH_PRIVATE_KEY_LOCATION = "tmp/ssh"
 
