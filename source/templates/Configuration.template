@@ -192,11 +192,15 @@ Resources:
             cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, '')
 
   ConfigParameters:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F81
+            reason: "KmsKeyId use aws/secretsmanager by default"
     DependsOn: SolutionMetricLambda
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub ${ClusterId}
-      KmsKeyId: "aws/secretsmanager"
       Description: !Sub Contain all settings for ${ClusterId}
       SecretString: !Sub '{"VpcId": "${VpcId}",
       "PublicSubnet1": "${PublicSubnet1}",
