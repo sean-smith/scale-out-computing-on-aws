@@ -1,13 +1,14 @@
 import config
 import subprocess
 from flask_restful import Resource, reqparse
+from requests import get
 import logging
 from decorators import admin_only
 import shlex
 logger = logging.getLogger("soca_api")
 
 
-class Queues(Resource):
+class Queue(Resource):
     @admin_only
     def post(self):
         """
@@ -34,6 +35,17 @@ class Queues(Resource):
         if queue_type not in QUEUE_TYPE:
             return {"success": False, "message": "Invalid queue type, must be alwayson or ondemand"}, 400
 
+        get_all_queues = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/queues",
+                             headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                             verify=False)
+        if get_all_queues.status_code == 200:
+            all_queues = get_all_queues.json()["message"]
+        else:
+            return {"success": False, "message": "Unable to retrieve all queues"}
+
+        if queue_name in all_queues:
+            return {"success": False, "message": "Queue already exist. Delete it first"}
+
         try:
             commands_ondemand = ["create queue " + queue_name,
                                  "set queue " + queue_name + " queue_type = Execution",
@@ -59,7 +71,7 @@ class Queues(Resource):
                     except Exception as err:
                         return {"success": False, "message": "Error with " + command + " Trace: " + str(err)}, 500
 
-            return {"success": True, "message": "d"}, 200
+            return {"success": True, "message": "Queue created"}, 200
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500
 
@@ -82,6 +94,17 @@ class Queues(Resource):
         queue_name = args['name']
         if queue_name is None:
             return {"success": False, "message": "name (str) is required parameter"}, 400
+
+        get_all_queues = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/queues",
+                             headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                             verify=False)
+        if get_all_queues.status_code == 200:
+            all_queues = get_all_queues.json()["message"]
+        else:
+            return {"success": False, "message": "Unable to retrieve all queues"}
+
+        if queue_name not in all_queues:
+            return {"success": False, "message": "Queue does not exist. Create it first"}
 
         try:
             delete_queue = subprocess.Popen(shlex.split(config.Config.PBS_QMGR + ' -c "delete queue ' + queue_name + '"'))

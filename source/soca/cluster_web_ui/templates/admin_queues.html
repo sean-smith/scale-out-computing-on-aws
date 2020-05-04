@@ -45,7 +45,6 @@
                       <div class="nav nav-tabs" id="nav-tab" role="tablist">
                           <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-add" role="tab" aria-controls="nav-home" aria-selected="true">Create a queue</a>
                           <a class="nav-item nav-link" id="nav-profile-tab" data-toggle="tab" href="#nav-delete" role="tab" aria-controls="nav-delete" aria-selected="false">Delete a queue</a>
-                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-parameters" role="tab" aria-controls="nav-contact" aria-selected="false">Queue parameters</a>
                       </div>
                      </nav>
                   <div class="tab-content" id="nav-tabContent">
@@ -61,7 +60,7 @@
                                           <input id="queue_name" placeholder="Queue name" class="form-control" type="text" required name="queue_name">
                                       </div>
                                       <select class="form-control" id="queue_type" name="queue_type">
-                                            <option value="automatic">Automatic Provisioning (Default)</option>
+                                          <option value="ondemand">Automatic Provisioning (Default)</option>
                                           <option value="alwayson">AlwaysOn</option>
                                     </select>
                                       <br>
@@ -70,6 +69,14 @@
                                           <button type="submit" class="btn btn-primary btn-lg">Create new Queue</button>
                                       </div>
                                   </form>
+                                  <br>
+                                  <div class="alert alert-info">
+                                      <strong>Automatic Provisioning</strong><br>
+                                      Host in this queue will be provisioned automatically based on the number jobs in the queue. Hosts are restricted to a given job ID and are automatically terminated as soon as the job complete.
+                                      <hr>
+                                      <strong>Always On</strong><br>
+                                      Host in this queue will stay online until an admin decide to manually turn them off
+                                  </div>
                               </div>
                           </div>
                       </div>
@@ -78,30 +85,29 @@
                           <br>
                           <div class="card shadow mb-4">
                               <div class="card-header py-3">
-                                  <h6 class="m-0 font-weight-bold text-primary">Delete User</h6>
+                                  <h6 class="m-0 font-weight-bold text-primary">Delete a queue</h6>
                               </div>
                               <div class="card-body">
                                   <div class="alert alert-primary" role="alert">
                                       <strong>Important </strong>
-                                      Deleting user will prevent user to access the cluster but does not remove associated $HOME directory and data
+                                      It's not recommended to delete the default queues: low,normal,high,test,desktop and alwayson.
                                   </div>
 
-                                  <form action="/admin/delete_user" method="post"
-                                    oninput='password_verif.setCustomValidity(password_verif.value != password.value ? "Passwords do not match." : "")'>                                  <div class="form-group">
-                                    <select class="form-control" id="user_to_delete" name="user_to_delete">
-                                        {% for user in all_users %}
-                                            <option value="{{user}}">{{user}}</option>
+                                  <form action="/admin/delete_user" method="post">                                  <div class="form-group">
+                                    <select class="form-control" id="queue_to_delete" name="queue_to_delete">
+                                        {% for queue in all_queues %}
+                                            <option value="{{queue}}">{{queue}}</option>
                                         {% endfor %}
 
                                     </select>
                                   </div>
                                        <div class="form-group form-check">
                                           <input type="checkbox" class="form-check-input" name="verif" id="verif" required>
-                                          <label class="form-check-label" for="verif">I am sure I want to delete this user</label>
+                                          <label class="form-check-label" for="verif">I am sure I want to delete this queue</label>
                                       </div>
                                       <div align="center">
                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                          <button type="submit" class="btn btn-danger btn-lg">Delete User</button>
+                                          <button type="submit" class="btn btn-danger btn-lg">Delete Queue</button>
                                       </div>
                                   </form>
                               </div>
