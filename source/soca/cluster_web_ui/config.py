@@ -47,7 +47,7 @@ class Config(object):
     DCV_AUTH_DIR = "/var/run/dcvsimpleextauth"
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
-    DCV_MAX_SESSION_ACOUNT = 4
+    DCV_MAX_SESSION_COUNT = 4
 
     # LDAP
     LDAP_HOST = "127.0.0.1"

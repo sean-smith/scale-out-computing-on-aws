@@ -5,7 +5,6 @@
 
      {% include 'common/header.html' %}
 
-
 </head>
 
 <body id="page-top">
@@ -91,11 +90,9 @@
                                       {% endif  %}
                                   {% endfor %}
                               {% else %}
-
                                   <form method="get" action="/api/dcv_create_session">
                                     <div class="row">
-
-                                      <div class="form-group col-md-4">
+                                      <div class="form-group col-md-3">
                                           <label for="walltime">Session Validity</label>
                                           <select class="form-control" name='walltime' id="walltime">
                                               <option selected="true" value="24:00:00">1 day</option>
@@ -108,7 +105,7 @@
                                           </select>
                                       </div>
                                       <input type="hidden" id="session_number" name="session_number" value="{{ n }}">
-                                      <div class="form-group col-md-8">
+                                      <div class="form-group col-md-6">
                                           <label for="instance_type">Session Type</label>
                                           <select class="form-control" name='instance_type' id="instance_type">
                                               <option value="" disabled="disabled">-- Quick Launch 2D --</option>
@@ -127,26 +124,50 @@
                                               {% endfor %}
                                           </select>
                                       </div>
+                                        <div class="form-group col-md-3 mb-3">
+                                            <label for="instance_type">Extra Options</label>
+
+                                            <button class="btn btn-info btn-sm" type="button" data-toggle="collapse" data-target="#advancedOptions{{ n }}" aria-expanded="false">
+                                                Advanced View
+                                            </button>
+                                        </div>
                                 </div>
+                                      <div class="collapse" id="advancedOptions{{ n }}">
+                                          <br>
+                                          <div>
+                                               <div class="form-group">
+                                                   <input id="instance_ami" placeholder="EC2 AMI ID to use" class="form-control" type="text"  name="instance_ami">
+                                                   <small id="instance_ami" class="form-text text-muted">(Optional) Install DCV on your custom AMI</small>
+                                               </div>
+                                                <div class="form-group">
+                                                   <input id="base_os" placeholder="OS of the AMI if different than the master" class="form-control" type="text"  name="base_os">
+                                                    <small id="instance_ami" class="form-text text-muted">Specify base os (centos7/amazonlinux2/rhel7) of your AMI if different than the master</small>
+
+                                               </div>
+                                               <div class="form-group">
+                                                   <input id="scratch_size" placeholder="Scratch storage (in GB)" class="form-control" type="text" required name="scratch_size">
+                                                   <small id="scratch_size" class="form-text text-muted">EBS storage (in GB) to be mounted under <code>/scratch</code></small>
+
+                                               </div>
+                                          </div>
+                                          <br>
+                                      </div>
 
                                      <div align="center">
                                       <button type="submit"  class="btn btn-primary btn-icon-split">
                                           <span class="icon text-white-50">
                                               <i class="fas fa-info-circle"></i>
                                           </span>
+                                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                           <span class="text">Launch my Session #{{ n }}</span>
                                       </button>
                                      </div>
                                   </form>
-
-
                               {% endif %}
                               </div>
                           </div>
                     </div>
                 {% endfor %}
-
-
 
               </div>
           </div>

@@ -13,12 +13,11 @@ def index():
     get_job_for_user = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/jobs",
                          params={"user": session["user"]},
                          verify=False)
-    print(get_job_for_user.json()["message"])
     if get_job_for_user.status_code == 200:
-        return render_template("my_jobs.html", user=session["user"], jobs=get_job_for_user.json()["message"])
+        return render_template("my_jobs.html", user=session["user"], jobs=get_job_for_user.json()["message"], page="my_jobs")
     else:
         flash("Unable to retrieve your job", "error")
-        return render_template("my_jobs.html", user=session["user"], jobs={})
+        return render_template("my_jobs.html", user=session["user"], jobs={}, page="my_jobs")
 
 @my_jobs.route("/my_jobs/delete", methods=["GET"])
 @login_required

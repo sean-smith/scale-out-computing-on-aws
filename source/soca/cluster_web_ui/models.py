@@ -30,6 +30,19 @@ class ApplicationProfiles(db.Model):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
+class DCVSessions(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user = db.Column(db.String(255), nullable=False)
+    session_id = db.Column(db.String(255), nullable=False)
+    session_info = db.Column(db.Text, nullable=False)
+    is_active = db.Column(db.Boolean)
+    created_on = db.Column(db.DateTime)
+    deactivated_on = db.Column(db.DateTime)
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
 class ProjectList(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     creator = db.Column(db.String(255), nullable=False)

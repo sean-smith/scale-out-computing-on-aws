@@ -20,6 +20,6 @@
   <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
 
-  {% if view == 'remotedesktop' or view == 'qstat' %}
-    <meta http-equiv="refresh" content="120">
+  {% if page == 'remote_desktop' or page == 'my_jobs' %}
+      <meta http-equiv="refresh" content="120">
   {% endif %}

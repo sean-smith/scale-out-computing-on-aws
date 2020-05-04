@@ -1,5 +1,4 @@
 import logging.config
-import subprocess
 from flask import Flask, request, jsonify, render_template
 from flask_restful import Api
 from flask_session import Session
@@ -28,18 +27,17 @@ from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
 from views.admin.applications import admin_applications
 from views.my_jobs import my_jobs
-
-
+from views.remote_desktop import remote_desktop
 from views.my_account import my_account
 from views.my_files import my_files
 from views.submit_job import submit_job
-
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
 from models import db
 from flask_swagger import swagger
 from swagger_ui import api_doc
 import config
+
 app = Flask(__name__)
 csrf = CSRFProtect(app)
 csrf.exempt("api")
@@ -85,7 +83,7 @@ app.register_blueprint(submit_job)
 app.register_blueprint(ssh)
 app.register_blueprint(sftp)
 app.register_blueprint(my_jobs)
-
+app.register_blueprint(remote_desktop)
 
 
 
