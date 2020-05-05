@@ -37,11 +37,13 @@ class Job(Resource):
                 try:
                     job_info = json.loads(((get_job_info.decode('utf-8')).rstrip().lstrip()))
                 except Exception as err:
-                    return {"success": False, "message": "Unable to retrieve this job. Job may have terminated."}, 500
+                    return {"success": False, "message": "Unable to retrieve this job. Job may have terminated."}, 210
 
-                return {"success": True, "message": job_info}, 200
+                job_key = list(job_info["Jobs"].keys())[0]
+                return {"success": True, "message": job_info["Jobs"][job_key]}, 200
+
             except Exception as err:
-                return {"succes": False, "message": "Unable to retrieve Job ID (job may have terminated and is no longer in the queue)"}, 500
+                return {"succes": False, "message": "Unable to retrieve Job ID (job may have terminated and is no longer in the queue)"}, 210
 
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500

@@ -79,7 +79,9 @@
                                            <th>{{ job_data.Resource_List.nodect }}</th>
                                            <th>
                                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#job{{ job_id.split(".")[0] }}">Job Info</button>
-                                               <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete{{ job_id.split(".")[0] }}">Kill</button>
+                                               {% if job_data.job_state != 'E' %}
+                                                   <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete{{ job_id.split(".")[0] }}">Kill</button>
+                                               {% endif %}
                                            </th>
                                            </tr>
                                           <!-- Modal Delete -->
