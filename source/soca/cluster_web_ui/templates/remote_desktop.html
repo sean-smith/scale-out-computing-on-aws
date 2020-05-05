@@ -58,13 +58,14 @@
                               {% if n in user_sessions.keys() %}
                                   {% for session_number, session_data in user_sessions.items() %}
                                       {% if session_number == n %}
-                                          {% if session_data.state == 'pending' %}
+
+                                          {% if session_data.session_state == 'pending' %}
                                               <div class="alert alert-warning" role="alert">
-                                                  Please wait, your session is starting and will be ready within 20 minutes (<a href="/qstat">check session creation progress</a>)
+                                                  Please wait, your session is starting and will be ready within 20 minutes (<a href="/my_jobs">check session creation progress</a>)
                                                   This page will automatically be refreshed when the session is active.
                                               </div>
 
-                                          {% elif session_data.state == 'running' %}
+                                          {% elif session_data.session_state == 'running' %}
                                               <h5>Access your Session</h5>
                                               <hr>
                                               <h6>Option1: Browser access</h6>

@@ -10,11 +10,19 @@ import random
 import string
 import base64
 import datetime
+import os
+import json
 
 logger = logging.getLogger("api_log")
 remote_desktop = Blueprint('remote_desktop', __name__, template_folder='templates')
 client = boto3.client('ec2')
 
+
+def get_soca_configuration():
+    secretsmanager_client = boto3.client('secretsmanager')
+    configuration_secret_name = os.environ['SOCA_CONFIGURATION']
+    response = secretsmanager_client.get_secret_value(SecretId=configuration_secret_name)
+    return json.loads(response['SecretString'])
 
 @remote_desktop.route('/remote_desktop', methods=['GET'])
 @login_required
@@ -37,8 +45,9 @@ def index():
 
         check_session = DCVSessions.query.filter_by(job_id=job_id).first()
         if get_job_info.status_code == 200:
+            # Job in queue, edit only if state is running
             job_state = get_job_info.json()["message"]["job_state"]
-            if job_state == "R":
+            if job_state == "R" and check_session.session_state != "running":
                 exec_host = (get_job_info.json()["message"]["exec_host"]).split("/")[0]
                 # Only edit the DB is needed
                 if check_session:
@@ -52,14 +61,11 @@ def index():
             check_session.deactivated_on = datetime.datetime.utcnow()
             db.session.commit()
         else:
-            # Unknown error:
-            pass
+            flash("Unknown error for session " + str(session_number) + " assigned to job " + str(job_id) + " with error " + str(get_job_info.text), "error")
 
         user_sessions[session_number] = {
-                "session_state": session_state,
-                "session_password": session_password,
-                "session_uuid": session_uuid,
-                "session_host": session_host}
+                "url": 'https://' + get_soca_configuration()['LoadBalancerDNSName'] + '/' + check_session.session_host  + '/?authToken=' + session_password + '#' + session_uuid ,
+                "session_state": session_state}
 
 
     max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
@@ -130,19 +136,16 @@ def create():
             sleep 3600
         done
     '''
-    '''
+
     payload = base64.b64encode(job_to_submit.encode()).decode()
     send_to_to_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
                             data={"payload": payload},
                             verify=False)
-    '''
 
-    #if send_to_to_queue.status_code == 200:
-        #job_id =  send_to_to_queue.json()["message"]
-    if True:
-        job_id = "12"
+    if send_to_to_queue.status_code == 200:
+        job_id = str(send_to_to_queue.json()["message"])
         flash("Your session has been initiated (job number " + job_id + "). It will be ready within 20 minutes.", "success")
         new_session = DCVSessions(user=session["user"],
                                   job_id=job_id,
