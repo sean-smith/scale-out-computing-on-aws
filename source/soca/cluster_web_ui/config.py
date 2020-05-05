@@ -43,7 +43,6 @@ class Config(object):
     COGNITO_CALLBACK_URL= "<YOUR_CALLBACK_URL>"
 
     # DCV
-    DCV_BIN = "/usr/bin/dcv"
     DCV_AUTH_DIR = "/var/run/dcvsimpleextauth"
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"

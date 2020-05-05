@@ -24,6 +24,7 @@ def get_soca_configuration():
     response = secretsmanager_client.get_secret_value(SecretId=configuration_secret_name)
     return json.loads(response['SecretString'])
 
+
 @remote_desktop.route('/remote_desktop', methods=['GET'])
 @login_required
 def index():
@@ -33,15 +34,13 @@ def index():
         session_state = session_info.session_state
         session_password = session_info.session_password
         session_uuid = session_info.session_uuid
-        session_host = session_info.session_host
         job_id = session_info.job_id
 
-        get_job_info = get(#config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
-            "https://soca-a5m4-viewer-2002948608.us-east-1.elb.amazonaws.com/api/scheduler/job",
-            headers={"X-SOCA-USER": session["user"],
-                     "X-SOCA-TOKEN": session["api_key"]},
-                     params={"job_id": job_id},
-                     verify=False)
+        get_job_info = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
+                           headers={"X-SOCA-USER": session["user"],
+                                    "X-SOCA-TOKEN": session["api_key"]},
+                           params={"job_id": job_id},
+                           verify=False)
 
         check_session = DCVSessions.query.filter_by(job_id=job_id).first()
         if get_job_info.status_code == 200:
@@ -49,7 +48,6 @@ def index():
             job_state = get_job_info.json()["message"]["job_state"]
             if job_state == "R" and check_session.session_state != "running":
                 exec_host = (get_job_info.json()["message"]["exec_host"]).split("/")[0]
-                # Only edit the DB is needed
                 if check_session:
                     check_session.session_host = exec_host
                     check_session.session_state = "running"
@@ -64,9 +62,8 @@ def index():
             flash("Unknown error for session " + str(session_number) + " assigned to job " + str(job_id) + " with error " + str(get_job_info.text), "error")
 
         user_sessions[session_number] = {
-                "url": 'https://' + get_soca_configuration()['LoadBalancerDNSName'] + '/' + check_session.session_host  + '/?authToken=' + session_password + '#' + session_uuid ,
+                "url": 'https://' + get_soca_configuration()['LoadBalancerDNSName'] + '/' + check_session.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
                 "session_state": session_state}
-
 
     max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
@@ -78,6 +75,7 @@ def index():
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
+
 
 @remote_desktop.route('/remote_desktop/create', methods=['POST'])
 @login_required
@@ -92,30 +90,32 @@ def create():
     session_uuid = str(uuid.uuid4())
     session_password = ''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(80))
 
-    command_dcv_create_session = config.Config.DCV_BIN + " create-session --user  " + session["user"] + " --owner " + session["user"] + " " + session_uuid
+    command_dcv_create_session = "create-session --user  " + session["user"] + " --owner " + session["user"] + " " + session_uuid
     params = {'pbs_job_name': 'Desktop' + str(parameters["session_number"]),
               'pbs_queue': 'desktop',
               'pbs_project': 'gui',
               'instance_type': parameters["instance_type"],
-              'instance_ami': parameters["instance_ami"],
-              'base_os': parameters["base_os"],
-              'scratch_size': parameters["scratch_size"],
+              'instance_ami': "#PBS -l instance_ami=" + parameters["instance_ami"] if parameters["instance_ami"] is not False else "",
+              'base_os': "#PBS -l base_os=" + parameters["base_os"] if parameters["base_os"] is not False else "",
+              'scratch_size': "#PBS -l scratch_size=" + parameters["scratch_size"] if parameters["scratch_size"] is not False else "",
               'session_password': session_password,
               'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
               'walltime': parameters["walltime"]}
 
-
-    ## build job
     job_to_submit = '''
     #PBS -N ''' + params['pbs_job_name'] + '''
     #PBS -q ''' + params['pbs_queue'] + '''
     #PBS -P ''' + params['pbs_project'] + '''
     #PBS -l walltime=''' + params['walltime'] + '''
     #PBS -l instance_type=''' + params['instance_type'] + '''
+    ''' + params['instance_ami'] + '''
+    ''' + params['base_os'] + '''
+    ''' + params['scratch_size'] + '''
     #PBS -e /dev/null
     #PBS -o /dev/null
     # Create the DCV Session
-    ''' + command_dcv_create_session + '''
+    DCV=$(which dcv)
+    $DCV ''' + command_dcv_create_session + '''
 
     # Query dcvsimpleauth with add-user
     echo ''' + params['session_password_b64'] + ''' | base64 --decode | ''' + config.Config.DCV_SIMPLE_AUTH + ''' add-user --user ''' + session["user"] + ''' --session ''' + session_uuid + ''' --auth-dir ''' + config.Config.DCV_AUTH_DIR + '''
@@ -128,7 +128,7 @@ def create():
     # Keep job open
     while true
         do
-            session_keepalive=$(''' + config.Config.DCV_BIN + ''' list-sessions | grep ''' + session_uuid + ''' | wc -l)
+            session_keepalive=$($DCV list-sessions | grep ''' + session_uuid + ''' | wc -l)
             if [ $session_keepalive -ne 1 ]
                 then
                     exit 0
@@ -141,7 +141,7 @@ def create():
     send_to_to_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
-                            data={"payload": payload},
+                            data={"payload": payload, },
                             verify=False)
 
     if send_to_to_queue.status_code == 200:

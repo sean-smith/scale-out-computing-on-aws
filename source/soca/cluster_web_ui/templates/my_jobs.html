@@ -118,17 +118,17 @@
                                                               <span aria-hidden="true">&times;</span>
                                                           </button>
                                                       </div>
-                                                      <div class="modal-body">
-                                                                  {% for key, value in job_data.items() %}
-                                                                      {% if key == "Variable_List" or key == "Resource_List" %}
-                                                                          <strong>{{ key }}</strong>:
-                                                                        {% for resource_name, resource_value in value.items() %}
-                                                                            <li><strong>{{ resource_name }}:</strong> {{ resource_value }}</li>
-                                                                        {% endfor %}
-                                                                      {% else %}
-                                                                          <strong>{{ key }}</strong>: {{ value }}<br>
-                                                                      {% endif %}
-                                                              {% endfor %}
+                                                      <div class="modal-body container">
+                                                          {% for key, value in job_data.items() %}
+                                                              {% if key == "Variable_List" or key == "Resource_List" %}
+                                                                  <strong>{{ key }}</strong>:
+                                                                  {% for resource_name, resource_value in value.items() %}
+                                                                      <li style="margin-left: 30px"><strong>{{ resource_name }}:</strong> {{ resource_value }}</li>
+                                                                  {% endfor %}
+                                                              {% else %}
+                                                                  <strong>{{ key }}</strong>: {{ value }}<br>
+                                                              {% endif %}
+                                                          {% endfor %}
                                                           </div>
                                                           <div class="modal-footer">
                                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

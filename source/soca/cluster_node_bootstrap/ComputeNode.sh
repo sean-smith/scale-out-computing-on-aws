@@ -230,14 +230,14 @@ echo -e "
 \$clienthost $SCHEDULER_HOSTNAME
 "  > /var/spool/pbs/mom_priv/config
 
+INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-type | cut -d. -f1`
 
 # If GPU instance, disable NOUVEAU drivers before installing DCV as this require a reboot
 # Rest of the DCV configuration is managed by ComputeNodeInstallDCV.sh
-INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-type | cut -d. -f1`
 GPU_INSTANCE_FAMILY=(g2 g3 g4 p2 p3 p3dn)
 if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_TYPE}" ]];
 then
-    echo "Detected GPU instances, disabling NOUVEAU driver and installing latest Nvidia drivers"
+    echo "Detected GPU instance .. disable NOUVEAU driver"
     cat << EOF | sudo tee --append /etc/modprobe.d/blacklist.conf
 blacklist vga16fb
 blacklist nouveau

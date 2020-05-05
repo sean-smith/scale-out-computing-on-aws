@@ -19,6 +19,7 @@ def index():
         flash("Unable to retrieve your job", "error")
         return render_template("my_jobs.html", user=session["user"], jobs={}, page="my_jobs")
 
+
 @my_jobs.route("/my_jobs/delete", methods=["GET"])
 @login_required
 def delete_job():
