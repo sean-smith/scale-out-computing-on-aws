@@ -55,7 +55,7 @@
                                   <h6 class="m-0 font-weight-bold text-primary">Create a new queue</h6>
                               </div>
                               <div class="card-body">
-                                  <form action="/admin/create_new_queue" method="post">
+                                  <form action="/admin/queues/create" method="post">
                                       <div class="form-group">
                                           <input id="queue_name" placeholder="Queue name" class="form-control" type="text" required name="queue_name">
                                       </div>
@@ -93,7 +93,7 @@
                                       It's not recommended to delete the default queues: low,normal,high,test,desktop and alwayson.
                                   </div>
 
-                                  <form action="/admin/delete_user" method="post">                                  <div class="form-group">
+                                  <form action="/admin/queues/delete" method="post">                                  <div class="form-group">
                                     <select class="form-control" id="queue_to_delete" name="queue_to_delete">
                                         {% for queue in all_queues %}
                                             <option value="{{queue}}">{{queue}}</option>

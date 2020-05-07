@@ -27,14 +27,15 @@ def index():
     return render_template('admin_queues.html', user=session['user'], all_queues=all_queues)
 
 
-@admin_queues.route('/admin/create_queue', methods=['POST'])
+@admin_queues.route('/admin/queues/create', methods=['POST'])
 @login_required
 @admin_only
 def create_new_queue():
     queue_name = str(request.form.get('queue_name'))
     queue_type = str(request.form.get('queue_type'))
     create_new_queue = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
-                            headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                            headers={"X-SOCA-TOKEN": session["api_key"],
+                                     "X-SOCA-USER": session["user"]},
                             data={"name": queue_name, "type": queue_type},
                             verify=False)
     if create_new_queue.status_code == 200:
@@ -44,7 +45,7 @@ def create_new_queue():
     return redirect('/admin/queues')
 
 
-@admin_queues.route('/admin/delete_queue', methods=['POST'])
+@admin_queues.route('/admin/queues/delete', methods=['POST'])
 @login_required
 @admin_only
 def delete_queue():
