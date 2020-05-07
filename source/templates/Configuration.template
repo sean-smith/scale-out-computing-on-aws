@@ -196,7 +196,7 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: F81
-            reason: "KmsKeyId use aws/secretsmanager by default"
+            reason: "KmsKeyId defaults to AWS account CMK, aws/secretsmanager hence not explicitly specified"
     DependsOn: SolutionMetricLambda
     Type: AWS::SecretsManager::Secret
     Properties:
