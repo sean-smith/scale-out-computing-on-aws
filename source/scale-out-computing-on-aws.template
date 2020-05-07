@@ -121,7 +121,7 @@ Mappings:
   Info:
     Data:
       ClusterIdPrefix: soca
-      Version: 2.0.0
+      Version: 2.0.1
     User:
       centos7: centos
       amazonlinux2: ec2-user
