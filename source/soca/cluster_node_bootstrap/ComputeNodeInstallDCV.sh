@@ -39,8 +39,7 @@ rpm -ivh *.rpm --nodeps
 DCVGLADMIN=$(which dcvgladmin)
 
 # Uninstall dcv-gl if not GPU instances
-# Note: NVIDIA-CUDA drivers must be installed first
-if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_TYPE}" ]];
+if [[ ! "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_TYPE}" ]];
 then
     $DCVGLADMIN disable
 fi
