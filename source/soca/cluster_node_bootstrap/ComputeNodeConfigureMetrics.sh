@@ -27,15 +27,14 @@ then
   $METRICBEAT module enable aws
   cp
   # Start MetricBeat in background
-  $METRICBEAT run -e -E \
-      -E "setup.kibana.host='https://$SOCA_ESDOMAIN_ENDPOINT:443/_plugin/kibana'" \
+  $METRICBEAT run -E "setup.kibana.host='https://$SOCA_ESDOMAIN_ENDPOINT:443/_plugin/kibana'" \
       -E "output.elasticsearch.hosts=['https://$SOCA_ESDOMAIN_ENDPOINT:443']" \
       -E "setup.ilm.enabled='false'" \
       -E "fields.job_id='$SOCA_JOB_ID'" \
       -E "fields.job_owner='$SOCA_JOB_OWNER'" \
       -E "fields.job_name='$SOCA_JOB_NAME'" \
       -E "fields.job_project='$SOCA_JOB_PROJECT'" \
-      -E "fields.job_queue='$SOCA_JOB_QUEUE'" &&
+      -E "fields.job_queue='$SOCA_JOB_QUEUE'" &
 
 else
   echo "MetricBeat disabled for this run "

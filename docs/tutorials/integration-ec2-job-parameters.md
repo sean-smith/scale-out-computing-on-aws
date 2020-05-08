@@ -232,6 +232,14 @@ Below is a list of parameters you can specify when you request your simulation t
 
 ## Others
 
+#### system_metrics
+
+*Default to True*
+
+- Description: Send host level metrics to your ElasticSearch backend
+- Allowed Value: `yes` `no` `true` `false` (case insensitive) 
+- Example: `-l system_metrics=False`
+
 #### anonymous_metrics
 
 *Default to the value specified during SOCA installation*
