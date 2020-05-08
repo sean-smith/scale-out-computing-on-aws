@@ -97,6 +97,10 @@ echo export "SOCA_FSX_LUSTRE_BUCKET="''' + str(params['FSxLustreConfiguration'][
 echo export "SOCA_FSX_LUSTRE_DNS="''' + str(params['FSxLustreConfiguration']['existing_fsx']).lower() + '''"" >> /etc/environment
 echo export "SOCA_INSTANCE_TYPE=$GET_INSTANCE_TYPE" >> /etc/environment
 echo export "SOCA_INSTANCE_HYPERTHREADING="''' + str(params['ThreadsPerCore']).lower() + '''"" >> /etc/environment
+echo export "SOCA_SYSTEM_METRICS="''' + str(params['SystemMetrics']).lower() + '''"" >> /etc/environment
+echo export "SOCA_ESDOMAIN_ENDPOINT="''' + str(params['ESDomainEndpoint']).lower() + '''"" >> /etc/environment
+
+
 echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(params['ClusterId']) + '''/cluster_node_bootstrap/logs/''' + str(params['JobId']) + '''/$(hostname -s)"" >> /etc/environment
 echo export "AWS_STACK_ID=${AWS::StackName}" >> /etc/environment
 echo export "AWS_DEFAULT_REGION=${AWS::Region}" >> /etc/environment
