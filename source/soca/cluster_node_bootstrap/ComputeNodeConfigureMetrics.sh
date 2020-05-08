@@ -33,7 +33,8 @@ then
       -E "fields.job_owner='$SOCA_JOB_OWNER'" \
       -E "fields.job_name='$SOCA_JOB_NAME'" \
       -E "fields.job_project='$SOCA_JOB_PROJECT'" \
-      -E "fields.job_queue='$SOCA_JOB_QUEUE'" &
+      -E "fields.job_queue='$SOCA_JOB_QUEUE'" \
+      -E "tags=['$SOCA_JOB_ID','$SOCA_JOB_OWNER','$SOCA_JOB_NAME','$SOCA_JOB_PROJECT', '$SOCA_JOB_QUEUE']" &
 
 else
   echo "MetricBeat disabled for this run "
