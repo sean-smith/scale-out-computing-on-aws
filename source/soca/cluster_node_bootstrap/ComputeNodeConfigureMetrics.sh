@@ -20,11 +20,12 @@ then
   sudo rpm -vi $METRICBEAST_RPM
   METRICBEAT=$(which metricbeat)
 
-  # Copy conf
+  # Copy custom SOCA configuration file
   cp /apps/soca/$SOCA_CONFIGURATION/cluster_analytics/metricbeat/system.yml /etc/metricbeat/modules.d/
 
   # Enable AWS module (only if using commercial binary)
   # $METRICBEAT module enable aws
+
   # Start MetricBeat in background
   $METRICBEAT run -E "setup.kibana.host='https://$SOCA_ESDOMAIN_ENDPOINT:443/_plugin/kibana'" \
       -E "output.elasticsearch.hosts=['https://$SOCA_ESDOMAIN_ENDPOINT:443']" \
