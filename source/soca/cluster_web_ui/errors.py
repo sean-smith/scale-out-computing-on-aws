@@ -11,7 +11,7 @@ def all_errors(error_name, trace=False):
         "UNABLE_RETRIEVE_IDS": ["Unable to retrieve LDAP IDS due to " + str(trace), 225],
         "GROUP_DO_NOT_EXIST": ["This LDAP group does not exist", 226],
         "NO_ACTIVE_TOKEN": ["Could not find any active token for this user", 227],
-        "CLIENT_MISSING_PARAMETER": ["Client input malformed", 400],
+        "CLIENT_MISSING_PARAMETER": ["Client input malformed. " + str(trace), 400],
         "CLIENT_OWN_RESOURCE": ["You cannot delete your own user/group", 400],
         "CLIENT_NOT_OWNER": ["You are not the owner of this resource", 400],
         "INVALID_EMAIL_ADDRESS": ["The email address does not seems to be correct", 400],

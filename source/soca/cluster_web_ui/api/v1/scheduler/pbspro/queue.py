@@ -3,13 +3,13 @@ import subprocess
 from flask_restful import Resource, reqparse
 from requests import get
 import logging
-from decorators import admin_only
+from decorators import private_api, admin_api
 import shlex
 logger = logging.getLogger("soca_api")
 
 
 class Queue(Resource):
-    @admin_only
+    @admin_api
     def post(self):
         """
         Create a new queue
@@ -51,12 +51,12 @@ class Queue(Resource):
                                  "set queue " + queue_name + " queue_type = Execution",
                                  "set queue " + queue_name + " default_chunk.compute_node = tbd",
                                  "set queue " + queue_name + " enabled = True",
-                                 "set queue " + queue_name + " enabled = True"]
+                                 "set queue " + queue_name + " started = True"]
 
             commands_alwayson = ["create queue " + queue_name,
                                  "set queue " + queue_name + " queue_type = Execution",
                                  "set queue " + queue_name + " enabled = True",
-                                 "set queue " + queue_name + " enabled = True"]
+                                 "set queue " + queue_name + " started = True"]
 
             if queue_type == "ondemand":
                 for command in commands_ondemand:
@@ -75,7 +75,7 @@ class Queue(Resource):
         except Exception as err:
             return {"success": False, "message": "Unknown error: " + str(err)}, 500
 
-    @admin_only
+    @admin_api
     def delete(self):
         """
         Delete a queue

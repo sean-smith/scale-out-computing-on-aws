@@ -91,7 +91,7 @@ def reset_key():
             # User can change their own password
             if password == password_verif:
                 change_password = post(config.Config.FLASK_ENDPOINT + '/api/user/reset_password',
-                                       headers={"X-SOCA-TOKEN": session["api_key"],
+                                       headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY,
                                                 "X-SOCA-USER": session["user"]},
                                        data={"user": session["user"],
                                              "password": password},

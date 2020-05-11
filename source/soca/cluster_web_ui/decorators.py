@@ -119,15 +119,17 @@ def login_required(f):
 # Views restricted to admin
 def admin_only(f):
     @wraps(f)
-    def validate_account():
+    def check_admin():
+        print("CHECK ADMIN")
+        logger.error("TRALALAL")
+        print(str(session))
         if "sudoers" in session:
             if session["sudoers"] is True:
                 return f()
             else:
                 flash("Sorry this page requires admin privileges.", "error")
                 return redirect("/")
-
         else:
             return redirect('/login')
 
-    return validate_account
+    return check_admin

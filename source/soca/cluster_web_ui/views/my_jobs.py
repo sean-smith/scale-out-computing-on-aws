@@ -11,6 +11,8 @@ my_jobs = Blueprint('my_jobs', __name__, template_folder='templates')
 @login_required
 def index():
     get_job_for_user = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/jobs",
+                           headers={"X-SOCA-USER": session["user"],
+                                    "X-SOCA-TOKEN": session["api_key"]},
                          params={"user": session["user"]},
                          verify=False)
     if get_job_for_user.status_code == 200:

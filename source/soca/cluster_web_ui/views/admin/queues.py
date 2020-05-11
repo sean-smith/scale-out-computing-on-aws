@@ -33,7 +33,7 @@ def index():
 def create_new_queue():
     queue_name = str(request.form.get('queue_name'))
     queue_type = str(request.form.get('queue_type'))
-    create_new_queue = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
+    create_new_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/queue",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
                             data={"name": queue_name, "type": queue_type},
@@ -53,7 +53,7 @@ def delete_queue():
     delete_queue = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/queue",
                              headers={"X-SOCA-TOKEN": session["api_key"],
                                       "X-SOCA-USER": session["user"]},
-                             data={"RequestParser": queue_name},
+                             data={"name": queue_name},
                          verify=False
                          )
     if delete_queue.status_code == 200:

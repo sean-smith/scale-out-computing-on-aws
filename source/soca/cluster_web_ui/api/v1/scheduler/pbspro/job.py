@@ -42,6 +42,8 @@ class Job(Resource):
         parser.add_argument('job_id', type=str, location='args')
         args = parser.parse_args()
         job_id = args['job_id']
+        if job_id is None:
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "job_id (str) parameter is required")
 
         try:
             qstat_command = config.Config.PBS_QSTAT + " -f " + job_id + " -Fjson"
@@ -166,8 +168,7 @@ class Job(Resource):
             return {"success": False, "message": "Unable to retrieve this job. Job may have terminated"}, 500
         else:
             job_info = get_job_info.json()["message"]
-            job_id_key = list(job_info["Jobs"].keys())
-            job_owner = job_info["Jobs"][job_id_key[0]]["Job_Owner"].split("@")[0]
+            job_owner = job_info["Job_Owner"].split("@")[0]
             request_user = request.headers.get("X-SOCA-USER")
             if request_user is None:
                 return errors.all_errors("X-SOCA-USER_MISSING")
