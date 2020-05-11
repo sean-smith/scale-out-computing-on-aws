@@ -9,19 +9,32 @@ from requests import get
 import json
 import shlex
 import sys
+import errors
+
 logger = logging.getLogger("soca_api")
 
 
 class Job(Resource):
+    @private_api
     def get(self):
         """
-        Get info for a job
+        Return information for a given job
         ---
         tags:
           - Scheduler
+        parameters:
+          - in: body
+            name: body
+            schema:
+              optional:
+                - job_id
+              properties:
+                job_id:
+                   type: string
+                   description: ID of the job
         responses:
           200:
-            description: List of queue
+            description: List of all jobs
           500:
             description: Backend error
         """
@@ -51,13 +64,23 @@ class Job(Resource):
     @private_api
     def post(self):
         """
-        Submit a job
+        Submit a job to the queue
         ---
         tags:
           - Scheduler
+        parameters:
+          - in: body
+            name: body
+            schema:
+              required:
+                - payload
+              properties:
+                payload:
+                  type: string
+                  description: Base 64 encoding of a job submission file
         responses:
           200:
-            description: List of queue
+            description: Job submitted correctly
           500:
             description: Backend error
         """
@@ -67,11 +90,11 @@ class Job(Resource):
         try:
             payload = base64.b64decode(args['payload']).decode()
         except KeyError:
-            return {"succes": False, "message": "payload (str) parameter is required"}, 500
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "group (str) parameter is required")
         except UnicodeError:
-            return {"succes": False, "message": "payload (str) does not seems to be a valid base64"}, 500
+            return errors.all_errors("UNICODE_ERROR", "payload (str) does not seems to be a valid base64")
         except Exception as err:
-            return {"succes": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
         try:
             qsub_script = """<<EOF
@@ -81,7 +104,7 @@ class Job(Resource):
 
             request_user = request.headers.get("X-SOCA-USER")
             if request_user is None:
-                return {"succes": False, "message": "Unable to retrieve request owner. X-SOCA-USER must be set"}, 500
+                return errors.all_errors("X-SOCA-USER_MISSING")
 
             submit_job_command = config.Config.PBS_QSUB + " " + qsub_script
             try:
@@ -104,18 +127,28 @@ class Job(Resource):
 
 
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
     @private_api
     def delete(self):
         """
-       Delete a job
+        Delete a job from the queue
         ---
         tags:
           - Scheduler
+        parameters:
+          - in: body
+            name: body
+            schema:
+              required:
+                - job_id
+              properties:
+                job_id:
+                  type: string
+                  description: ID of the job to remove
         responses:
           200:
-            description: List of queue
+            description: Job submitted correctly
           500:
             description: Backend error
         """
@@ -137,9 +170,9 @@ class Job(Resource):
             job_owner = job_info["Jobs"][job_id_key[0]]["Job_Owner"].split("@")[0]
             request_user = request.headers.get("X-SOCA-USER")
             if request_user is None:
-                return {"succes": False, "message": "Unable to retrieve request owner. X-SOCA-USER must be set"}, 500
+                return errors.all_errors("X-SOCA-USER_MISSING")
             if request_user != job_owner:
-                return {"succes": False, "message": "This job does not seems to be owned by you"}, 500
+                return errors.all_errors("CLIENT_NOT_OWNER")
             try:
                 qdel_command = config.Config.PBS_QDEL + " " + job_id
                 try:

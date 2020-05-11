@@ -5,10 +5,10 @@ import datetime
 import secrets
 import config
 from decorators import restricted_api, admin_api
-
+import errors
 
 class ApiKey(Resource):
-    @admin_api
+    @restricted_api
     def get(self):
         """
         Retrieve API key of the user
@@ -19,7 +19,6 @@ class ApiKey(Resource):
           - in: body
             name: body
             schema:
-              id: GETApiKey
               required:
                 - user
               properties:
@@ -40,8 +39,7 @@ class ApiKey(Resource):
         args = parser.parse_args()
         user = args["user"]
         if user is None:
-            return {"success": False,
-                    "message": "user (str) parameter is required"}, 400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "user (str) parameter is required")
 
         try:
             check_existing_key = ApiKeys.query.filter_by(user=user,
@@ -71,11 +69,11 @@ class ApiKey(Resource):
                             "message": api_token}, 200
 
                 except Exception as err:
-                    return {"success": False, "message": "Unknown error: " + str(err)}, 500
+                    return errors.all_errors(type(err).__name__, err)
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
-    @admin_api
+    @restricted_api
     def delete(self):
         """
         Delete API key(s) associated to a user
@@ -86,7 +84,6 @@ class ApiKey(Resource):
             - in: body
               name: body
               schema:
-                id: DELETEApiKey
                 required:
                   - user
                 properties:
@@ -107,7 +104,7 @@ class ApiKey(Resource):
         args = parser.parse_args()
         user = args["user"]
         if user is None:
-            return {"success": False, "message": "user (str) parameters is required"}, 400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "user (str) parameter is required")
         try:
             check_existing_keys = ApiKeys.query.filter_by(user=user, is_active=True).all()
             if check_existing_keys:
@@ -117,8 +114,8 @@ class ApiKey(Resource):
                     db.session.commit()
                 return {"success": True, "message": "Successfully deactivated"}, 200
             else:
-                return {"success": False, "message": "Could not find any active token for user"}, 203
+                return errors.all_errors("NO_ACTIVE_TOKEN")
 
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 

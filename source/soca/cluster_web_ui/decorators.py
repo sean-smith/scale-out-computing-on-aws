@@ -37,68 +37,17 @@ def admin_api(f):
                                                      scope="sudo",
                                                      is_active=True).first()
             if token_has_sudo:
-                if request.method == "DELETE":
-                    target_user = request.args.get("user", None)
-                    target_group = request.args.get("group", None)
-                    if target_user == user:
-                        return {"success": False, "message": "You can not delete your own user"}, 401
-                    elif user+"group" == target_group:
-                        return {"success": False, "message": "You can not delete your own group"}, 401
-                    else:
-                        return f(*args, **kwargs)
-                else:
-                    return f(*args, **kwargs)
+                return f(*args, **kwargs)
             else:
                 return {"success": False, "message": "Not authorized"}, 401
     return admin_resource
 
 
+
 # Private API can only be accessed with a valid pair of user/token
-# User can only interact with their own environment
 def private_api(f):
     @wraps(f)
     def private_resource(*args, **kwargs):
-        user = request.headers.get("X-SOCA-USER", None)
-        token = request.headers.get("X-SOCA-TOKEN", None)
-        if request.method == "GET":
-            target_user = request.args.get("user", None)
-            target_group = request.args.get("group", None)
-        else:
-            target_user = request.form.get("user", None)
-            target_group = request.form.get("group", None)
-
-        if token == config.Config.API_ROOT_KEY:
-            return f(*args, **kwargs)
-
-        if user is None or token is None:
-            return {"success": False, "message": "NOT_PERMITTED"}, 401
-        else:
-            token_is_valid = ApiKeys.query.filter_by(token=token,
-                                                     user=user,
-                                                     is_active=True).first()
-            if token_is_valid and token_is_valid.scope == "sudo":
-                return f(*args, **kwargs)
-            else:
-                if request.method == "DELETE":
-                    if token_is_valid and user == target_user:
-                        return {"success": False, "message": "You can not delete your own user"}, 401
-                    elif token_is_valid and user + "group" == target_group:
-                        return {"success": False, "message": "You can not delete your own group"}, 401
-                    else:
-                        return {"success": False, "message": "Not authorized"}, 401
-                else:
-                    if (token_is_valid and user == target_user) or (token_is_valid and user + "group" == target_group):
-                        return f(*args, **kwargs)
-                    else:
-                        return {"success": False, "message": "Not authorized"}, 401
-
-    return private_resource
-
-
-# Read/Only APIs only require a valid pair of token
-def read_only_api(f):
-    @wraps(f)
-    def ro_resource(*args, **kwargs):
         user = request.headers.get("X-SOCA-USER", None)
         token = request.headers.get("X-SOCA-TOKEN", None)
         if token == config.Config.API_ROOT_KEY:
@@ -108,12 +57,12 @@ def read_only_api(f):
                                                  user=user,
                                                  is_active=True).first()
 
-        if token_is_valid and request.method == "GET":
+        if token_is_valid:
             return f(*args, **kwargs)
         else:
             return {"success": False, "message": "Not authorized"}, 401
 
-    return ro_resource
+    return private_resource
 
 
 # Views require a valid login

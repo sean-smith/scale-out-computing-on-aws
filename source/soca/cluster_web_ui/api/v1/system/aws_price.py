@@ -43,10 +43,10 @@ def get_compute_pricing(client_pricing, ec2_instance_type):
 class AwsPrice(Resource):
     def get(self):
         """
-        Retrieve content of a file
+        Return RI/OD price based on compute/storage inputs
         ---
         tags:
-          - Group Management
+          - AWS
         responses:
           200:
             description: Pair of user/token is valid

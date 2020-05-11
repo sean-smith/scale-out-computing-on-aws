@@ -17,7 +17,7 @@ class Files(Resource):
         Retrieve content of a file
         ---
         tags:
-          - Group Management
+          - System
         responses:
           200:
             description: Pair of user/token is valid
@@ -50,13 +50,13 @@ class Files(Resource):
             return {"success": False,
                     "message": "Unknown error: " + str(err)}, 50
 
-    @private_api
+    @admin_api
     def post(self):
         """
         Create a new file
         ---
         tags:
-          - Group Management
+          - System
         responses:
           200:
             description: Pair of user/token is valid
@@ -76,14 +76,9 @@ class Files(Resource):
             return {"success": False,
                     "message": "Unable to decode payload. Make sure you have encoded the data with b64"}, 500
 
-        print(file_name)
         if file_name is None or file_content is None:
             return {"success": False,
                     "message": "file_content (str) and file_name (str) parameters are required"}, 400
-
-        #if file_name not in config.Config.CONFIGURATION_FILE_CUSTOMIZABLE_VIA_WEB.values():
-        #    return {"success": False,
-        #            "message": "You can not edit this file using the API"}, 400
 
         with open(file_name, "w") as file:
             file.write(file_content)

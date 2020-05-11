@@ -2,14 +2,15 @@ import config
 import ldap
 from flask_restful import Resource
 import logging
-from decorators import admin_api
+from decorators import private_api
+import errors
 import re
 
 logger = logging.getLogger("soca_api")
 
 
 class Groups(Resource):
-    #@admin_api
+    @private_api
     def get(self):
         """
         List all LDAP groups
@@ -18,11 +19,11 @@ class Groups(Resource):
           - Group Management
         responses:
           200:
-            description: Pair of user/token is valid
-          203:
-            description: Invalid user/token pair
+            description: Group info
           400:
             description: Malformed client input
+          500:
+            description: Backend issue
         """
         # List all LDAP users
         ldap_host = config.Config.LDAP_HOST
@@ -50,11 +51,5 @@ class Groups(Resource):
 
             return {"success": True, "message": all_ldap_groups}, 200
 
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server seems to be down."}, 500
-
-        except ldap.NO_SUCH_OBJECT:
-            return {"success": False, "message": "Group does not exist"}, 203
-
         except Exception as err:
-            return {"success": False, "message": "Unknown Error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)

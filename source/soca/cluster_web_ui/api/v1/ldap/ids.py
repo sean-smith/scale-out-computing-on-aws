@@ -1,13 +1,15 @@
 import ldap
-from decorators import private_api
+import errors
 from flask_restful import Resource
 import config
 import logging
+from decorators import admin_api
 from random import choice
 logger = logging.getLogger("soca_api")
 
 
 class Ids(Resource):
+    @admin_api
     def get(self):
         """
         Return available Linux UID/GID numbers
@@ -30,10 +32,8 @@ class Ids(Resource):
                                         ldap.SCOPE_SUBTREE,
                                         'objectClass=posixAccount',
                                         ['uidNumber', 'gidNumber'])
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "Unable to contact LDAP server"}, 500
         except Exception as err:
-            return {"success": False, "message": "Unknown error try to retrieve LDAP ids: " + str(err)}, 501
+            return errors.all_errors(type(err).__name__, err)
 
         UID = 5000
         GID = 5000

@@ -3,12 +3,11 @@ import config
 import ldap
 from models import db,ApiKeys
 from decorators import restricted_api, admin_api
-
+import errors
 
 class Sudo(Resource):
     @admin_api
     def get(self):
-        #
         """
         Check SUDO permissions for a user
         ---
@@ -18,7 +17,6 @@ class Sudo(Resource):
           - in: body
             name: body
             schema:
-              id: User
               required:
                 - user
               properties:
@@ -55,11 +53,8 @@ class Sudo(Resource):
             else:
                 return {'success': False, 'message': "User does not have SUDO permissions."}, 222
 
-        except ldap.SERVER_DOWN:
-            return {'success': False, 'message': 'LDAP server is down'}, 500
-
         except Exception as err:
-            return {'success': False, 'message': "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
     @admin_api
     def post(self):
@@ -72,7 +67,6 @@ class Sudo(Resource):
           - in: body
             name: body
             schema:
-              id: User
               required:
                 - user
               properties:
@@ -121,17 +115,8 @@ class Sudo(Resource):
                     db.session.commit()
             return {"success": True, "message": user + " now has admin permission"}, 200
 
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server is down"}, 500
-
-        except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
-
-        except ldap.ALREADY_EXISTS:
-            return {"success": False, "message": "User already has the correct permissions configured."}, 221
-
         except Exception as err:
-            return {"false": True, "message": "Unknown error: " +str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
     @admin_api
     def delete(self):
@@ -144,7 +129,6 @@ class Sudo(Resource):
           - in: body
             name: body
             schema:
-              id: User
               required:
                 - user
               properties:
@@ -182,13 +166,5 @@ class Sudo(Resource):
                     db.session.commit()
             return {"success": True, "message": user + " does not have admin permission anymore"}, 200
 
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server is down"}, 500
-
-        except ldap.NO_SUCH_OBJECT:
-            return {"success": False, "message": "User do not have admin permission"}, 210
-        except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
-
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)

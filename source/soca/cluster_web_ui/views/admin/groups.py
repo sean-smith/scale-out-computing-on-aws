@@ -14,7 +14,8 @@ admin_groups = Blueprint('admin_groups', __name__, template_folder='templates')
 @admin_only
 def index():
     get_all_groups = get(config.Config.FLASK_ENDPOINT + "/api/ldap/groups",
-                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                         headers={"X-SOCA-TOKEN": session["api_key"],
+                                  "X-SOCA-USER": session["user"]},
                          verify=False)
 
     if get_all_groups.status_code == 200:
@@ -24,7 +25,8 @@ def index():
         all_groups = {}
 
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                        headers={"X-SOCA-TOKEN": session["api_key"],
+                                 "X-SOCA-USER": session["user"]},
                         verify=False)
 
     if get_all_users.status_code == 200:

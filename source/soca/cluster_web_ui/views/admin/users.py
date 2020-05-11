@@ -15,7 +15,8 @@ admin_users = Blueprint('admin_users', __name__, template_folder='templates')
 @admin_only
 def index():
     get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                        headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                        headers={"X-SOCA-TOKEN": session["api_key"],
+                                 "X-SOCA-USER": session["user"]},
                         verify=False).json()
 
     all_users = get_all_users["message"].keys()
@@ -79,7 +80,8 @@ def create_new_account():
         uid = request.form.get('uid', None)
         gid = request.form.get('gid', None)
         create_new_user = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
-                               headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                               headers={"X-SOCA-TOKEN": session["api_key"],
+                                        "X-SOCA-USER": session["user"]},
                                data={"user": user,
                                      "password": password,
                                      "email": email,

@@ -12,40 +12,33 @@ from decorators import private_api, admin_api
 from flask import session
 import ldap.modlist as modlist
 from datetime import datetime
+import errors
 logger = logging.getLogger("soca_api")
 
 
 class Reset(Resource):
-    @private_api
+    @admin_api
     def post(self):
         """
-        Allow user to change their own password.
+        Change password for a given user
         ---
         tags:
           - User Management
-        securityDefinitions:
-          api_key:
-            type: apiKey
-            name: x-api-key
-            in: header
-        security:
-          - api_key: []
 
         parameters:
           - in: body
             name: body
             schema:
-              id: LDAPModify
               required:
-                - username
+                - user
                 - password
               properties:
-                username:
+                user:
                   type: string
-                  description: username of the SOCA user
+                  description: SOCA user
                 password:
                   type: string
-                  description: Your new password
+                  description: New password to configure
 
         responses:
           200:
@@ -62,8 +55,7 @@ class Reset(Resource):
         user = args["user"]
         password = args["password"]
         if user is None or password is None:
-            return {"success": False,
-                    "message": "user (str) and password (str) parameters are required"}, 400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "user (str) and password (str) parameters are required")
 
         dn_user = "uid=" + user + ",ou=people," + config.Config.LDAP_BASE_DN
         enc_passwd = bytes(password, 'utf-8')
@@ -76,15 +68,10 @@ class Reset(Resource):
         new_value = passwd
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server is down."}, 500
-
-        try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
             mod_attrs = [(ldap.MOD_REPLACE, "userPassword", new_value.encode('utf-8'))]
             conn.modify_s(dn_user, mod_attrs)
             return {"success": True, "message": "Password updated correctly."}, 200
-        except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
+
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)

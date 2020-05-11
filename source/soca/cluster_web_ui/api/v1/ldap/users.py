@@ -2,13 +2,14 @@ import config
 import ldap
 from flask_restful import Resource
 import logging
-from decorators import admin_api, read_only_api
+from decorators import admin_api, private_api
+from errors import all_errors
 
 logger = logging.getLogger("soca_api")
 
 
 class Users(Resource):
-    @read_only_api
+    @private_api
     def get(self):
         """
         List all LDAP users
@@ -23,7 +24,6 @@ class Users(Resource):
           400:
             description: Malformed client input
         """
-        # List all LDAP users
         ldap_host = config.Config.LDAP_HOST
         base_dn = config.Config.LDAP_BASE_DN
         all_ldap_users = {}
@@ -40,8 +40,5 @@ class Users(Resource):
 
             return {"success": True, "message": all_ldap_users}, 200
 
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server seems to be down."}, 500
-
         except Exception as err:
-            return {"success": False, "message": "Unknown Error: " + str(err)}, 500
+            return all_errors(type(err).__name__, err)

@@ -65,8 +65,8 @@ class Config(object):
     SSH_PRIVATE_KEY_LOCATION = "tmp/ssh"
 
     # Dev mickael test
-    LDAP_HOST = "18.233.57.193"
-    ROOT_PW = 'EGBGnMUL'
+    LDAP_HOST = "34.235.247.192"
+    ROOT_PW = 'tYGyTYff'
     ROOT_DN = 'CN=admin,dc=soca,dc=local'
     FLASK_HOST = "127.0.0.1"
     FLASK_PROTOCOL = "http://"

@@ -12,15 +12,16 @@ logger = logging.getLogger("soca_api")
 
 
 class Jobs(Resource):
+    @private_api
     def get(self):
         """
-        Get all jobs info
+        List all jobs in the queue
         ---
         tags:
           - Scheduler
         responses:
           200:
-            description: List of queue
+            description: List of all jobs
           500:
             description: Backend error
         """
@@ -39,7 +40,7 @@ class Jobs(Resource):
                     return {"success": False, "message": "Unable to retrieve this job. Job may have terminated."}, 500
 
                 if user is None:
-                    return {"success": True, "message": job_info["Jobs"] if "Jobs" in job_info.keys() else {} }, 200
+                    return {"success": True, "message": job_info["Jobs"] if "Jobs" in job_info.keys() else {}}, 200
                 else:
                     job_for_user = {"Jobs": {}}
                     if "Jobs" in job_info.keys():

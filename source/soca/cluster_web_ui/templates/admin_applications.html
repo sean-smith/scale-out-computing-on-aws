@@ -85,6 +85,48 @@
                                           <div class="alert alert-info">
                                               Drag & Drop form components based on your own requirements. <br>
                                               We have generated a test template for you, customize it as needed or <strong><a style="cursor:pointer;color: #ff5252" id="clear-all-fields">click here to start from scratch.</a></strong>
+                                              <hr>
+                                              <div class="accordion" id="accordionExample">
+                                                  <div>
+                                                    <div id="headingOne">
+                                                      <h2 class="mb-0">
+                                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                                          Calculate number of nodes to provision automatically
+                                                        </button>
+                                                      </h2>
+                                                    </div>
+
+                                                    <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionExample">
+                                                      <div class="card-body">
+                                                          If <code>ec2_instance_type</code> and <code>cpus</code> parameters are specified, SOCA will automatically calculate the number of node(s) to provision. If not set, you will need to find a way to specify <code>nodes</code> resource.
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                  <div>
+                                                    <div id="headingTwo">
+                                                      <h2 class="mb-0">
+                                                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                                          Configure Job Cost Estimate automatically
+                                                        </button>
+                                                      </h2>
+                                                    </div>
+                                                    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                                                      <div class="card-body">
+                                                          Parameters below will be used to estimate the price of a simulation if configured:
+                                                          <li>ec2_instance_type</li>
+                                                          <li>cpus</li>
+                                                          <li>storage_ebs</li>
+                                                          <li>storage_fsx</li>
+                                                          <li>wall_time</li>
+
+                                                          If not set, users will simply have to enter a value manually. <br>
+
+                                                      Use <code>hidden</code> fields if you want to harcode the values and prevent user to change them.
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                              </div>
+
                                           </div>
                                           <!-- Form Builder -->
                                           <div class="form-build"></div>
@@ -355,6 +397,38 @@ Compress output, send output to S3 etc ...
       }
     ]
   },
+   {
+    "type": "text",
+    "required": true,
+    "label": "How many CPUs do you want ? (cpus)",
+    "placeholder": "Number of EC2 instance will automatically be calculated based on Instance Type and CPUs count",
+    "className": "form-control",
+    "name": "cpus",
+    "subtype": "text",
+    "maxlength": 255
+  },
+   {
+    "type": "select",
+    "required": true,
+    "label": "How much storage do you want (SSD under /scratch)",
+    "className": "form-control",
+    "name": "scratch_size",
+    "multiple": false,
+    "values": [
+      {
+        "label": "10 GB",
+        "value": "10"
+      },
+      {
+        "label": "50 GB",
+        "value": "50"
+      },
+      {
+        "label": "150 GB",
+        "value": "150"
+      }
+    ]
+  },
   {
     "type": "select",
     "required": true,
@@ -394,16 +468,7 @@ Compress output, send output to S3 etc ...
     "subtype": "text",
     "maxlength": 255
   },
-  {
-    "type": "text",
-    "required": true,
-    "label": "How many CPUs do you want ? (cpus)",
-    "placeholder": "Number of EC2 instance will automatically be calculated based on Instance Type and CPUs count",
-    "className": "form-control",
-    "name": "cpus",
-    "subtype": "text",
-    "maxlength": 255
-  },
+
   {
     "type": "select",
     "required": true,

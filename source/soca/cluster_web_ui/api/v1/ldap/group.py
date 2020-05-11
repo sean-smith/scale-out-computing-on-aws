@@ -3,13 +3,15 @@ import ldap
 from flask_restful import Resource, reqparse
 from requests import get, put
 import logging
+from flask import request
 from decorators import private_api, admin_api
 import re
+import errors
 logger = logging.getLogger("soca_api")
 
 
 class Group(Resource):
-    @private_api
+    @admin_api
     def get(self):
         """
         Retrieve information for a specific group
@@ -20,7 +22,6 @@ class Group(Resource):
           - in: body
             name: body
             schema:
-            id: Group
             required:
               - group
             properties:
@@ -41,8 +42,7 @@ class Group(Resource):
         args = parser.parse_args()
         group = args["group"]
         if group is None:
-            return {"success": False,
-                    "message": "group (str) parameter is required"}, 400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "group (str) parameter is required")
 
         group_search_base = "ou=Group," + config.Config.LDAP_BASE_DN
         group_search_scope = ldap.SCOPE_SUBTREE
@@ -51,8 +51,8 @@ class Group(Resource):
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
             groups = conn.search_s(group_search_base, group_search_scope, group_filter, ["cn", "memberUid"])
             if groups.__len__() == 0:
-                return {"success": False,
-                        "message": "Group does not exist"}, 210
+                return errors.all_errors("GROUP_DO_NOT_EXIST")
+
             for group in groups:
                 group_base = group[0]
                 members = []
@@ -66,9 +66,8 @@ class Group(Resource):
 
             return {"success": True, "message": {"group_dn": group_base, "members": members}}
 
-
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
     @admin_api
     def post(self):
@@ -81,7 +80,6 @@ class Group(Resource):
           - in: body
             name: body
             schema:
-              id: Group
               required:
                 - group
               optional:
@@ -125,65 +123,58 @@ class Group(Resource):
         else:
             members = args["members"].split(",")
 
-        get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids', verify=False)
+        get_gid = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
+                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                      verify=False)
 
         if get_gid.status_code == 200:
             current_ldap_gids = get_gid.json()
         else:
-            return {"success": False, "message": "Unable to retrieve GID: " +str(get_gid.json())}, 500
+            return errors.all_errors("UNABLE_RETRIEVE_IDS", str(get_gid.text))
 
         if gid is None:
             group_id = current_ldap_gids["message"]["proposed_gid"]
         else:
             if gid in current_ldap_gids["message"]["gid_in_use"]:
-                return {"success": False, "message": "GID already in use."}, 211
+                return errors.all_errors("GID_ALREADY_IN_USE")
             group_id = gid
 
         if group is None:
-            return {"success": False,
-                    "message": "group (str) parameter is required"},  400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "group (str) parameter is required")
 
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server is down."}, 500
-
-        group_members = []
-        if members is not None:
-            if not isinstance(members, list):
-                return {"success": False,
-                        "message": "users must be a valid list"}, 400
-
-            get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                verify=False)
-
-            if get_all_users.status_code == 200:
-                all_users = get_all_users.json()["message"]
-            else:
-                return {"success": False, "message": "Unable to retrieve the list of SOCA users " + str(get_all_users.json())}, 212
-
-            for member in members:
-                if member not in all_users.keys():
+            group_members = []
+            if members is not None:
+                if not isinstance(members, list):
                     return {"success": False,
-                            "message": "Unable to create group because user (" + member +") does not exist."}, 211
+                            "message": "users must be a valid list"}, 400
+
+                get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
+                                    headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                    verify=False)
+
+                if get_all_users.status_code == 200:
+                    all_users = get_all_users.json()["message"]
                 else:
-                    group_members.append(member)
+                    return {"success": False, "message": "Unable to retrieve the list of SOCA users " + str(get_all_users.json())}, 212
 
-        group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
-        attrs = [
-            ('objectClass', ['top'.encode('utf-8'),
-                             'posixGroup'.encode('utf-8')]),
-            ('gidNumber', [str(group_id).encode('utf-8')]),
-            ('cn', [str(group).encode('utf-8')],)
-        ]
+                for member in members:
+                    if member not in all_users.keys():
+                        return {"success": False,
+                                "message": "Unable to create group because user (" + member +") does not exist."}, 211
+                    else:
+                        group_members.append(member)
 
-        try:
+            group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
+            attrs = [
+                ('objectClass', ['top'.encode('utf-8'),
+                                 'posixGroup'.encode('utf-8')]),
+                ('gidNumber', [str(group_id).encode('utf-8')]),
+                ('cn', [str(group).encode('utf-8')],)
+            ]
+
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-        except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
-
-        try:
             conn.add_s(group_dn, attrs)
             users_not_added = []
             for member in group_members:
@@ -201,11 +192,9 @@ class Group(Resource):
             else:
                 return {"success": True, "message": "Group created successfully but unable to add some users: " + str(users_not_added)}, 214
 
-        except ldap.ALREADY_EXISTS:
-            return {"success": False, "message": "Group already exist"}, 215
-
         except Exception as err:
-            return {"success": False, "message": "Unknown error when trying to create a group: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
+
 
     @admin_api
     def delete(self):
@@ -218,7 +207,6 @@ class Group(Resource):
           - in: body
             name: body
             schema:
-              id: User
               required:
                 - user
               properties:
@@ -238,51 +226,38 @@ class Group(Resource):
         parser.add_argument('group', type=str, location='form')
         args = parser.parse_args()
         group = args["group"]
+
+        request_user = request.headers.get("X-SOCA-USER")
+        if request_user is None:
+            return errors.all_errors("X-SOCA-USER_MISSING")
+
+        if request_user == group:
+            return errors.all_errors("CLIENT_OWN_RESOURCE")
+
         if group is None:
-            return {"success": False,
-                    "message": "group (str) parameter is required"}, 400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "group (str) parameter is required")
+
         ldap_base = config.Config.LDAP_BASE_DN
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server is down."}, 500
-
-        try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
-        except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
-
-        try:
             conn.delete_s("cn=" + group + ",ou=Group," + ldap_base)
             return {"success": True, "message": "Deleted user."}, 200
-        except ldap.NO_SUCH_OBJECT:
-            return {"success": False, "message": "Unknown group"}, 203
-
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 500
+            return errors.all_errors(type(err).__name__, err)
 
-
-
-
-    @private_api
+    @admin_api
     def put(self):
         """
         Add/Remove user to/from a LDAP group
         ---
         tags:
           - Group Management
-        securityDefinitions:
-          api_key:
-            type: apiKey
-            name: x-api-key
-            in: header
-        security:
-          - api_key: []
+
         parameters:
           - in: body
             name: body
             schema:
-              id: d
               required:
                 - user
                 - attribute
@@ -322,50 +297,38 @@ class Group(Resource):
         action = args["action"]
         ALLOWED_ACTIONS = ["add", "remove"]
         if user is None or group is None or action is None:
-            return {"success": False,
-                    "message": "user (str), group (str) and action (str) parameters are required"}, 400
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "user (str), group (str) and action (str) parameters are required")
 
         if action not in ALLOWED_ACTIONS:
             return {"success": False,
-                    "message": "attribute is not supported"}, 400
+                    "message": "This action is not supported"}, 400
 
         try:
             conn = ldap.initialize('ldap://' + config.Config.LDAP_HOST)
-        except ldap.SERVER_DOWN:
-            return {"success": False, "message": "LDAP server is down."}, 500
+            user_dn = "uid=" + user + ",ou=People," + config.Config.LDAP_BASE_DN
+            group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
 
-        user_dn = "uid=" + user + ",ou=People," + config.Config.LDAP_BASE_DN
-        group_dn = "cn=" + group + ",ou=Group," + config.Config.LDAP_BASE_DN
+            get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
+                                headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                verify=False)
 
-        get_all_users = get(config.Config.FLASK_ENDPOINT + "/api/ldap/users",
-                            headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                            verify=False)
-
-        if get_all_users.status_code == 200:
-            all_users = get_all_users.json()["message"]
-            if user_dn not in all_users.values():
+            if get_all_users.status_code == 200:
+                all_users = get_all_users.json()["message"]
+                if user_dn not in all_users.values():
+                    return {"success": False,
+                            "message": "User do not exist."}, 212
+            else:
                 return {"success": False,
-                        "message": "User do not exist."}, 212
-        else:
-            return {"success": False,
-                    "message": "Unable to retrieve list of LDAP users. " + str(get_all_users._content)}, 500
+                        "message": "Unable to retrieve list of LDAP users. " + str(get_all_users._content)}, 500
 
-        if action == "add":
-            mod_attrs = [(ldap.MOD_ADD, 'memberUid', [user_dn.encode("utf-8")])]
-        else:
-            mod_attrs = [(ldap.MOD_DELETE, 'memberUid', [user_dn.encode("utf-8")])]
+            if action == "add":
+                mod_attrs = [(ldap.MOD_ADD, 'memberUid', [user_dn.encode("utf-8")])]
+            else:
+                mod_attrs = [(ldap.MOD_DELETE, 'memberUid', [user_dn.encode("utf-8")])]
 
-        try:
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
             conn.modify_s(group_dn, mod_attrs)
             return {"success": True, "message": "LDAP attribute has been modified correctly"}, 200
-        except ldap.TYPE_OR_VALUE_EXISTS:
-            return {"success": True, "message": "User already part of the group"}, 211
-        except ldap.NO_SUCH_ATTRIBUTE:
-            return {"success": True, "message": "User do not belong to the group"}, 210
-        except ldap.NO_SUCH_OBJECT:
-            return {"success": True, "message": "Group do not exist. Create it first."}, 210
-        except ldap.INVALID_CREDENTIALS:
-            return {"success": False, "message": "Unable to LDAP bind, Please verify cn=Admin credentials"}, 401
+
         except Exception as err:
-            return {"success": False, "message": "Unknown error: " + str(err)}, 401
+            return errors.all_errors(type(err).__name__, err)

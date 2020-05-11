@@ -43,6 +43,7 @@ def authenticate():
     logger.info("Received login request for : " + str(user))
     if user is not None and password is not None:
         check_auth = post(config.Config.FLASK_ENDPOINT + '/api/ldap/authenticate',
+                          headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                           data={"user": user, "password": password},
                           verify=False)
         logger.info(check_auth)

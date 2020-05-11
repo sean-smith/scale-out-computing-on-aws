@@ -18,7 +18,7 @@ class Queue(Resource):
           - Scheduler
         responses:
           200:
-            description: List of queue
+            description: List of queues
           500:
             description: Backend error
         """

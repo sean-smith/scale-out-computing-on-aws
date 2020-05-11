@@ -2,13 +2,13 @@ import config
 import subprocess
 from flask_restful import Resource
 import logging
-from decorators import read_only_api
+from decorators import private_api
 import shlex
 logger = logging.getLogger("soca_api")
 
 
 class Queues(Resource):
-    @read_only_api
+    @private_api
     def get(self):
         """
         List all queues
@@ -17,7 +17,7 @@ class Queues(Resource):
           - Scheduler
         responses:
           200:
-            description: List of queue
+            description: List of queues
           500:
             description: Backend error
         """
