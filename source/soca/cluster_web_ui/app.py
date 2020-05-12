@@ -18,6 +18,7 @@ from api.v1.ldap.group import Group
 from api.v1.ldap.groups import Groups
 from api.v1.ldap.authenticate import Authenticate
 from api.v1.system.files import Files
+from api.v1.system.aws_price import AwsPrice
 from views.index import index
 from views.ssh import ssh
 from views.sftp import sftp
@@ -61,11 +62,13 @@ api.add_resource(ApiKey, '/api/user/api_key')
 api.add_resource(Reset, '/api/user/reset_password')
 # System
 api.add_resource(Files, '/api/system/files')
+api.add_resource(AwsPrice, '/api/system/aws_price')
 # Scheduler
 api.add_resource(Job, '/api/scheduler/job')
 api.add_resource(Jobs, '/api/scheduler/jobs')
 api.add_resource(Queue, '/api/scheduler/queue')
 api.add_resource(Queues, '/api/scheduler/queues')
+
 
 
 
