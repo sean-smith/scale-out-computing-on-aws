@@ -58,9 +58,18 @@
                               </div>
                               <div class="card-body">
                                   <div id="cost_result">
+                                      <div class="alert alert-primary">
                                       <h3>
                                           Please fill out the form first
                                       </h3>
+                                          Note: If not specified, SOCA uses the following default parameters:
+                                          <li><strong>instance_type</strong>: c5.large</li>
+                                          <li><strong>scratch_size</strong>: 0</li>
+                                          <li><strong>scratch_size</strong>: 10</li>
+                                          <li><strong>fsx_capacity</strong>: 0</li>
+                                          <li><strong>cpus</strong>: 1</li>
+                                          <li><strong>walltime</strong>: 60</li>
+                                      </div>
                                   </div>
                                   <hr>
                                   <p>
@@ -71,11 +80,11 @@
                                   <div class="collapse" id="disclaimer">
                                       <div class="card card-body">
                                           Theses numbers are just an estimate based on:
-                                  <li>Virginia rates (us-east-1)</li>
                                   <li>Does not reflect any additional charges such as network or storage transfer or usage of io1 volume (default to gp2)</li>
                                   <li>FSx Persistent Baseline: (50 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)</li>
                                   <li>FSx Scratch Baseline: (200 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)</li>
-                                  <li>Rate as of May 2020</li>  </div>
+                                  <li>Compute rate retrieved for your running region</li>
+                                  <li>EBS/FSx rates as of May 2020 based on us-east-1</li>  </div>
                                   </div>
 
                               </div>
@@ -119,20 +128,23 @@
 
          $("form").change(function(){
               var instance_type = $("#instance_type").val() || "c5.large";
-              var ebs_storage = $("#ebs_storage").val() || 0;
-              var fsx_storage = $("#fsx_storage").val() || 0;
-              var wall_time = $("#wall_time").val() || 60;
+              var scratch_size = $("#scratch_size").val() || 0;
+              var root_size = $("#root_size").val() || 0;
+              var fsx_capacity = $("#fsx_capacity").val() || 0;
+              var walltime = $("#walltime").val() || 60;
               var cpus = $("#cpus").val() || 1;
 
-             $("#cost_result").html('<h3><i class="fas fa-spinner"></i><br> Please wait while we estimate the price of this job ... </h3>'),
+             $("#cost_result").html('<div align="center"><i class="fas fa-spinner fa-5x"></i></div><h3><br> Please wait while we estimate the price of this job ... </h3>'),
 
              $.get('/api/system/aws_price', {
                  "instance_type": instance_type,
-                 "ebs_storage": ebs_storage,
-                 "fsx_storage": fsx_storage,
+                 "scratch_size": scratch_size,
+                 "root_size": root_size,
+                 "fsx_capacity": fsx_capacity,
                  "cpus": cpus,
-                 "wall_time": wall_time
+                 "walltime": walltime
           }, function (data) {
+
                  cost_data = jQuery.parseJSON(JSON.stringify(data));
                  cost_ebs = cost_data.ebs_storage
                  cost_fsx = cost_data.fsx_storage
@@ -140,24 +152,26 @@
 
                  var cost_response = '<h3>Estimated OnDemand Cost: $'+ cost_data.estimated_total_cost + '</h3> <br> \
                      <h3>Breakdown</h3> \
-                     <div class="progress"> \
-                     <div class="progress-bar bg-primary" role="progressbar" style="width: '+ cost_data.compute_pct +'%" aria-valuenow="'+ cost_data.compute_pct +'" aria-valuemin="0" aria-valuemax="100">Compute ($' + cost_data.compute.estimated_on_demand_cost + ')</div> \
-                     <div class="progress-bar bg-success" role="progressbar" style="width: '+ cost_data.storage_pct +'%" aria-valuenow="'+ cost_data.storage_pct +'" aria-valuemin="0" aria-valuemax="100">Storage ($' + cost_data.estimated_storage_cost  + ')</div> \
-                     </div> <br>\
-                     <strong>Storage (EBS):</strong> '+ cost_data.ebs_storage +' <br>\
-                     <strong>Storage (FSX):</strong> '+ cost_data.fsx_storage +' <br>\
-                     <strong>Compute (Nodes Count)</strong> '+ cost_data.compute.nodes +' <br>\
-                     <strong>Compute (Instance Type):</strong> '+ cost_data.compute.instance_type +' <br> \
-                     <strong>Compute (Requested CPUs):</strong> '+ cost_data.compute.cpus +' <br> \
-                     <strong>Estimated run time (in minutes):</strong> '+ cost_data.compute.wall_time +' <br> \
-                     <hr> \
-                     <strong>Estimated Compute OnDemand</strong> '+ cost_data.compute.estimated_on_demand_cost +' <br> \
-                     <strong>Estimated Compute Reserved</strong> '+ cost_data.compute.estimated_reserved_cost +' <br>'
+                     <div class="progress" style="height:30px"> \
+                     <div class="progress-bar bg-primary" role="progressbar" style="width: '+ cost_data.compute_pct +'%;height:30px" aria-valuenow="'+ cost_data.compute_pct +'" aria-valuemin="0" aria-valuemax="100">Compute ($' + cost_data.compute.estimated_on_demand_cost + ')</div> \
+                     <div class="progress-bar bg-success" role="progressbar" style="width: '+ cost_data.storage_pct +'%height:30px" aria-valuenow="'+ cost_data.storage_pct +'" aria-valuemin="0" aria-valuemax="100">Storage ($' + cost_data.estimated_storage_cost  + ')</div> \
+                     </div> <br> <h5>Storage</h5>\
+                     <strong>Root Partition:</strong> $'+ cost_data.root_size +' <br>\
+                     <strong>Scratch Partition:</strong> $'+ cost_data.scratch_size +' <br>\
+                     <strong>FSx for Lustre:</strong> $'+ cost_data.fsx_capacity +' <br> \
+                     <strong>Estimated Storage:</strong> $'+ cost_data.estimated_storage_cost +' <br> \
+                     <hr> <h5>Compute</h5> \
+                     <strong>Nodes Count</strong> '+ cost_data.compute.nodes +' <br>\
+                     <strong>Instance Type:</strong> '+ cost_data.compute.instance_type +' <br> \
+                     <strong>Requested CPUs:</strong> '+ cost_data.compute.cpus +' <br> \
+                     <strong>Maximum run time (in hours):</strong> '+ cost_data.compute.walltime +' <br> \
+                     <strong>Estimated Compute OnDemand</strong> $'+ cost_data.compute.estimated_on_demand_cost +' <br> \
+                     <strong>Estimated Compute Reserved</strong> $'+ cost_data.compute.estimated_reserved_cost +' <br>'
 
                  $("#cost_result").html(cost_response);
 
              }).fail(function(data) {
-                 $("#cost_result").html("<h3><i class='fas fa-exclamation-triangle'></i>Unable to estimate cost</h3> Error: " + JSON.stringify(data.responseJSON));
+                 $("#cost_result").html("<div class='alert alert-danger'><h3><i class='fas fa-exclamation-triangle'></i>Unable to estimate cost</h3> <strong>Error:</strong> <br> " + JSON.stringify(data.responseJSON)) + "</div>";
              });
          });
 

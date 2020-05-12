@@ -112,16 +112,15 @@
                                                     </div>
                                                     <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
                                                       <div class="card-body">
-                                                          Parameters below will be used to estimate the price of a simulation if configured:
-                                                          <li>instance_type</li>
-                                                          <li>cpus</li>
-                                                          <li>ebs_storage</li>
-                                                          <li>fsx_storage</li>
-                                                          <li>wall_time</li>
-
-                                                          If not set, users will simply have to enter a value manually. <br>
-
-                                                      Use <code>hidden</code> fields if you want to harcode the values and prevent user to change them.
+                                                          Parameters below will be used to estimate the price of a simulation:
+                                                          <li><strong>instance_type</strong>: Type of instance to provision, default to c5.large</li>
+                                                          <li><strong>cpus</strong>: Number of CPUs to allocate, default to 1</li>
+                                                          <li><strong>scratch_size</strong>: Size of /scratch partition in GB, default to 0 GB</li>
+                                                          <li><strong>root_size</strong>: Size of /root partition in GB, default to 10 GB</li>
+                                                          <li><strong>fsx_size</strong>: Size of FSx for Lustre partition in GB, default to 0 GB</li>
+                                                          <li><strong>walltime</strong>: Maximum simulation time in minutes (format is DD:HH:MM), default to price for a up to 60 minutes (00:60:00) runtime</li>
+                                                           <br>
+                                                          Use <code>hidden</code> fields if you want to harcode the values and prevent user to change them. If not set, SOCA will use the default value to estimate your simulation cost
                                                       </div>
                                                     </div>
                                                   </div>

@@ -4,18 +4,42 @@ import boto3
 import ast
 import re
 import math
+
 logger = logging.getLogger("soca_api")
 
 
-def get_compute_pricing(client_pricing, ec2_instance_type):
+def get_compute_pricing(ec2_instance_type):
     pricing = {}
+    region_mapping = {"ap-east-1": "APE1-",
+                      "ap-northeast-1": "APN1-",
+                      "ap-northeast-2": "APN2-",
+                      "ap-south-1": "APS1-",
+                      "ap-southeast-1": "APS1-",
+                      "ap-southeast-2": "APS1-",
+                      "ca-central-1": "CAC1-",
+                      "eu-central-1":  "EUC1-",
+                      "eu-north-1": "EUN1-",
+                      "eu-south-1": "EUS1-",
+                      "eu-west-1":  "EUW1-",
+                      "eu-west-2":  "EUW2-",
+                      "eu-west-3":  "EUW3-",
+                      "me-south-1":  "MES1-",
+                      "us-east-1":  "",
+                      "us-east-2":  "USE2-",
+                      "us-west-1":  "USW1-",
+                      "us-west-2":  "USW2-",
+                      "sa-east-1":  "SAE1-",
+    }
+    client_pricing = boto3.client("pricing", region_name="us-east-1")
+    session = boto3.session.Session()
+    region = session.region_name
     response = client_pricing.get_products(
         ServiceCode='AmazonEC2',
         Filters=[
             {
                 'Type': 'TERM_MATCH',
                 'Field': 'usageType',
-                'Value': 'BoxUsage:' + ec2_instance_type
+                'Value': region_mapping[region] + 'BoxUsage:' + ec2_instance_type
             },
         ],
 
@@ -38,24 +62,24 @@ def get_compute_pricing(client_pricing, ec2_instance_type):
                             instance_data = v[skus]['priceDimensions'][ratecode]
                             if 'Linux/UNIX (Amazon VPC)' in instance_data['description']:
                                 pricing['reserved'] = float(instance_data['pricePerUnit']['USD'])
-
+    print(pricing)
     return pricing
 
 
-def compute(instance_type, wall_time, nodect):
-    client_pricing = boto3.client("pricing", region_name="us-east-1")
+def compute(instance_type, walltime, nodect):
+
     compute_data = {}
 
     if instance_type:
-        compute_price = get_compute_pricing(client_pricing, instance_type)
+        compute_price = get_compute_pricing(instance_type)
 
     compute_data["on_demand_hourly_rate"] = "%.3f" % compute_price["ondemand"]
     compute_data["reserved_hourly_rate"] ="%.3f" % compute_price["reserved"]
     compute_data["nodes"] = nodect
-    compute_data["wall_time"] = wall_time
+    compute_data["walltime"] = "%.3f" %  walltime
     compute_data["instance_type"] = instance_type
-    compute_data["estimated_on_demand_cost"] = "%.3f" % ((compute_price["ondemand"] * nodect) * (wall_time / 60))
-    compute_data["estimated_reserved_cost"] = "%.3f" % ((compute_price["reserved"] * nodect) * (wall_time / 60))
+    compute_data["estimated_on_demand_cost"] = "%.3f" % ((compute_price["ondemand"] * nodect) * (walltime / 60))
+    compute_data["estimated_reserved_cost"] = "%.3f" % ((compute_price["reserved"] * nodect) * (walltime / 60))
     return compute_data
 
 class AwsPrice(Resource):
@@ -75,23 +99,38 @@ class AwsPrice(Resource):
         """
         parser = reqparse.RequestParser()
         parser.add_argument('instance_type', type=str, location='args')
-        parser.add_argument('wall_time', type=int, location='args', help="Please specify wall_time in minutes", default=60)
+        parser.add_argument('walltime', type=str, location='args', help="Please specify wall_time using DD:HH:MM format", default="01:00:00")
         parser.add_argument('cpus', type=int, location='args', help="Please specify how many cpus you want to allocate")
-        parser.add_argument('ebs_storage', type=int, location='args', help="Please specify ebs_storage in GB", default=0)
-        parser.add_argument('fsx_storage', type=int, location='args', help="Please specify fsx_storage in GB", default=0)
+        parser.add_argument('scratch_size', type=int, location='args', help="Please specify storage in GB to allocate to /scratch partition (Default 0)", default=0)
+        parser.add_argument('root_size', type=int, location='args', help="Please specify your AMI root disk space (Default 10gb)", default=10)
+        parser.add_argument('fsx_capacity', type=int, location='args', help="Please specify fsx_storage in GB", default=0)
         parser.add_argument('fsx_type', type=str, location='args', default="SCRATCH_2")
         args = parser.parse_args()
         instance_type = args['instance_type']
-        wall_time = args['wall_time']
-        ebs_storage = args['ebs_storage']
-        fsx_storage = args['fsx_storage']
+        scratch_size = args['scratch_size']
+        root_size = args['root_size']
+        fsx_storage = args['fsx_capacity']
         fsx_type = args['fsx_type']
         cpus = args['cpus']
         sim_cost = {}
-        ebs_gp2_storage_baseline = 0.1  # 0.1 cts per gb per month
-        fsx_storage_baseline = 0.14 #   Persistent (50 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)  Scratch (200 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)
 
+        # Change value below as needed if you use a different region
+        EBS_GP2_STORAGE_BASELINE = 0.1  # us-east-1 0.1 cts per gb per month
+        FSX_STORAGE_BASELINE = 0.14  # us-east-1Persistent (50 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)  Scratch (200 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)
 
+        # Get WallTime in hours
+        wall_time_unformated = args['walltime'].split(":")
+        if wall_time_unformated.__len__() != 3:
+            return {"message": "walltime must use HH:MM:SS format"}
+        try:
+            sim_days = float(wall_time_unformated[0]) if wall_time_unformated[0] != "00" else 0.000
+            sim_hours = float(wall_time_unformated[1]) if wall_time_unformated[1] != "00" else 0.000
+            sim_minutes = float(wall_time_unformated[2]) if wall_time_unformated[2] != "00" else 0.000
+        except ValueError:
+            return {"message": "walltime must use HH:MM:SS and only use numbers"}
+        walltime = (sim_days * 24) + sim_hours + (sim_minutes / 60)
+
+        # Calculate number of nodes required based on instance type and CPUs requested
         if cpus is None:
             nodect = 1
         else:
@@ -102,29 +141,26 @@ class AwsPrice(Resource):
                 cpu_per_system = 2
             nodect = math.ceil(int(cpus) / cpu_per_system)
 
+        # Calculate EBS Storage (storage * ebs_price * sim_time_in_secs / (second_in_a_day * 30 days) * number of nodes
+        sim_cost["scratch_size"] = "%.5f" % ((scratch_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
+        sim_cost["root_size"] = "%.5f" % ((root_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
 
-        if ebs_storage == 0:
-            sim_cost["ebs_storage"] = 0
-        else:
-            # storage * ebs_price * sim_time_in_secds / (second_in_a_day * 30 days) * number of nodes
-            sim_cost["ebs_storage"] = "%.3f" % ((ebs_storage * ebs_gp2_storage_baseline * (wall_time * 60) / (86400 * 30)) * nodect)
+        # Calculate FSx Storage (storage * ebs_price * sim_time_in_secs / (second_in_a_day * 30 days) * number of nodes
+        sim_cost["fsx_capacity"] = "%.5f" % ((fsx_storage * FSX_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
 
-        if fsx_storage == 0:
-            sim_cost["fsx_storage"] = 0
-        else:
-            # storage * ebs_price * sim_time_in_secds / (second_in_a_day * 30 days) * number of nodes
-            sim_cost["fsx_storage"] = "%.3f" % ((fsx_storage * fsx_storage_baseline * (wall_time * 60) / (86400 * 30)) * nodect)
-
+        # Calculate Compute
         try:
-            sim_cost["compute"] = compute(instance_type, wall_time,nodect)
-        except:
-            sim_cost["compute"] = {"message": "Unable to get compute price. Please verify the input parameters (instance type may be incorrect?)"}
+            sim_cost["compute"] = compute(instance_type, walltime, nodect)
+        except Exception as err:
+            sim_cost["compute"] = {"message": "Unable to get compute price. Instance type may be incorrect or region name not tracked correctly? Error: " +str(err)}
             return sim_cost, 500
-        sim_cost["estimated_storage_cost"] = "%.3f" % (float(sim_cost["fsx_storage"]) + float(sim_cost["ebs_storage"]))
+
+        # Output
+        sim_cost["estimated_storage_cost"] = "%.3f" % (float(sim_cost["fsx_capacity"]) + float(sim_cost["scratch_size"]) + float(sim_cost["root_size"]))
         sim_cost["estimated_total_cost"] = "%.3f" % (float(sim_cost["estimated_storage_cost"]) + float(sim_cost["compute"]["estimated_on_demand_cost"]))
-        sim_cost["storage_pct"] = "%.3f" % (float(sim_cost["estimated_storage_cost"]) / float(sim_cost["estimated_total_cost"]) * 100)
-        sim_cost["compute_pct"] = "%.3f" % (float(sim_cost["compute"]["estimated_on_demand_cost"]) / float(sim_cost["estimated_total_cost"]) * 100)
+        sim_cost["storage_pct"] = "%.3f" % (float(sim_cost["estimated_storage_cost"]) / float(sim_cost["estimated_total_cost"]) * 100) if float(sim_cost["estimated_storage_cost"]) != 0.000 else 0
+        sim_cost["compute_pct"] = "%.3f" % (float(sim_cost["compute"]["estimated_on_demand_cost"]) / float(sim_cost["estimated_total_cost"]) * 100) if float(sim_cost["compute"]["estimated_on_demand_cost"]) != 0.000 else 0
         sim_cost["compute"]["cpus"] = cpus
-        return sim_cost
+        return sim_cost, 200
 
 

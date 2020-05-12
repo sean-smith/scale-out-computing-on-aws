@@ -120,9 +120,6 @@ def login_required(f):
 def admin_only(f):
     @wraps(f)
     def check_admin():
-        print("CHECK ADMIN")
-        logger.error("TRALALAL")
-        print(str(session))
         if "sudoers" in session:
             if session["sudoers"] is True:
                 return f()
