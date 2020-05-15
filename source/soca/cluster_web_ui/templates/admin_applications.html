@@ -118,7 +118,7 @@
                                                           <li><strong>scratch_size</strong>: Size of /scratch partition in GB, default to 0 GB</li>
                                                           <li><strong>root_size</strong>: Size of /root partition in GB, default to 10 GB</li>
                                                           <li><strong>fsx_size</strong>: Size of FSx for Lustre partition in GB, default to 0 GB</li>
-                                                          <li><strong>walltime</strong>: Maximum simulation time in minutes (format is DD:HH:MM), default to price for a up to 60 minutes (00:60:00) runtime</li>
+                                                          <li><strong>walltime</strong>: Maximum simulation time in minutes (format is DD:HH:MM), default to price for a up to 60 minutes (00:01:00) runtime</li>
                                                            <br>
                                                           Use <code>hidden</code> fields if you want to harcode the values and prevent user to change them. If not set, SOCA will use the default value to estimate your simulation cost
                                                       </div>
@@ -349,36 +349,15 @@ Compress output, send output to S3 etc ...
   {
     "type": "header",
     "subtype": "h4",
-    "label": "Job information"
-  },
-  {
-    "type": "select",
-    "required": true,
-    "label": "What version of the solver do you want to use ? (binary_location)",
-    "description": "Path to the solver executable/binary. It's usually located within the \"bin\" folder of your installation directory",
-    "className": "form-control",
-    "name": "binary_location",
-    "multiple": false,
-    "values": [
-      {
-        "label": "Version 2020",
-        "value": "/apps/software/version2020/bin/solver.exe"
-      },
-      {
-        "label": "Version 2019 ",
-        "value": "/apps/software/version19/bin/solver.exe"
-      },
-      {
-        "label": "BETA",
-        "value": "/apps/software/versionBETA/bin/solver.exe"
-      }
-    ]
+    "label": "Recommended Parameters"
   },
   {
     "type": "select",
     "required": true,
     "label": "What type of instance do you want to use? (instance_type)",
     "className": "form-control",
+                   "description": "EC2 instance type to provision. This will be used along with cpus to calculate the number of nodes to provision",
+
     "name": "instance_type",
     "multiple": false,
     "values": [
@@ -402,11 +381,67 @@ Compress output, send output to S3 etc ...
     "label": "How many CPUs do you want ? (cpus)",
     "placeholder": "Number of EC2 instance will automatically be calculated based on Instance Type and CPUs count",
     "className": "form-control",
+             "description": "Number of CPUs to allocate to the simulation. This will be used along with instance_type to calculate the number of nodes to provision",
+
     "name": "cpus",
     "subtype": "text",
     "maxlength": 255
   },
-   {
+  {
+    "type": "text",
+    "required": true,
+    "label": "Job Name (job_name)",
+    "className": "form-control",
+    "name": "job_name",
+    "subtype": "text",
+      "placeholder": "Do not use spaces",
+    "maxlength": 255
+  },
+  {
+    "type": "text",
+    "required": true,
+    "label": "Input location (input_file)",
+    "placeholder": "(Do not delete) This entry will automatically be pre-populated with the absolute path of the input file.",
+    "className": "form-control",
+    "name": "input_file",
+    "description": "input_file is a reserved name on SOCA. The value will automatically be replaced by the input location provided by the user. You MUST have it and parameter name MUST be input_name",
+    "subtype": "text",
+    "maxlength": 255
+  },
+
+  {
+    "type": "select",
+    "required": true,
+    "label": "Do you want to limit how long the job will be running? (walltime)",
+    "className": "form-control",
+    "name": "walltime",
+      "description": "Use HH:MM:SS format (hours:minutes:seconds). For example 90 minutes is 00:90:00 or 01:30:00",
+    "multiple": false,
+    "values": [
+      {
+        "label": "No Limit",
+        "value": "99:99:99",
+        "selected": true
+      },
+      {
+        "label": "No more than 1 hour",
+        "value": "00:01:00"
+      },
+      {
+        "label": "No more than 5 hours",
+        "value": "00:05:00"
+      },
+      {
+        "label": "No more than 1 day",
+        "value": "01:00:00"
+      },
+      {
+        "label": "No more than 1 month",
+        "value": "31:00:00"
+      }
+    ]
+  },
+                                 {
     "type": "select",
     "required": true,
     "label": "How much storage do you want (SSD under /scratch)",
@@ -448,61 +483,32 @@ Compress output, send output to S3 etc ...
     ]
   },
   {
-    "type": "text",
-    "required": true,
-    "label": "Job Name (job_name)",
-    "className": "form-control",
-    "name": "job_name",
-    "subtype": "text",
-    "maxlength": 255
-  },
-  {
-    "type": "text",
-    "required": true,
-    "label": "Input location (input_file)",
-    "placeholder": "(Do not delete) This entry will automatically be pre-populated with the absolute path of the input file.",
-    "className": "form-control",
-    "name": "input_file",
-    "description": "input_file is a reserved name on SOCA. The value will automatically be replaced by the input location provided by the user. You MUST have it and parameter name MUST be input_name",
-    "subtype": "text",
-    "maxlength": 255
-  },
-
-  {
-    "type": "select",
-    "required": true,
-    "label": "Do you want to limit how long the job will be running? (walltime)",
-    "className": "form-control",
-    "name": "walltime",
-    "multiple": false,
-    "values": [
-      {
-        "label": "No Limit",
-        "value": "99:99:99",
-        "selected": true
-      },
-      {
-        "label": "No more than 1 hour",
-        "value": "00:01:00"
-      },
-      {
-        "label": "No more than 5 hours",
-        "value": "00:05:00"
-      },
-      {
-        "label": "No more than 1 day",
-        "value": "1:00:00"
-      },
-      {
-        "label": "No more than 1 month",
-        "value": "31:00:00"
-      }
-    ]
-  },
-  {
     "type": "header",
     "subtype": "h4",
     "label": "Application parameters"
+  },
+                                 {
+    "type": "select",
+    "required": true,
+    "label": "What version of the solver do you want to use ? (binary_location)",
+    "description": "Path to the solver executable/binary. It's usually located within the \"bin\" folder of your installation directory",
+    "className": "form-control",
+    "name": "binary_location",
+    "multiple": false,
+    "values": [
+      {
+        "label": "Version 2020",
+        "value": "/apps/software/version2020/bin/solver.exe"
+      },
+      {
+        "label": "Version 2019 ",
+        "value": "/apps/software/version19/bin/solver.exe"
+      },
+      {
+        "label": "BETA",
+        "value": "/apps/software/versionBETA/bin/solver.exe"
+      }
+    ]
   },
   {
     "type": "paragraph",

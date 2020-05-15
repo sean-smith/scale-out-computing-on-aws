@@ -1,6 +1,6 @@
 import logging
 import config
-from flask import render_template, Blueprint, request, redirect, session, flash
+from flask import render_template, Blueprint, request, redirect, session, flash, Response
 from requests import post, get, delete
 from decorators import login_required
 import boto3
@@ -10,20 +10,11 @@ import random
 import string
 import base64
 import datetime
-import os
-import json
+import read_secretmanager
 
 logger = logging.getLogger("api_log")
 remote_desktop = Blueprint('remote_desktop', __name__, template_folder='templates')
 client = boto3.client('ec2')
-
-
-def get_soca_configuration():
-    secretsmanager_client = boto3.client('secretsmanager')
-    configuration_secret_name = os.environ['SOCA_CONFIGURATION']
-    response = secretsmanager_client.get_secret_value(SecretId=configuration_secret_name)
-    return json.loads(response['SecretString'])
-
 
 @remote_desktop.route('/remote_desktop', methods=['GET'])
 @login_required
@@ -62,7 +53,7 @@ def index():
             flash("Unknown error for session " + str(session_number) + " assigned to job " + str(job_id) + " with error " + str(get_job_info.text), "error")
 
         user_sessions[session_number] = {
-                "url": 'https://' + get_soca_configuration()['LoadBalancerDNSName'] + '/' + check_session.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
+                "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + check_session.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
                 "session_state": session_state}
 
     max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
@@ -71,6 +62,7 @@ def index():
     all_instances_available = client._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
     return render_template('remote_desktop.html',
+                           user=session["user"],
                            user_sessions=user_sessions,
                            page='remote_desktop',
                            all_instances=all_instances,
@@ -161,3 +153,63 @@ def create():
     else:
         flash("Error during job submission: " + str(send_to_to_queue.json()["message"]), "error")
     return redirect("/remote_desktop")
+
+
+@remote_desktop.route('/remote_desktop/delete', methods=['GET'])
+@login_required
+def delete():
+    dcv_session = request.args.get("session", None)
+    if dcv_session is None:
+        flash("Invalid DCV sessions", "error")
+        return redirect("/remote_desktop")
+
+    check_session = DCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True)
+    if check_session:
+        job_id = check_session.job_id
+        delete_job = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
+                            headers={"X-SOCA-TOKEN": session["api_key"],
+                                     "X-SOCA-USER": session["user"]},
+                            data={"job_id": job_id},
+                            verify=False)
+        if delete_job.status_code == 200:
+            check_session.is_active = False
+            db.session.commit()
+            flash("DCV session terminated. Host will be decomissioned shortly", "success")
+        else:
+            flash("Unable to delete associated job id ( " +str(job_id) + ") due to " + str(delete_job.text), "error")
+    else:
+        flash("Unable to retrieve this session", "error")
+
+    return redirect("/remote_desktop")
+
+@remote_desktop.route('/remote_desktop/client', methods=['GET'])
+@login_required
+def generate_client():
+    dcv_session = request.args.get("session", None)
+    if dcv_session is None:
+        flash("Invalid DCV sessions", "error")
+        return redirect("/remote_desktop")
+
+    check_session = DCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True)
+    if check_session:
+        session_file = '''
+        [version]
+        format=1.0
+
+        [connect]
+        host=''' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '''
+        port=443
+        weburlpath=/''' + check_session["session_host"] + '''
+        sessionid=''' + check_session["session_uuid"] + '''
+        user=''' + session["user"] + '''
+        authToken=''' + check_session["session_password"] + '''
+        '''
+        return Response(
+            session_file,
+            mimetype='text/txt',
+            headers={'Content-disposition': 'attachment; filename=' + session['user'] + '_soca_' + str(dcv_session) + '.dcv'})
+
+    else:
+        flash("Unable to retrieve this session. This session may have been terminated.", "error")
+        return redirect("/remote_desktop")
+

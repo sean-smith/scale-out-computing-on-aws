@@ -9,7 +9,7 @@ from requests import post
 from views.my_files import decrypt, user_has_permission
 from models import ApplicationProfiles
 from collections import OrderedDict
-import boto3
+import re
 
 logger = logging.getLogger(__name__)
 submit_job = Blueprint('submit_job', __name__, template_folder='templates')
@@ -81,7 +81,7 @@ def job_submission():
                                    user=session["user"],
                                    profile_form=profile_form,
                                    profile_job=profile_job,
-                                   input_path=input_path,
+                                   input_path=input_path.rstrip().lstrip(),
                                    input_name=input_name)
                                    #get_all_ec2_instances=get_all_ec2_instances)
     else:
@@ -97,6 +97,24 @@ def send_job():
     except Exception as err:
         flash("Unable to read the job script due to: " + str(err), "error")
         return redirect("/my_files")
+
+    required_parameters = ["cpus", "instance_type"]
+    for param in required_parameters:
+        if param not in request.form:
+            flash("You must specify cpus and instance_type parameters", "error")
+            return redirect("/my_files")
+
+    cpus = request.form["cpus"]
+    instance_type = request.form["instance_type"]
+    if cpus is None:
+        nodect = 1
+    else:
+        cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
+        if cpus_count_pattern:
+            cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+        else:
+            cpu_per_system = 2
+        nodect = math.ceil(int(cpus) / cpu_per_system)
 
     for param in request.form:
         if param != "csrf_token":

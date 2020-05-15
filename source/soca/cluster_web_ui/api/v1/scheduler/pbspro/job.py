@@ -10,6 +10,11 @@ import json
 import shlex
 import sys
 import errors
+import os
+import uuid
+import re
+import random
+import string
 
 logger = logging.getLogger("soca_api")
 
@@ -108,15 +113,29 @@ class Job(Resource):
             if request_user is None:
                 return errors.all_errors("X-SOCA-USER_MISSING")
 
+            # Basic Input verification
+            check_job_name = re.search(r'#PBS -N (.+)', payload)
+            if check_job_name:
+                if " " in check_job_name:
+                    return {"succes": False, "message": "Space are not authorized in job name"}, 500
+
+                job_name = re.sub(r'\W+', '', check_job_name.group(1))
+            else:
+                job_name = ""
+
             submit_job_command = config.Config.PBS_QSUB + " " + qsub_script
             try:
+                random_id = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
+                job_output_path = config.Config.USER_HOME + "/" + request_user + "/soca_job_output/" + job_name + "_" +str(random_id)
+                os.makedirs(job_output_path)
+                os.chdir(job_output_path)
                 launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command], stderr=subprocess.PIPE)
                 job_id = ((launch_job.decode('utf-8')).rstrip().lstrip()).split('.')[0]
                 return {"success": True, "message": str(job_id)}, 200
             except subprocess.CalledProcessError as e:
                 return {"succes": False,
                         "message": {
-                            "error": "Unable to submit the job. Your job script is invalid (eg: malformed, syntax error...)",
+                            "error": "Unable to submit the job. Please verify your script file (eg: malformed inputs, syntax error, extra space in the PBS variables ...) or refer to the 'stderr' message.",
                             "stderr": '{}'.format(e.stderr.decode(sys.getfilesystemencoding())),
                             "stdout": '{}'.format(e.output.decode(sys.getfilesystemencoding())),
                             "job_script": str(payload)}

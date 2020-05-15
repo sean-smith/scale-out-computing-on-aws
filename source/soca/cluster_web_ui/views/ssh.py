@@ -4,7 +4,7 @@ import config
 import subprocess
 import os
 from flask import send_file, render_template, Blueprint, session, redirect, request
-
+import read_secretmanager
 logger = logging.getLogger(__name__)
 
 ssh = Blueprint('ssh', __name__, template_folder='templates')
@@ -12,7 +12,7 @@ ssh = Blueprint('ssh', __name__, template_folder='templates')
 @ssh.route('/ssh', methods=['GET'])
 @login_required
 def home():
-    scheduler_ip = ""#scheduler_ip
+    scheduler_ip = read_secretmanager.get_soca_configuration()['SchedulerPublicIP']
     return render_template('ssh.html', user=session["user"], scheduler_ip=scheduler_ip)
 
 

@@ -1,14 +1,24 @@
-import base64
+import random
+import re
+import uuid
+import string
+a = '''
+#dsasd
+sad
+sad
+s
+adsa
+#PBS -N re@@@#$arfsd
+cdfsfsd
+fds
+'''
+request_user = "mcrozes"
+check_job_name = re.search(r'#PBS -N (.+)', a)
+if check_job_name:
+    job_name = re.sub(r'\W+', '', check_job_name.group(1))
 
+z = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
 
+job_output_path =   "/" + request_user + "/soca_job_output/" + job_name + "_" + z
 
-job_for_user = {"Jobs": {}}
-print(job_for_user)
-
-job_for_user["Jobs"]["a"] = 1
-
-
-print(job_for_user)
-
-job_for_user["Jobs"]["b"] = 1
-print(job_for_user)
+print(job_output_path)

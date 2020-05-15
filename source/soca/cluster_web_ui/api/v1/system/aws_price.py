@@ -99,7 +99,7 @@ class AwsPrice(Resource):
         """
         parser = reqparse.RequestParser()
         parser.add_argument('instance_type', type=str, location='args')
-        parser.add_argument('walltime', type=str, location='args', help="Please specify wall_time using DD:HH:MM format", default="01:00:00")
+        parser.add_argument('walltime', type=str, location='args', help="Please specify wall_time using HH:HH:SS format", default="01:00:00")
         parser.add_argument('cpus', type=int, location='args', help="Please specify how many cpus you want to allocate")
         parser.add_argument('scratch_size', type=int, location='args', help="Please specify storage in GB to allocate to /scratch partition (Default 0)", default=0)
         parser.add_argument('root_size', type=int, location='args', help="Please specify your AMI root disk space (Default 10gb)", default=10)
@@ -121,14 +121,15 @@ class AwsPrice(Resource):
         # Get WallTime in hours
         wall_time_unformated = args['walltime'].split(":")
         if wall_time_unformated.__len__() != 3:
-            return {"message": "walltime must use HH:MM:SS format"}
+            return {"message": "walltime must use HH:MM:SS format. For example 90 minutes will be 00:90:00 or 01:30:00"}, 500
         try:
-            sim_days = float(wall_time_unformated[0]) if wall_time_unformated[0] != "00" else 0.000
-            sim_hours = float(wall_time_unformated[1]) if wall_time_unformated[1] != "00" else 0.000
-            sim_minutes = float(wall_time_unformated[2]) if wall_time_unformated[2] != "00" else 0.000
+            sim_hours = float(wall_time_unformated[0]) if wall_time_unformated[0] != "00" else 0.000
+            sim_minutes = float(wall_time_unformated[1]) if wall_time_unformated[1] != "00" else 0.000
+            sim_seconds = float(wall_time_unformated[2]) if wall_time_unformated[2] != "00" else 0.000
         except ValueError:
-            return {"message": "walltime must use HH:MM:SS and only use numbers"}
-        walltime = (sim_days * 24) + sim_hours + (sim_minutes / 60)
+            return {"message": "walltime must use HH:MM:SS and only use numbers"}, 500
+
+        walltime = sim_hours + (sim_minutes / 60) + (sim_seconds / 60)
 
         # Calculate number of nodes required based on instance type and CPUs requested
         if cpus is None:
@@ -142,11 +143,11 @@ class AwsPrice(Resource):
             nodect = math.ceil(int(cpus) / cpu_per_system)
 
         # Calculate EBS Storage (storage * ebs_price * sim_time_in_secs / (second_in_a_day * 30 days) * number of nodes
-        sim_cost["scratch_size"] = "%.5f" % ((scratch_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
-        sim_cost["root_size"] = "%.5f" % ((root_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
+        sim_cost["scratch_size"] = "%.3f" % ((scratch_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
+        sim_cost["root_size"] = "%.3f" % ((root_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
 
         # Calculate FSx Storage (storage * ebs_price * sim_time_in_secs / (second_in_a_day * 30 days) * number of nodes
-        sim_cost["fsx_capacity"] = "%.5f" % ((fsx_storage * FSX_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
+        sim_cost["fsx_capacity"] = "%.3f" % ((fsx_storage * FSX_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
 
         # Calculate Compute
         try:
@@ -158,6 +159,7 @@ class AwsPrice(Resource):
         # Output
         sim_cost["estimated_storage_cost"] = "%.3f" % (float(sim_cost["fsx_capacity"]) + float(sim_cost["scratch_size"]) + float(sim_cost["root_size"]))
         sim_cost["estimated_total_cost"] = "%.3f" % (float(sim_cost["estimated_storage_cost"]) + float(sim_cost["compute"]["estimated_on_demand_cost"]))
+        sim_cost["estimated_hourly_cost"] = "%.3f" % (float(sim_cost["estimated_total_cost"]) / float(walltime))
         sim_cost["storage_pct"] = "%.3f" % (float(sim_cost["estimated_storage_cost"]) / float(sim_cost["estimated_total_cost"]) * 100) if float(sim_cost["estimated_storage_cost"]) != 0.000 else 0
         sim_cost["compute_pct"] = "%.3f" % (float(sim_cost["compute"]["estimated_on_demand_cost"]) / float(sim_cost["estimated_total_cost"]) * 100) if float(sim_cost["compute"]["estimated_on_demand_cost"]) != 0.000 else 0
         sim_cost["compute"]["cpus"] = cpus

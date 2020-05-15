@@ -82,6 +82,9 @@
                                                {% if job_data.job_state != 'E' %}
                                                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete{{ job_id.split(".")[0] }}">Kill</button>
                                                {% endif %}
+                                               {% if job_data.Variable_List.PBS_O_WORKDIR %}
+                                                   <a href="/my_files?path={{ job_data.Variable_List.PBS_O_WORKDIR  }}"><button type="button" class="btn btn-warning">Job Directory</button></a>
+                                               {% endif %}
                                            </th>
                                            </tr>
                                           <!-- Modal Delete -->

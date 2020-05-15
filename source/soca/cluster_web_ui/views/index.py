@@ -69,3 +69,4 @@ def authenticate():
 
     else:
         return redirect('/login')
+

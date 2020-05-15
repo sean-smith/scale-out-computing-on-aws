@@ -125,13 +125,16 @@
               formData: {{ profile_form | safe }}
           })
 
+          // populate input file path by default
+          $("#input_file").val('{{ input_path }}');
+
 
          $("form").change(function(){
               var instance_type = $("#instance_type").val() || "c5.large";
               var scratch_size = $("#scratch_size").val() || 0;
               var root_size = $("#root_size").val() || 0;
               var fsx_capacity = $("#fsx_capacity").val() || 0;
-              var walltime = $("#walltime").val() || 60;
+              var walltime = $("#walltime").val() || "01:00:00";
               var cpus = $("#cpus").val() || 1;
 
              $("#cost_result").html('<div align="center"><i class="fas fa-spinner fa-5x"></i></div><h3><br> Please wait while we estimate the price of this job ... </h3>'),
@@ -151,6 +154,7 @@
                  cost_compute_ondemand = cost_data.compute.estimated_on_demand_cost
 
                  var cost_response = '<h3>Estimated OnDemand Cost: $'+ cost_data.estimated_total_cost + '</h3> <br> \
+                     <h3>Estimated Hourly Cost: $'+ cost_data.estimated_hourly_cost + '</h3> <br> \
                      <h3>Breakdown</h3> \
                      <div class="progress" style="height:30px"> \
                      <div class="progress-bar bg-primary" role="progressbar" style="width: '+ cost_data.compute_pct +'%;height:30px" aria-valuenow="'+ cost_data.compute_pct +'" aria-valuemin="0" aria-valuemax="100">Compute ($' + cost_data.compute.estimated_on_demand_cost + ')</div> \
