@@ -33,27 +33,31 @@ def index():
                            params={"job_id": job_id},
                            verify=False)
 
-        check_session = DCVSessions.query.filter_by(job_id=job_id).first()
-        if get_job_info.status_code == 200:
-            # Job in queue, edit only if state is running
-            job_state = get_job_info.json()["message"]["job_state"]
-            if job_state == "R" and check_session.session_state != "running":
-                exec_host = (get_job_info.json()["message"]["exec_host"]).split("/")[0]
-                if check_session:
-                    check_session.session_host = exec_host
-                    check_session.session_state = "running"
-                    db.session.commit()
-
-        elif get_job_info.status_code == 210:
-            # Job is no longer in the queue
-            check_session.is_active = False
-            check_session.deactivated_on = datetime.datetime.utcnow()
-            db.session.commit()
+        check_session = DCVSessions.query.filter_by(job_id=job_id).all()
+        if len(check_session) > 1:
+            flash("More than 1 entry on the DB was found for this job ("+job_id+"). Most likely this is because this db was copied from a different cluster. Please remove the entry for the DB first")
+            return redirect("/remote_desktop")
         else:
-            flash("Unknown error for session " + str(session_number) + " assigned to job " + str(job_id) + " with error " + str(get_job_info.text), "error")
+            for job_info in check_session:
+                if get_job_info.status_code == 200:
+                    # Job in queue, edit only if state is running
+                    job_state = get_job_info.json()["message"]["job_state"]
+                    if job_state == "R" and job_info.session_state != "running":
+                        exec_host = (get_job_info.json()["message"]["exec_host"]).split("/")[0]
+                        job_info.session_host = exec_host
+                        job_info.session_state = "running"
+                        db.session.commit()
 
-        user_sessions[session_number] = {
-                "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + check_session.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
+                elif get_job_info.status_code == 210:
+                    # Job is no longer in the queue
+                    job_info.is_active = False
+                    job_info.deactivated_on = datetime.datetime.utcnow()
+                    db.session.commit()
+                else:
+                    flash("Unknown error for session " + str(session_number) + " assigned to job " + str(job_id) + " with error " + str(get_job_info.text), "error")
+
+            user_sessions[session_number] = {
+                "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + job_info.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
                 "session_state": session_state}
 
     max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
@@ -82,7 +86,7 @@ def create():
     session_uuid = str(uuid.uuid4())
     session_password = ''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(80))
 
-    command_dcv_create_session = "create-session --user  " + session["user"] + " --owner " + session["user"] + " " + session_uuid
+    command_dcv_create_session = "create-session --user " + session["user"] + " --owner " + session["user"] + " " + session_uuid
     params = {'pbs_job_name': 'Desktop' + str(parameters["session_number"]),
               'pbs_queue': 'desktop',
               'pbs_project': 'gui',
@@ -94,39 +98,41 @@ def create():
               'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
               'walltime': parameters["walltime"]}
 
-    job_to_submit = '''
-    #PBS -N ''' + params['pbs_job_name'] + '''
-    #PBS -q ''' + params['pbs_queue'] + '''
-    #PBS -P ''' + params['pbs_project'] + '''
-    #PBS -l walltime=''' + params['walltime'] + '''
-    #PBS -l instance_type=''' + params['instance_type'] + '''
-    ''' + params['instance_ami'] + '''
-    ''' + params['base_os'] + '''
-    ''' + params['scratch_size'] + '''
-    #PBS -e /dev/null
-    #PBS -o /dev/null
-    # Create the DCV Session
-    DCV=$(which dcv)
-    $DCV ''' + command_dcv_create_session + '''
+    job_to_submit = '''#!/bin/bash
+#PBS -N ''' + params['pbs_job_name'] + '''
+#PBS -q ''' + params['pbs_queue'] + '''
+#PBS -P ''' + params['pbs_project'] + '''
+#PBS -l walltime=''' + params['walltime'] + '''
+#PBS -l instance_type=''' + params['instance_type'] + '''
+''' + params['instance_ami'] + '''
+''' + params['base_os'] + '''
+''' + params['scratch_size'] + '''
 
-    # Query dcvsimpleauth with add-user
-    echo ''' + params['session_password_b64'] + ''' | base64 --decode | ''' + config.Config.DCV_SIMPLE_AUTH + ''' add-user --user ''' + session["user"] + ''' --session ''' + session_uuid + ''' --auth-dir ''' + config.Config.DCV_AUTH_DIR + '''
+cd $PBS_O_WORKDIR
 
-    # Uncomment if you want to disable Gnome Lock Screen (require webui restart)
-    # GSETTINGS=$(which gsettings)
-    # $GSETTINGS set org.gnome.desktop.lockdown disable-lock-screen true
-    # $GSETTINGS set org.gnome.desktop.session idle-delay 0
+# Create the DCV Session
+DCV="/bin/dcv"
+echo "DCV detected $DCV" >> dcv.log 2>&1
+/bin/dcv ''' + command_dcv_create_session + ''' >> dcv.log 2>&1
+    
+# Query dcvsimpleauth with add-user
+echo "''' + params['session_password_b64'] + '''" | base64 --decode | ''' + config.Config.DCV_SIMPLE_AUTH + ''' add-user --user ''' + session["user"] + ''' --session ''' + session_uuid + ''' --auth-dir ''' + config.Config.DCV_AUTH_DIR + ''' >> dcv.log 2>&1
 
-    # Keep job open
-    while true
-        do
-            session_keepalive=$($DCV list-sessions | grep ''' + session_uuid + ''' | wc -l)
-            if [ $session_keepalive -ne 1 ]
-                then
-                    exit 0
-            fi
-            sleep 3600
-        done
+# Uncomment if you want to disable Gnome Lock Screen (require webui restart)
+# GSETTINGS=$(which gsettings)
+# $GSETTINGS set org.gnome.desktop.lockdown disable-lock-screen true
+# $GSETTINGS set org.gnome.desktop.session idle-delay 0
+
+# Keep job open
+while true
+    do
+        session_keepalive=$($DCV list-sessions | grep ''' + session_uuid + ''' | wc -l)
+        if [ $session_keepalive -ne 1 ]
+            then
+                exit 0
+        fi
+        sleep 3600
+done
     '''
 
     payload = base64.b64encode(job_to_submit.encode()).decode()
@@ -157,13 +163,15 @@ def create():
 
 @remote_desktop.route('/remote_desktop/delete', methods=['GET'])
 @login_required
-def delete():
+def delete_job():
     dcv_session = request.args.get("session", None)
     if dcv_session is None:
         flash("Invalid DCV sessions", "error")
         return redirect("/remote_desktop")
 
-    check_session = DCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True)
+    check_session = DCVSessions.query.filter_by(user=session["user"],
+                                                session_number=dcv_session,
+                                                is_active=True).first()
     if check_session:
         job_id = check_session.job_id
         delete_job = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
@@ -174,9 +182,9 @@ def delete():
         if delete_job.status_code == 200:
             check_session.is_active = False
             db.session.commit()
-            flash("DCV session terminated. Host will be decomissioned shortly", "success")
+            flash("DCV session is about to be terminated. Job will still be visible in the queue for a couple of minutes before being completely removed.", "success")
         else:
-            flash("Unable to delete associated job id ( " +str(job_id) + ") due to " + str(delete_job.text), "error")
+            flash("Unable to delete associated job id (" +str(job_id) + "). " + str(delete_job.json()["message"]), "error")
     else:
         flash("Unable to retrieve this session", "error")
 
@@ -190,20 +198,20 @@ def generate_client():
         flash("Invalid DCV sessions", "error")
         return redirect("/remote_desktop")
 
-    check_session = DCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True)
+    check_session = DCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True).first()
     if check_session:
         session_file = '''
-        [version]
-        format=1.0
+[version]
+format=1.0
 
-        [connect]
-        host=''' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '''
-        port=443
-        weburlpath=/''' + check_session["session_host"] + '''
-        sessionid=''' + check_session["session_uuid"] + '''
-        user=''' + session["user"] + '''
-        authToken=''' + check_session["session_password"] + '''
-        '''
+[connect]
+host=''' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '''
+port=443
+weburlpath=/''' + check_session.session_host + '''
+sessionid=''' + check_session.session_uuid + '''
+user=''' + session["user"] + '''
+authToken=''' + check_session.session_password + '''
+'''
         return Response(
             session_file,
             mimetype='text/txt',

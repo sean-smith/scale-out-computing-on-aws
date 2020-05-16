@@ -56,7 +56,6 @@ def private_api(f):
         token_is_valid = ApiKeys.query.filter_by(token=token,
                                                  user=user,
                                                  is_active=True).first()
-
         if token_is_valid:
             return f(*args, **kwargs)
         else:

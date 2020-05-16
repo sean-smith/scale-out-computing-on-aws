@@ -39,15 +39,14 @@
                         {% endif %}
                {% endwith %}
 
-              <div class="row">
-
-                 <div class="alert alert-primary" role="alert">
+                <div class="alert alert-primary" role="alert">
                      <strong>2D Session: </strong>
                      2D session does not support GPU acceleration. This type of session is good for non-intensive compute activities.
                      <hr><strong>3D Session: </strong>
                      3D session provides full GPU support. This is recommended for graphic intensive operations such as 3D model rendering or post-processing.
                      <br>
                  </div>
+              <div class="row">
                   {% for n in range(1,max_number_of_sessions + 1) %}
                     <div class="col-md-6">
                           <div class="card shadow mb-4">
@@ -80,7 +79,7 @@
                                               <div class="alert alert-warning" role="alert">
                                                   Download your client <a href="https://download.nice-dcv.com/" target="_blank"> here</a>.
                                               </div>
-                                              <a target="_blank" href="/api/dcv_create_client_file?session_number={{ n }}" class="btn btn-success btn-icon-split">
+                                              <a target="_blank" href="/remote_desktop/client?session={{ n }}" class="btn btn-success btn-icon-split">
                                                 <span class="icon text-white-50">
                                                   <i class="fas fa-check"></i>
                                                 </span>

@@ -8,14 +8,18 @@ sad
 sad
 s
 adsa
-#PBS -N re@@@#$arfsd
+#PBS -N re@@   @#$arfsd
 cdfsfsd
 fds
 '''
 request_user = "mcrozes"
 check_job_name = re.search(r'#PBS -N (.+)', a)
 if check_job_name:
-    job_name = re.sub(r'\W+', '', check_job_name.group(1))
+    if " " in check_job_name.group(1):
+        print("Space are not authorized in job name")
+        job_name = re.sub(r'\W+', '', check_job_name.group(1))
+    else:
+        job_name = ""
 
 z = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
 

@@ -15,6 +15,7 @@ import uuid
 import re
 import random
 import string
+import shutil
 
 logger = logging.getLogger("soca_api")
 
@@ -57,7 +58,7 @@ class Job(Resource):
                 try:
                     job_info = json.loads(((get_job_info.decode('utf-8')).rstrip().lstrip()))
                 except Exception as err:
-                    return {"success": False, "message": "Unable to retrieve this job. Job may have terminated."}, 210
+                    return {"success": False, "message": "Unable to retrieve this job. Job may have terminated. Error: " + str(job_info)}, 210
 
                 job_key = list(job_info["Jobs"].keys())[0]
                 return {"success": True, "message": job_info["Jobs"][job_key]}, 200
@@ -104,11 +105,6 @@ class Job(Resource):
             return errors.all_errors(type(err).__name__, err)
 
         try:
-            qsub_script = """<<EOF
-            """ + payload + """
-            EOF
-            """
-
             request_user = request.headers.get("X-SOCA-USER")
             if request_user is None:
                 return errors.all_errors("X-SOCA-USER_MISSING")
@@ -116,19 +112,32 @@ class Job(Resource):
             # Basic Input verification
             check_job_name = re.search(r'#PBS -N (.+)', payload)
             if check_job_name:
-                if " " in check_job_name:
+                if " " in check_job_name.group(1):
                     return {"succes": False, "message": "Space are not authorized in job name"}, 500
 
                 job_name = re.sub(r'\W+', '', check_job_name.group(1))
             else:
                 job_name = ""
 
-            submit_job_command = config.Config.PBS_QSUB + " " + qsub_script
+
             try:
+                # Prepare job directory
                 random_id = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
-                job_output_path = config.Config.USER_HOME + "/" + request_user + "/soca_job_output/" + job_name + "_" +str(random_id)
+                job_output_folder = config.Config.USER_HOME + "/" + request_user + "/soca_job_output/"
+                job_output_path = job_output_folder + job_name + "_" + str(random_id)
                 os.makedirs(job_output_path)
                 os.chdir(job_output_path)
+
+                with open("job_submit.que", "w") as text_file:
+                    text_file.write(payload)
+
+                shutil.chown(job_output_folder, user=request_user, group=request_user)
+                shutil.chown(job_output_path, user=request_user, group=request_user)
+                shutil.chown(job_output_path + "/job_submit.que", user=request_user, group=request_user)
+                os.chmod(job_output_folder, 0o700)
+                os.chmod(job_output_path, 0o700)
+                os.chmod(job_output_path + "/job_submit.que", 0o700)
+                submit_job_command = config.Config.PBS_QSUB + " job_submit.que"
                 launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command], stderr=subprocess.PIPE)
                 job_id = ((launch_job.decode('utf-8')).rstrip().lstrip()).split('.')[0]
                 return {"success": True, "message": str(job_id)}, 200
