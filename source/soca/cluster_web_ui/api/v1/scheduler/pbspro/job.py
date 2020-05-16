@@ -98,7 +98,7 @@ class Job(Resource):
         try:
             payload = base64.b64decode(args['payload']).decode()
         except KeyError:
-            return errors.all_errors("CLIENT_MISSING_PARAMETER", "group (str) parameter is required")
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "payload (base64) parameter is required")
         except UnicodeError:
             return errors.all_errors("UNICODE_ERROR", "payload (str) does not seems to be a valid base64")
         except Exception as err:
@@ -128,16 +128,16 @@ class Job(Resource):
                 os.makedirs(job_output_path)
                 os.chdir(job_output_path)
 
-                with open("job_submit.que", "w") as text_file:
+                with open("job_submit.sh", "w") as text_file:
                     text_file.write(payload)
 
                 shutil.chown(job_output_folder, user=request_user, group=request_user)
                 shutil.chown(job_output_path, user=request_user, group=request_user)
-                shutil.chown(job_output_path + "/job_submit.que", user=request_user, group=request_user)
+                shutil.chown(job_output_path + "/job_submit.sh", user=request_user, group=request_user)
                 os.chmod(job_output_folder, 0o700)
                 os.chmod(job_output_path, 0o700)
-                os.chmod(job_output_path + "/job_submit.que", 0o700)
-                submit_job_command = config.Config.PBS_QSUB + " job_submit.que"
+                os.chmod(job_output_path + "/job_submit.sh", 0o700)
+                submit_job_command = config.Config.PBS_QSUB + " job_submit.sh"
                 launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command], stderr=subprocess.PIPE)
                 job_id = ((launch_job.decode('utf-8')).rstrip().lstrip()).split('.')[0]
                 return {"success": True, "message": str(job_id)}, 200
@@ -186,6 +186,8 @@ class Job(Resource):
         parser.add_argument('job_id', type=str, location='args')
         args = parser.parse_args()
         job_id = args['job_id']
+        if job_id is None:
+            return errors.all_errors("CLIENT_MISSING_PARAMETER", "job_id (str) parameter is required")
 
         get_job_info = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                            headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},

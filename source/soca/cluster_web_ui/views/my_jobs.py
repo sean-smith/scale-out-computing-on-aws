@@ -25,14 +25,14 @@ def index():
 @my_jobs.route("/my_jobs/delete", methods=["GET"])
 @login_required
 def delete_job():
-    job_id_to_delete = request.args.get("job_id", False)
-    if job_id_to_delete is False:
+    job_id = request.args.get("job_id", False)
+    if job_id is False:
         return redirect("/my_jobs")
 
     delete_job = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                               headers={"X-SOCA-USER": session["user"],
                                        "X-SOCA-TOKEN": session["api_key"]},
-                              params={"job_id": job_id_to_delete},
+                              params={"job_id": job_id},
                               verify=False)
     if delete_job.status_code == 200:
         flash("Request to delete job was successful. The job will be removed from the queue shortly", "success")

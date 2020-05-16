@@ -177,12 +177,12 @@ def delete_job():
         delete_job = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                             headers={"X-SOCA-TOKEN": session["api_key"],
                                      "X-SOCA-USER": session["user"]},
-                            data={"job_id": job_id},
+                            params={"job_id": job_id},
                             verify=False)
         if delete_job.status_code == 200:
             check_session.is_active = False
             db.session.commit()
-            flash("DCV session is about to be terminated. Job will still be visible in the queue for a couple of minutes before being completely removed.", "success")
+            flash("DCV session is about to be terminated. Job may still be visible in the queue for a couple of minutes before being completely removed.", "success")
         else:
             flash("Unable to delete associated job id (" +str(job_id) + "). " + str(delete_job.json()["message"]), "error")
     else:
