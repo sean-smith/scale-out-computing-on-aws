@@ -10,7 +10,7 @@ from views.my_files import decrypt, user_has_permission
 from models import ApplicationProfiles
 from collections import OrderedDict
 import re
-
+import math
 logger = logging.getLogger(__name__)
 submit_job = Blueprint('submit_job', __name__, template_folder='templates')
 

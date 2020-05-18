@@ -86,23 +86,37 @@
 
     function saveData()
     {
-        getVal = btoa(window.fileeditor.getValue());
-        fileToEdit = btoa("{{file_to_edit}}");
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                 $('#update-div').html('<div class="alert alert-success">File updated correctly</div>');
-            }
-            else {
-                 $('#update-div').html('<div class="alert alert-danger">Could not update file: ' + this.responseText + '<div>');
-            }
-        };
+        $('#update-div').html('<div class="alert alert-primary">Hold on, we are saving this file ... </div>');
+        try {
+            getVal = btoa(window.fileeditor.getValue());
+            fileToEdit = btoa("{{file_to_edit}}");
+        }
+        catch(err) {
+          $('#update-div').html('<div class="alert alert-danger">Unable to edit this file, are you using non ASCII characters? Error: ' + err.message + ' </div>');
+        }
 
-        xhr.open("POST", "/api/system/files", true);
-        xhr.setRequestHeader("Content-type", 'application/x-www-form-urlencoded');
-        xhr.setRequestHeader("X-SOCA-USER", "{{ user }}");
-        xhr.setRequestHeader("X-SOCA-TOKEN", "{{ api_key }}");
-        xhr.send("file_content="+getVal+"&file_name="+fileToEdit);
+
+        $.ajax({
+            url: "/api/system/files",
+            type: "post",
+            data: {
+                "file_content": getVal,
+                "file_name": fileToEdit
+            },
+            headers: {
+                "Content-type": "application/x-www-form-urlencoded",
+                "X-SOCA-USER": "{{ user }}",
+                "X-SOCA-TOKEN": "{{ api_key }}"
+            },
+            dataType: 'json',
+            success: function (data) {
+                $('#update-div').html('<div class="alert alert-success">File updated correctly</div>');
+                },
+            fail: function(data){
+                console.log(data)
+                $('#update-div').html('<div class="alert alert-danger">Could not update file. Check the console.log ' + data.toString() + '<div>');
+            }
+        });
     }
 </script>
 </body>

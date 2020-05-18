@@ -5,6 +5,7 @@ import subprocess
 import os
 from flask import send_file, render_template, Blueprint, session, redirect, request
 import read_secretmanager
+import os
 logger = logging.getLogger(__name__)
 
 ssh = Blueprint('ssh', __name__, template_folder='templates')
@@ -23,22 +24,22 @@ def get_key():
     if type is None or type not in ["pem", "ppk"]:
         return redirect("/ssh")
 
-    username = session['user']
+    user = session['user']
+    user_private_key_path = config.Config.USER_HOME + "/" + user + "/.ssh/id_rsa"
     if type == "pem":
-        user_private_key_path = config.Config.USER_HOME + "/" + username + "/.ssh/id_rsa"
+
         return send_file(user_private_key_path,
                          as_attachment=True,
-                         attachment_filename=username + '_soca_privatekey.pem')
+                         attachment_filename=user + '_soca_privatekey.pem')
     else:
-        user_private_key_path = '/data/home/' + username + '/.ssh/id_rsa'
-        generate_ppk = ['unix/puttygen', user_private_key_path,
+        generate_ppk = ['/apps/soca/' + read_secretmanager.get_soca_configuration()['ClusterId'] + '/cluster_web_ui/unix/puttygen', user_private_key_path,
                         '-o',
-                        config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + username + '_soca_privatekey.ppk']
+                        config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk']
         subprocess.call(generate_ppk)
-        os.chmod(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + username + '_soca_privatekey.ppk', 0o700)
-        return send_file(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + username + '_soca_privatekey.ppk',
+        os.chmod(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk', 0o700)
+        return send_file(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk',
                          as_attachment=True,
-                         attachment_filename=username + '_soca_privatekey.ppk')
+                         attachment_filename=user + '_soca_privatekey.ppk')
 
 
 

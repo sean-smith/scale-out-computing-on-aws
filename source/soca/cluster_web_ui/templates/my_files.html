@@ -82,8 +82,7 @@
           </form>
           <hr>
           Do not close the page while uploading<br>
-          Upload limited to 500 MB. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files.
-
+          Upload limited to 500 MB and 5 minutes timeout. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files or edit the configuration files.
       </div>
 
     </div>
@@ -243,6 +242,7 @@
                           addRemoveLinks : true,
                           dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploaded under {{ path }}',
                           maxFilesize: 500, // 500 MB
+                          timeout: 300000, //  5 minutes
                           params: {
                                  path: "{{ path }}/"
                           },

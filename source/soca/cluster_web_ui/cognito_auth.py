@@ -38,11 +38,12 @@ def sso_authorization(code):
 
         # Simply check if user exist
         check_user = get(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
-                         headers={"X-SOCA-TOKEN": session["api_key"]},
+                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                          params={"user": user},
                          verify=False)
         if check_user.status_code == 200:
             session['user'] = user
+
             return {'success': True,
                     'message': ''}
         else:

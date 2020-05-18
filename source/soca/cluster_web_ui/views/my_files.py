@@ -323,6 +323,8 @@ def create():
         access_right = 0o750
         os.makedirs(folder_to_create, access_right)
         change_ownership(folder_to_create)
+        if CACHE_FOLDER_CONTENT_PREFIX + folder_path in cache.keys():
+            del cache[CACHE_FOLDER_CONTENT_PREFIX + folder_path]
         flash(folder_to_create + " created successfully.", "success")
     except OSError as err:
         if err.errno == errno.EEXIST:

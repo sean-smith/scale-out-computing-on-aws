@@ -77,9 +77,20 @@ def oauth():
     sso_auth = cognito_auth.sso_authorization(request.args.get('code'))
     cognito_root_url = config.Config.COGNITO_ROOT_URL
     if sso_auth['success'] is True:
+        logger.info("User authenticated, checking sudo permissions")
+        check_sudo_permission = get(config.Config.FLASK_ENDPOINT + '/api/ldap/sudo',
+                                    headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                    params={"user": session["user"]},
+                                    verify=False)
+        if check_sudo_permission.status_code == 200:
+            session["sudoers"] = True
+        else:
+            session["sudoers"] = False
         return redirect(cognito_root_url+next_url)
     else:
         if sso_auth['message'] == 'user_not_found':
-            return redirect(cognito_root_url)
+            flash("This user does not seems to have an account on SOCA", "error")
         else:
-            return str(sso_auth['message'])
+            flash(str(sso_auth['message']), "error")
+        return redirect("/login")
+
