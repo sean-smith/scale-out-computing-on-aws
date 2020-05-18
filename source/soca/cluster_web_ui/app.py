@@ -1,8 +1,7 @@
 import logging.config
-from flask import Flask, redirect, jsonify, render_template
+from flask import Flask, redirect, jsonify
 from flask_restful import Api
 from flask_session import Session
-from flask_restful_swagger import swagger
 from flask_sqlalchemy import SQLAlchemy
 from api.v1.scheduler.pbspro.job import Job
 from api.v1.scheduler.pbspro.jobs import Jobs
@@ -110,7 +109,7 @@ def folder_name_truncate(folder_name):
         return folder_name
 app.jinja_env.filters['folder_name_truncate'] = folder_name_truncate
 
-@app.route("/api/spec.json")
+@app.route("/api/swagger.json")
 def spec():
     swag = swagger(app)
     swag['info']['version'] = "1.0"
@@ -162,8 +161,7 @@ with app.app_context():
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()
     app.config["SESSION_SQLALCHEMY"] = SQLAlchemy(app)
-    #app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
-    api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/spec.json", url_prefix="/api/doc", title="SOCA API Documentation")
+    api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/swagger.json", url_prefix="/api/doc", title="SOCA API Documentation",)
 
 if __name__ == '__main__':
     app.run()
