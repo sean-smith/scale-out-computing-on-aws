@@ -8,7 +8,7 @@
     <script src="{{ url_for('static', filename='js/dataTables.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dropzone.js') }}"></script>
     <link href="{{ url_for('static', filename='css/dropzone.css') }}" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
 <script>
     function formatBytes(a,b){if(0==a)return"0 Bytes";var c=1024,d=b||2,e=["Bytes","KB","MB","GB","TB","PB","EB","ZB","YB"],f=Math.floor(Math.log(a)/Math.log(c));return parseFloat((a/Math.pow(c,f)).toFixed(d))+" "+e[f]}
 </script>

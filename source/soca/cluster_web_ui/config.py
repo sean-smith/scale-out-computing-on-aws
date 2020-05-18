@@ -53,26 +53,17 @@ class Config(object):
     LDAP_BASE_DN = "dc=soca,dc=local"
     LDAP_ADMIN_PASSWORD_FILE = "/root/OpenLdapAdminPassword.txt"
     LDAP_ADMIN_USERNAME_FILE = "/root/OpenLdapAdminUsername.txt"
-    #ROOT_DN = 'CN=' + open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip() + ',' + LDAP_BASE_DN
-    #ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
+    ROOT_DN = 'CN=' + open(LDAP_ADMIN_USERNAME_FILE, 'r').read().rstrip().lstrip() + ',' + LDAP_BASE_DN
+    ROOT_PW = open(LDAP_ADMIN_PASSWORD_FILE, 'r').read().rstrip().lstrip()
 
     # PBS
     PBS_QSTAT = "/opt/pbs/bin/qstat"
     PBS_QDEL = "/opt/pbs/bin/qdel"
     PBS_QSUB = "/opt/pbs/bin/qsub"
     PBS_QMGR = "/opt/pbs/bin/qmgr"
+
     # SSH
     SSH_PRIVATE_KEY_LOCATION = "tmp/ssh"
-
-    # Dev mickael test
-    LDAP_HOST = "34.235.247.192"
-    ROOT_PW = 'tYGyTYff'
-    ROOT_DN = 'CN=admin,dc=soca,dc=local'
-    FLASK_HOST = "127.0.0.1"
-    FLASK_PROTOCOL = "http://"
-    FLASK_PORT = "5000"
-    FLASK_ENDPOINT = FLASK_PROTOCOL + FLASK_HOST + ":" + FLASK_PORT
-    USER_HOME = "/Users"
 
 
 app_config = Config()

@@ -65,7 +65,7 @@ $ echo "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9v
                                   <br>
                                   <h4>Prepare the POST request</h4>
                                   You will need to specify three headers:
-                                  <li>X-SOCA-USER and set the value to <code>{{  username }}</code></li>
+                                  <li>X-SOCA-USER and set the value to <code>{{  user }}</code></li>
                                   <li>X-SOCA-TOKEN and set the value to <code>{{  user_token }}</code></li>
                                   <li>Content-Type and set the value to <code>application/json</code></li>
 
@@ -77,7 +77,7 @@ $ echo "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9v
                                   <pre><code class="language-bash">
 curl -X POST -H "Content-Type: application/json" \
              -H "X-SOCA-TOKEN: {{ user_token }}" \
-             -H "X-SOCA-USER: {{ username }}" \
+             -H "X-SOCA-USER: {{ user }}" \
              -d '{"payload":"IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIHF1ZXVlX2EKI1BCUyAtbCBub2Rlcz0xLGluc3RhbmNlX3R5cGU9YzUubGFyZ2UKL2Jpbi9lY2hvICJIZWxsbyBXb3JsZCIK"'}  \
              {{ master_host }}submit_job
                                   </code></pre>
@@ -87,7 +87,7 @@ curl -X POST -H "Content-Type: application/json" \
 import requests
 import json
 hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
-        "X-SOCA-USER": "{{ username }}",
+        "X-SOCA-USER": "{{ user }}",
         "Content-Type": "application/json"}
 data = {"payload": "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIHF1ZXVlX2EKI1BCUyAtbCBub2Rlcz0xLGluc3RhbmNlX3R5cGU9YzUubGFyZ2UKL2Jpbi9lY2hvICJIZWxsbyBXb3JsZCIK"}
 req = requests.post(" {{ master_host }}submit_job", headers=hdrs, data=json.dumps(data))

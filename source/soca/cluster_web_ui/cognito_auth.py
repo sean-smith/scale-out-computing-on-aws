@@ -1,17 +1,18 @@
 import base64
 import os
 import config
-import api.openldap as openldap
 import requests
 from flask import session
 from jose import jwt
+from requests import get
 
 '''
 To enable SSO auth via cognito, update COGNITO section on config.py
 https://awslabs.github.io/scale-out-computing-on-aws/security/integrate-cognito-sso/
 '''
-def sso_authorization(code):
 
+
+def sso_authorization(code):
     authorization = 'Basic ' + base64.b64encode((config.Config.COGNITO_APP_ID + ':' + config.Config.COGNITO_APP_SECRET).encode()).decode()
     headers = {'Content-Type': 'application/x-www-form-urlencoded',
                'Authorization': authorization}
@@ -30,17 +31,18 @@ def sso_authorization(code):
     claims = jwt.decode(id_token, key, access_token=access_token, algorithms=[key['alg']], audience=config.Config.COGNITO_APP_ID)
     if claims:
         try:
-            username = claims['email'].split('@')[0]
+            user = claims['email'].split('@')[0]
         except Exception as err:
             return {'success': False,
                     'message': 'Error reading SSO claims. ' + str(claims) + ' Err: ' + str(err)}
 
         # Simply check if user exist
-        # We could do a simply ldap lookup, but making sure user has a private key is more important
-        # without private key, a user (even with valid ldap account) won't be able to do anything
-        check_if_file_exist = os.path.isfile('/data/home/' + username + '/.ssh/id_rsa')
-        if check_if_file_exist is True:
-            session['user'] = username
+        check_user = get(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
+                         headers={"X-SOCA-TOKEN": session["api_key"]},
+                         params={"user": user},
+                         verify=False)
+        if check_user.status_code == 200:
+            session['user'] = user
             return {'success': True,
                     'message': ''}
         else:

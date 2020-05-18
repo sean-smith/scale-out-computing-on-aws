@@ -76,7 +76,7 @@ def create_new_account():
         user = str(request.form.get('user'))
         password = str(request.form.get('password'))
         email = str(request.form.get('email'))
-        sudoers = bool(request.form.get('sudo'))
+        sudoers = request.form.get('sudo', None)
         uid = request.form.get('uid', None)
         gid = request.form.get('gid', None)
         create_new_user = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
@@ -85,7 +85,7 @@ def create_new_account():
                                data={"user": user,
                                      "password": password,
                                      "email": email,
-                                     "sudoers": sudoers,
+                                     "sudoers": 0 if sudoers is None else 1,
                                      "uid": uid},
                                verify=False
                                )

@@ -158,7 +158,7 @@ class User(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('user', type=str, location='form')
         parser.add_argument('password', type=str, location='form')
-        parser.add_argument('sudoers', type=bool, location='form')
+        parser.add_argument('sudoers', type=int, location='form')
         parser.add_argument('email', type=str, location='form')
         parser.add_argument('uid', type=int, location='form')
         parser.add_argument('gid', type=int, location='form')
@@ -252,6 +252,16 @@ class User(Resource):
             # Create home directory
             if create_home(user) is False:
                 return {"success": False, "message": "User added but unable to create home directory"}, 500
+
+            # Add Sudo permission
+            if sudoers == 1:
+                grant_sudo = post(config.Config.FLASK_ENDPOINT + "/api/ldap/sudo",
+                                 headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                 data={"user": user},
+                                 verify=False
+                                 )
+                if grant_sudo.status_code != 200:
+                    return {"success": False, "message": "User added but unable to give admin permissions"}, 500
 
             return {"success": True, "message": "Added user"}, 200
 

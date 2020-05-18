@@ -1,5 +1,6 @@
 import logging
 import config
+import cognito_auth
 from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint, current_app
 from requests import post, get
@@ -70,3 +71,15 @@ def authenticate():
     else:
         return redirect('/login')
 
+@index.route('/oauth', methods=['GET'])
+def oauth():
+    next_url = request.args.get('state')
+    sso_auth = cognito_auth.sso_authorization(request.args.get('code'))
+    cognito_root_url = config.Config.COGNITO_ROOT_URL
+    if sso_auth['success'] is True:
+        return redirect(cognito_root_url+next_url)
+    else:
+        if sso_auth['message'] == 'user_not_found':
+            return redirect(cognito_root_url)
+        else:
+            return str(sso_auth['message'])

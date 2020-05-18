@@ -11,12 +11,9 @@ def index():
     check_user_key = get(config.Config.FLASK_ENDPOINT + "/api/user/api_key",
                          headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                          params={"user": session["user"]},
-                         verify=False).json()
-
-    logger.info(str(request) + ": check_user_key: Status: " + str(check_user_key))
-    logger.debug("check_user_key: Content: " + str(check_user_key))
-    if check_user_key["success"] is True:
-        user_token = check_user_key["message"]
+                         verify=False)
+    if check_user_key.status_code == 200:
+        user_token = check_user_key.json()["message"]
     else:
         user_token = "UNKNOWN"
         flash("Unable to retrieve API key for user", "error")
@@ -35,11 +32,10 @@ def reset_key():
                                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                                      data={"user": user},
                                      verify=False)
-        print(invalidate_user_key)
         logger.info(str(request) + ": invalidate_user_key: Status: " + str(invalidate_user_key.status_code))
         logger.debug("invalidate_user_key: Content: " + str(invalidate_user_key._content))
 
-        if invalidate_user_key.json()["message"] is True:
+        if invalidate_user_key.status_code == 200:
             return redirect("/my_api_key")
         else:
             logger.error("Error while trying to reset Trace: " +str(invalidate_user_key))

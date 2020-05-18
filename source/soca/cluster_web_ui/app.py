@@ -1,5 +1,5 @@
 import logging.config
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, redirect, jsonify, render_template
 from flask_restful import Api
 from flask_session import Session
 from flask_restful_swagger import swagger
@@ -120,6 +120,10 @@ def spec():
                                   "<li>CodeBase: https://github.com/awslabs/scale-out-computing-on-aws</li>"
     return jsonify(swag)
 
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return redirect('/')
 
 # Manage logger
 dict_config = {

@@ -62,7 +62,6 @@ def get_compute_pricing(ec2_instance_type):
                             instance_data = v[skus]['priceDimensions'][ratecode]
                             if 'Linux/UNIX (Amazon VPC)' in instance_data['description']:
                                 pricing['reserved'] = float(instance_data['pricePerUnit']['USD'])
-    print(pricing)
     return pricing
 
 
