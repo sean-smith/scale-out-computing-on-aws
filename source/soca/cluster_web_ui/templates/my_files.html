@@ -165,8 +165,13 @@
                      <div class="float-right">
                          <a href="/my_files/download?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Download this file" class="fa fa-file-download fa-lg"  style="color: grey"></i></a>
                          <a href="/submit_job?input_file={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Use as simulation input" class="fas fa-microchip fa-lg"  style="color: grey"></i></a>
-                         <a target="_blank" href="/editor?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="View or Edit this file" class="fas fa-edit fa-lg" style="color: grey"></i></a>
-                         <a  data-toggle="modal" data-target="#deleteModal{{ loop.index }}"><i data-toggle="tooltip" data-placement="top" title="Delete file" style="cursor: pointer" class="fas fa-trash-alt fa-lg" style="color: grey"></i></a>
+                         {% if file_data.st_size_default > max_online_preview %} <!-- Unable to edit file bigger than 150 mb via web -->
+                             <a style="cursor: pointer" target="_blank" data-toggle="modal" data-target="#fileToBig"><i data-toggle="tooltip" data-placement="top" title="View or Edit this file" class="fas fa-edit fa-lg" style="color: grey"></i></a>
+                         {% else %}
+                            <a target="_blank" href="/editor?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="View or Edit this file" class="fas fa-edit fa-lg" style="color: grey"></i></a>
+                         {% endif %}
+
+                         <a data-toggle="modal" data-target="#deleteModal{{ loop.index }}"><i data-toggle="tooltip" data-placement="top" title="Delete file" style="cursor: pointer" class="fas fa-trash-alt fa-lg" style="color: grey"></i></a>
                      </div>
                         <!-- Begin Modal DELETE -->
                         <div class="modal fade" id="deleteModal{{ loop.index }}" tabindex="-1" role="dialog"  aria-hidden="true">
@@ -215,6 +220,21 @@
 
                      </tr>
          {% endfor %}
+        <div class="modal fade" id="fileToBig" tabindex="-1" role="dialog"  aria-hidden="true">
+                          <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">Unable to preview this file via web</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                  This file is too big and cannot be preview via web. <br> Please <a href="/sftp"> download a copy </a> or open it via <a href="/remote_desktop">remote desktop (DCV)</a> or <a href="/ssh"> cli (via SSH)</a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
 
         </tbody>
@@ -241,8 +261,8 @@
                           url: "/my_files/upload",
                           addRemoveLinks : true,
                           dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploaded under {{ path }}',
-                          maxFilesize: 500, // 500 MB
-                          timeout: 300000, //  5 minutes
+                          maxFilesize: {{max_upload_size | safe}}, // 5 GB Max Upload
+                          timeout: {{max_upload_timeout | safe }}, //  5 minutes
                           params: {
                                  path: "{{ path }}/"
                           },

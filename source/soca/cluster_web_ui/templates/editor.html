@@ -86,15 +86,15 @@
 
     function saveData()
     {
-        $('#update-div').html('<div class="alert alert-primary">Hold on, we are saving this file ... </div>');
+        $('#update-div').html('<div class="alert alert-primary">Hold on, we are saving this file ... It may take a while if your files is bigger than 200 mb </div>');
         try {
             getVal = btoa(window.fileeditor.getValue());
             fileToEdit = btoa("{{file_to_edit}}");
         }
         catch(err) {
+            console.log(err)
           $('#update-div').html('<div class="alert alert-danger">Unable to edit this file, are you using non ASCII characters? Error: ' + err.message + ' </div>');
         }
-
 
         $.ajax({
             url: "/api/system/files",

@@ -66,9 +66,7 @@ def get_compute_pricing(ec2_instance_type):
 
 
 def compute(instance_type, walltime, nodect):
-
     compute_data = {}
-
     if instance_type:
         compute_price = get_compute_pricing(instance_type)
 

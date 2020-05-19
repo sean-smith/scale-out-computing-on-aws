@@ -216,9 +216,10 @@ def index():
                 for entry in os.scandir(path):
                     if not entry.name.startswith("."):
                         filesystem[entry.name] = {"path": path + "/" + entry.name,
-                                                    "uid": encrypt(path + "/" + entry.name)["message"],
+                                                  "uid": encrypt(path + "/" + entry.name)["message"],
                                                   "type": "folder" if entry.is_dir() else "file",
                                                   "st_size": convert_size(entry.stat().st_size),
+                                                  "st_size_default": entry.stat().st_size,
                                                   "st_mtime": entry.stat().st_mtime
                                                   }
                 cache[CACHE_FOLDER_CONTENT_PREFIX + path] = filesystem
@@ -244,6 +245,9 @@ def index():
                                filesystem=OrderedDict(sorted(filesystem.items(), key=lambda t: t[0].lower())),
                                breadcrumb=breadcrumb,
                                application_profiles=application_profiles,
+                               max_upload_size=config.Config.MAX_UPLOAD_FILE,
+                               max_upload_timeout=config.Config.MAX_UPLOAD_TIMEOUT,
+                               max_online_preview=config.Config.MAX_SIZE_ONLINE_PREVIEW,
                                path=path,
                                page="my_files")
     except Exception as err:
@@ -443,6 +447,7 @@ def editor():
             "rb": "ruby",
             "scala": "scala",
             "sh": "shell",
+            "bash": "bash",
             "ts": "typescript",
             "sql": "sql",
             "yaml": "yaml",
@@ -454,6 +459,7 @@ def editor():
         else:
             file_syntax = "text"
 
+        # get size of file
         return render_template("editor.html",
                                page="editor",
                                file_to_edit=file_info["file_path"],

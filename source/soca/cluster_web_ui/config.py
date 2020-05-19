@@ -17,14 +17,16 @@ class Config(object):
     SESSION_SQLALCHEMY_TABLE = "flask_sessions"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "db.sqlite")
     SECRET_KEY = os.environ["SOCA_FLASK_SECRET_KEY"]
-    API_ROOT_KEY = os.environ["SOCA_FLASK_API_ROOT_KEY"] #secrets.token_hex(32)
-
+    API_ROOT_KEY = os.environ["SOCA_FLASK_API_ROOT_KEY"]
+    SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]
 
     # WEB
     USER_HOME = "/data/home"
-    DEFAULT_CACHE_TIME = 500  # 5 minutes
     APPS_LOCATION = "/apps/"
-    SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]
+    DEFAULT_CACHE_TIME = 500  # 5 minutes
+    MAX_UPLOAD_FILE = 5000  # 5 GB
+    MAX_UPLOAD_TIMEOUT = 1800000  # 30 minutes
+    MAX_SIZE_ONLINE_PREVIEW = 150000000  # in bytes (150mb by default), maximum size of file that can be visualized via the web editor
 
     # UWSGI SETTINGS
     FLASK_HOST = "127.0.0.1"
