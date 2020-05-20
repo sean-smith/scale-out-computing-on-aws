@@ -69,6 +69,9 @@ def job_submission():
             flash("Unable to use this file as an input (maybe the file was removed or you do not have permission to access it. <br> Please try again or use a different model. Error is: " + str(file_info), "error")
             return redirect("/submit_job")
         profile_form = base64.b64decode(get_application_profile.profile_form).decode()
+        profile_interpreter = get_application_profile.profile_interpreter
+        if profile_interpreter == "qsub":
+            profile_interpreter = config.Config.PBS_QSUB
 
 
         profile_job = get_application_profile.profile_job
@@ -77,13 +80,15 @@ def job_submission():
         input_name = input_path.split("/")[-1]
 
         return render_template('submit_job_selected_application.html',
-                                   profile_name=get_application_profile.profile_name,
-                                   user=session["user"],
-                                   profile_form=profile_form,
-                                   profile_job=profile_job,
-                                   input_path=input_path.rstrip().lstrip(),
-                                   input_name=input_name)
-                                   #get_all_ec2_instances=get_all_ec2_instances)
+                               profile_name=get_application_profile.profile_name,
+                               user=session["user"],
+                               profile_form=profile_form,
+                               profile_job=profile_job,
+                               profile_interpreter=profile_interpreter,
+                               pbs_interpreter=config.Config.PBS_QSUB,
+                               input_path=input_path.rstrip().lstrip(),
+                               input_name=input_name)
+
     else:
         flash("Application not found.", "error")
         return redirect("/submit_job")
@@ -98,23 +103,24 @@ def send_job():
         flash("Unable to read the job script due to: " + str(err), "error")
         return redirect("/my_files")
 
-    required_parameters = ["cpus", "instance_type"]
-    for param in required_parameters:
-        if param not in request.form:
-            flash("You must specify cpus and instance_type parameters", "error")
-            return redirect("/my_files")
+    if request.form["profile_interpreter"] == config.Config.PBS_QSUB:
+        required_parameters = ["cpus", "instance_type"]
+        for param in required_parameters:
+            if param not in request.form:
+                flash("You must specify cpus and instance_type parameters", "error")
+                return redirect("/my_files")
 
-    cpus = request.form["cpus"]
-    instance_type = request.form["instance_type"]
-    if cpus is None:
-        nodect = 1
-    else:
-        cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
-        if cpus_count_pattern:
-            cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+        cpus = request.form["cpus"]
+        instance_type = request.form["instance_type"]
+        if cpus is None:
+            nodect = 1
         else:
-            cpu_per_system = 2
-        nodect = math.ceil(int(cpus) / cpu_per_system)
+            cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
+            if cpus_count_pattern:
+                cpu_per_system = int(cpus_count_pattern.group(1)) * 2
+            else:
+                cpu_per_system = 2
+            nodect = math.ceil(int(cpus) / cpu_per_system)
 
     for param in request.form:
         if param != "csrf_token":
@@ -123,11 +129,15 @@ def send_job():
     payload = base64.b64encode(job_to_submit.encode()).decode()
     send_to_to_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                         headers={"X-SOCA-TOKEN": session["api_key"],
-                                "X-SOCA-USER": session["user"]},
-                        data={"payload": payload},
+                                 "X-SOCA-USER": session["user"]},
+                        data={"payload": payload,
+                              "interpreter": request.form["profile_interpreter"]},
                         verify=False)
     if send_to_to_queue.status_code == 200:
-        flash("Job submitted to the queue with ID: " + send_to_to_queue.json()["message"], "success")
+        if request.form["profile_interpreter"] == config.Config.PBS_QSUB:
+            flash("Job submitted to the queue with ID: " + send_to_to_queue.json()["message"], "success")
+        else:
+            flash(send_to_to_queue.json()["message"], "success")
     else:
         flash("Error during job submission: " + str(send_to_to_queue.json()["message"]), "error")
 

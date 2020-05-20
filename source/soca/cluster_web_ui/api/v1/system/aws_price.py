@@ -71,12 +71,12 @@ def compute(instance_type, walltime, nodect):
         compute_price = get_compute_pricing(instance_type)
 
     compute_data["on_demand_hourly_rate"] = "%.3f" % compute_price["ondemand"]
-    compute_data["reserved_hourly_rate"] ="%.3f" % compute_price["reserved"]
+    compute_data["reserved_hourly_rate"] = "%.3f" % compute_price["reserved"]
     compute_data["nodes"] = nodect
-    compute_data["walltime"] = "%.3f" %  walltime
+    compute_data["walltime"] = "%.3f" % walltime
     compute_data["instance_type"] = instance_type
-    compute_data["estimated_on_demand_cost"] = "%.3f" % ((compute_price["ondemand"] * nodect) * (walltime / 60))
-    compute_data["estimated_reserved_cost"] = "%.3f" % ((compute_price["reserved"] * nodect) * (walltime / 60))
+    compute_data["estimated_on_demand_cost"] = "%.3f" % ((compute_price["ondemand"] * nodect) * walltime)
+    compute_data["estimated_reserved_cost"] = "%.3f" % ((compute_price["reserved"] * nodect) * walltime)
     return compute_data
 
 class AwsPrice(Resource):
@@ -96,7 +96,7 @@ class AwsPrice(Resource):
         """
         parser = reqparse.RequestParser()
         parser.add_argument('instance_type', type=str, location='args')
-        parser.add_argument('walltime', type=str, location='args', help="Please specify wall_time using HH:HH:SS format", default="01:00:00")
+        parser.add_argument('wall_time', type=str, location='args', help="Please specify wall_time using HH:MM:SS format", default="01:00:00")
         parser.add_argument('cpus', type=int, location='args', help="Please specify how many cpus you want to allocate")
         parser.add_argument('scratch_size', type=int, location='args', help="Please specify storage in GB to allocate to /scratch partition (Default 0)", default=0)
         parser.add_argument('root_size', type=int, location='args', help="Please specify your AMI root disk space (Default 10gb)", default=10)
@@ -116,17 +116,17 @@ class AwsPrice(Resource):
         FSX_STORAGE_BASELINE = 0.14  # us-east-1Persistent (50 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)  Scratch (200 MB/s/TiB baseline, up to 1.3 GB/s/TiB burst)
 
         # Get WallTime in hours
-        wall_time_unformated = args['walltime'].split(":")
+        wall_time_unformated = args['wall_time'].split(":")
         if wall_time_unformated.__len__() != 3:
-            return {"message": "walltime must use HH:MM:SS format. For example 90 minutes will be 00:90:00 or 01:30:00"}, 500
+            return {"message": "wall_time must use HH:MM:SS format. For example 90 minutes will be 00:90:00 or 01:30:00"}, 500
         try:
             sim_hours = float(wall_time_unformated[0]) if wall_time_unformated[0] != "00" else 0.000
             sim_minutes = float(wall_time_unformated[1]) if wall_time_unformated[1] != "00" else 0.000
             sim_seconds = float(wall_time_unformated[2]) if wall_time_unformated[2] != "00" else 0.000
         except ValueError:
-            return {"message": "walltime must use HH:MM:SS and only use numbers"}, 500
+            return {"message": "wall_time must use HH:MM:SS and only use numbers"}, 500
 
-        walltime = sim_hours + (sim_minutes / 60) + (sim_seconds / 60)
+        walltime = sim_hours + (sim_minutes / 60) + (sim_seconds / 3600)
 
         # Calculate number of nodes required based on instance type and CPUs requested
         if cpus is None:
@@ -139,12 +139,12 @@ class AwsPrice(Resource):
                 cpu_per_system = 2
             nodect = math.ceil(int(cpus) / cpu_per_system)
 
-        # Calculate EBS Storage (storage * ebs_price * sim_time_in_secs / (second_in_a_day * 30 days) * number of nodes
-        sim_cost["scratch_size"] = "%.3f" % ((scratch_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
-        sim_cost["root_size"] = "%.3f" % ((root_size * EBS_GP2_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
+        # Calculate EBS Storage (storage * ebs_price * sim_time_in_secs / (walltime_seconds * 30 days) * number of nodes
+        sim_cost["scratch_size"] = "%.3f" % ((scratch_size * EBS_GP2_STORAGE_BASELINE * (walltime * 3600) / (86400 * 30)) * nodect)
+        sim_cost["root_size"] = "%.3f" % ((root_size * EBS_GP2_STORAGE_BASELINE * (walltime * 3600) / (86400 * 30)) * nodect)
 
         # Calculate FSx Storage (storage * ebs_price * sim_time_in_secs / (second_in_a_day * 30 days) * number of nodes
-        sim_cost["fsx_capacity"] = "%.3f" % ((fsx_storage * FSX_STORAGE_BASELINE * (walltime * 60) / (86400 * 30)) * nodect)
+        sim_cost["fsx_capacity"] = "%.3f" % ((fsx_storage * FSX_STORAGE_BASELINE * (walltime * 3600) / (86400 * 30)) * nodect)
 
         # Calculate Compute
         try:

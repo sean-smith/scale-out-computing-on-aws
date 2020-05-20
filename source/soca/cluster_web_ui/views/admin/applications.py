@@ -81,6 +81,7 @@ def create_application():
                                                   profile_name=request.form["profile_name"],
                                                   profile_form=request.form["submit_job_form"],
                                                   profile_job=request.form["submit_job_script"],
+                                                  profile_interpreter=request.form["submit_job_interpreter"],
                                                   profile_thumbnail=encoded_image,
                                                   created_on=datetime.datetime.utcnow())
             db.session.add(new_app_profile)

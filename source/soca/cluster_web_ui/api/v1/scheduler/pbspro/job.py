@@ -82,10 +82,15 @@ class Job(Resource):
             schema:
               required:
                 - payload
+              optional:
+                - interpreter
               properties:
                 payload:
                   type: string
                   description: Base 64 encoding of a job submission file
+                interpreter:
+                  type: string
+                  description: Interpreter to use (eg: qsub, /bin/bash ..)
         responses:
           200:
             description: Job submitted correctly
@@ -94,6 +99,7 @@ class Job(Resource):
         """
         parser = reqparse.RequestParser()
         parser.add_argument('payload', type=str, location='form')
+        parser.add_argument('interpreter', type=str, location='form')
         args = parser.parse_args()
         try:
             payload = base64.b64decode(args['payload']).decode()
@@ -119,7 +125,10 @@ class Job(Resource):
             else:
                 job_name = ""
 
-
+            if args['interpreter'] is None:
+                interpreter = config.Config.PBS_QSUB
+            else:
+                interpreter = args['interpreter']
             try:
                 # Prepare job directory
                 random_id = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
@@ -137,10 +146,16 @@ class Job(Resource):
                 os.chmod(job_output_folder, 0o700)
                 os.chmod(job_output_path, 0o700)
                 os.chmod(job_output_path + "/job_submit.sh", 0o700)
-                submit_job_command = config.Config.PBS_QSUB + " job_submit.sh"
+
+                submit_job_command = interpreter + " job_submit.sh"
+
                 launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command], stderr=subprocess.PIPE)
-                job_id = ((launch_job.decode('utf-8')).rstrip().lstrip()).split('.')[0]
-                return {"success": True, "message": str(job_id)}, 200
+                if interpreter == config.Config.PBS_QSUB:
+                    job_id = ((launch_job.decode('utf-8')).rstrip().lstrip()).split('.')[0]
+                    return {"success": True, "message": str(job_id)}, 200
+                else:
+                    return {"success": True, "message": "Your Linux command has been executed successfully. Output (if any) can be accessed on <a href='/my_files?path="+job_output_path+"'>"+job_output_path+"</a>"}, 200
+
             except subprocess.CalledProcessError as e:
                 return {"succes": False,
                         "message": {

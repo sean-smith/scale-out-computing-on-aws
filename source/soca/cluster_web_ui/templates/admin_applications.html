@@ -118,9 +118,9 @@
                                                           <li><strong>scratch_size</strong>: Size of /scratch partition in GB, default to 0 GB</li>
                                                           <li><strong>root_size</strong>: Size of /root partition in GB, default to 10 GB</li>
                                                           <li><strong>fsx_size</strong>: Size of FSx for Lustre partition in GB, default to 0 GB</li>
-                                                          <li><strong>walltime</strong>: Maximum simulation time in minutes (format is DD:HH:MM), default to price for a up to 60 minutes (00:01:00) runtime</li>
+                                                          <li><strong>wall_time</strong>: Maximum simulation time (format is HH:MM:SS), default to 60 minutes (01:00:00 or 00:60:00) runtime</li>
                                                            <br>
-                                                          Use <code>hidden</code> fields if you want to harcode the values and prevent user to change them. If not set, SOCA will use the default value to estimate your simulation cost
+                                                          Use <code>hidden</code> fields if you want to hardcode the values and prevent user to change them. If not set, SOCA will use the default value to estimate your simulation cost.
                                                       </div>
                                                     </div>
                                                   </div>
@@ -137,6 +137,11 @@
                                           <div class="alert alert-info">
                                           Edit the test template below to match the variables you have created on your form or simply write code that cannot be changed by the user. To read values from your form, simply reference the component name between <kbd>%</kbd>(e.g if your form input name is <code>my_param</code>, retrieve the value via <kbd>%my_param%</kbd>)
                                           </div>
+                                      Choose what interpreter you want to use:
+                                        <select class="form-control" name="interpreter" id="interpreter">
+                                            <option value="qsub">This is a PBS job script (will use qsub)</option>
+                                            <option value="/bin/bash">This is a Linux script (will use /bin/bash)</option>
+                                        </select>
                                           <textarea class="form-control job_preview " id="job-script" rows="30">
 {% if action == "edit" %}
 {{ profile_job | safe }}
@@ -237,6 +242,7 @@ Compress output, send output to S3 etc ...
                                                   <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
                                                   <input type="hidden" value="" id="submit_job_script" name="submit_job_script">
                                                   <input type="hidden" value="" id="submit_job_form" name="submit_job_form">
+                                                  <input type="hidden" value="" id="submit_job_interpreter" name="submit_job_interpreter">
                                                   <input type="hidden" value="create" id="action" name="action">
                                                   <input type="hidden" value="" id="thumbnail_b64" name="thumbnail_b64">
                                                   <div align="center">
@@ -314,9 +320,11 @@ Compress output, send output to S3 etc ...
                               <script>
                                   function prepareInput(){
                                       getJobScriptData = btoa($('#job-script').val());
+                                      getInterpreterValue = $('#interpreter').val();
                                       getFormBuilderData = btoa(formBuilder.actions.getData('json', true));
                                       document.getElementById("submit_job_script").value = getJobScriptData;
                                       document.getElementById("submit_job_form").value = getFormBuilderData;
+                                      document.getElementById("submit_job_interpreter").value = getInterpreterValue;
                                   }
                                   function ConvertImageToB64() {
                                       if (this.files && this.files[0]) {
@@ -412,9 +420,9 @@ Compress output, send output to S3 etc ...
   {
     "type": "select",
     "required": true,
-    "label": "Do you want to limit how long the job will be running? (walltime)",
+    "label": "Do you want to limit how long the job will be running? (wall_time)",
     "className": "form-control",
-    "name": "walltime",
+    "name": "wall_time",
       "description": "Use HH:MM:SS format (hours:minutes:seconds). For example 90 minutes is 00:90:00 or 01:30:00",
     "multiple": false,
     "values": [
