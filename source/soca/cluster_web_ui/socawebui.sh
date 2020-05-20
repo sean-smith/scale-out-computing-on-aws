@@ -13,6 +13,7 @@ UWSGI_BIND='0.0.0.0:8443'
 UWSGI_PROCESSES=5
 UWSGI_THREADS=$(cat  /proc/cpuinfo | grep processor | wc -l)
 UWSGI_FILE='wsgi.py'
+BUFFER_SIZE=32768
 
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
@@ -54,7 +55,7 @@ case "$1" in
             export SOCA_FLASK_API_ROOT_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
             # Launching process
-            $UWSGI_BIN --master --https $UWSGI_BIND,cert.crt,cert.key --wsgi-file $UWSGI_FILE --processes $UWSGI_PROCESSES --threads $UWSGI_THREADS --daemonize application.log --enable-threads --check-static /apps/soca/$SOCA_CONFIGURATION/cluster_web_ui/static
+            $UWSGI_BIN --master --https $UWSGI_BIND,cert.crt,cert.key --wsgi-file $UWSGI_FILE --processes $UWSGI_PROCESSES --threads $UWSGI_THREADS --daemonize application.log --enable-threads --buffer-size $BUFFER_SIZE --check-static /apps/soca/$SOCA_CONFIGURATION/cluster_web_ui/static
 
         else
            echo 'SOCA is already running with PIDs: ' $status_check_process

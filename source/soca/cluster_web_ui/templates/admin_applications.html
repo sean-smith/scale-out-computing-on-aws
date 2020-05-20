@@ -139,8 +139,14 @@
                                           </div>
                                       Choose what interpreter you want to use:
                                         <select class="form-control" name="interpreter" id="interpreter">
-                                            <option value="qsub">This is a PBS job script (will use qsub)</option>
-                                            <option value="/bin/bash">This is a Linux script (will use /bin/bash)</option>
+                                            {% if profile_interpreter == "qsub" %}
+                                                <option value="qsub" selected>This is a PBS job script (will use qsub)</option>
+                                                <option value="/bin/bash">This is a Linux script (will use /bin/bash)</option>
+                                            {% else %}
+                                                <option value="qsub" >This is a PBS job script (will use qsub)</option>
+                                                <option value="/bin/bash" selected>This is a Linux script (will use /bin/bash)</option>
+                                            {% endif %}
+
                                         </select>
                                           <textarea class="form-control job_preview " id="job-script" rows="30">
 {% if action == "edit" %}
@@ -183,7 +189,7 @@ Compress output, send output to S3 etc ...
                                       <div class="tab-pane fade show" id="nav-save" role="tabpanel" aria-labelledby="nav-save">
                                           <br>
                                           {% if action == "edit" %}
-                                              <form method="post" action="/admin/applications/create">
+                                              <form  name="manageprofile" id="manageprofile" method="post" action="/admin/applications/create">
                                                   <div class="form-group">
                                                       <label for="profile_name">How do you want to name this application profile?</label>
                                                       <input type="text" class="form-control"  name="profile_name" required value="{{ profile_name }}">
@@ -200,28 +206,27 @@ Compress output, send output to S3 etc ...
                                                              });
                                                          </script>
                                                      </div>
-                                                   <div class="form-check">
-                                                    <input type="checkbox" onchange="prepareInput()" class="form-check-input" id="checkValidation" required>
-                                                    <label class="form-check-label" for="checkValidation">I want to update this application</label>
-                                                  </div>
+
                                                   <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
                                                   <input type="hidden" value="" id="submit_job_script" name="submit_job_script">
                                                   <input type="hidden" value="" id="submit_job_form" name="submit_job_form">
+                                                  <input type="hidden" value="" id="submit_job_interpreter" name="submit_job_interpreter">
                                                   <input type="hidden" value="{{ app_id }}" id="app_id" name="app_id">
                                                   <input type="hidden" value="" id="thumbnail_b64" name="thumbnail_b64">
                                                   <input type="hidden" value="edit" id="action" name="action">
 
                                                   <div align="center">
+                                                      <br>
                                                       <button type="submit" class="btn btn-success">Update this application</button>
                                                   </div>
                                               </form>
 
 
                                           {% else %}
-                                              <form method="post" action="/admin/applications/create"  enctype="multipart/form-data">
+                                              <form id="manageprofile" name="manageprofile" method="post" action="/admin/applications/create"  enctype="multipart/form-data">
                                                   <div class="form-group">
                                                       <label for="profile_name">How do you want to name this application profile?</label>
-                                                      <input type="text" class="form-control" onchange="prepareInput()" name="profile_name" required >
+                                                      <input type="text" class="form-control" name="profile_name" required >
                                                   </div>
                                                   <div class="form-group">
                                                       <label for="profile_name">Do you want to specify a thumbnail (this will scaled to 150*150px)?</label>
@@ -245,6 +250,8 @@ Compress output, send output to S3 etc ...
                                                   <input type="hidden" value="" id="submit_job_interpreter" name="submit_job_interpreter">
                                                   <input type="hidden" value="create" id="action" name="action">
                                                   <input type="hidden" value="" id="thumbnail_b64" name="thumbnail_b64">
+
+
                                                   <div align="center">
                                                       <button type="submit" class="btn btn-success">Create this application</button>
                                                   </div>
@@ -318,14 +325,14 @@ Compress output, send output to S3 etc ...
     {% include 'common/footer.html' %}
 
                               <script>
-                                  function prepareInput(){
-                                      getJobScriptData = btoa($('#job-script').val());
-                                      getInterpreterValue = $('#interpreter').val();
-                                      getFormBuilderData = btoa(formBuilder.actions.getData('json', true));
-                                      document.getElementById("submit_job_script").value = getJobScriptData;
-                                      document.getElementById("submit_job_form").value = getFormBuilderData;
-                                      document.getElementById("submit_job_interpreter").value = getInterpreterValue;
-                                  }
+                              $('#manageprofile').submit(function(event) {
+                                  getJobScriptData = btoa($('#job-script').val());
+                                  getInterpreterValue = $('#interpreter').val();
+                                  getFormBuilderData = btoa(formBuilder.actions.getData('json', true));
+                                  document.getElementById("submit_job_script").value = getJobScriptData;
+                                  document.getElementById("submit_job_form").value = getFormBuilderData;
+                                  document.getElementById("submit_job_interpreter").value = getInterpreterValue;
+                              });
                                   function ConvertImageToB64() {
                                       if (this.files && this.files[0]) {
                                           var FR= new FileReader();

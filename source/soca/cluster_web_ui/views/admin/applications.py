@@ -19,6 +19,7 @@ def index():
     return render_template('admin_applications.html',
                            user=session['user'],
                            page="application",
+                           profile_interpreter="qsub",
                            application_profiles=application_profiles,
                            action="create")
 
@@ -37,6 +38,7 @@ def edit():
     if get_application_profile:
         profile_form = base64.b64decode(get_application_profile.profile_form).decode()
         profile_job = base64.b64decode(get_application_profile.profile_job).decode()
+        profile_interpreter = get_application_profile.profile_interpreter
         profile_name = get_application_profile.profile_name
 
     application_profiles = {}
@@ -50,6 +52,7 @@ def edit():
                            profile_form=profile_form,
                            profile_job=profile_job,
                            profile_name=profile_name,
+                           profile_interpreter=profile_interpreter,
                            application_profiles=application_profiles,
                            page="application",
                            action="edit"
@@ -64,7 +67,7 @@ def create_application():
         flash("Missing action parameter", "error")
         return redirect("/admin/applications")
     else:
-        required_parameters = ["submit_job_script", "profile_name", "submit_job_form"]
+        required_parameters = ["submit_job_script", "profile_name", "submit_job_form", "submit_job_interpreter"]
         for parameter in required_parameters:
             if parameter not in request.form:
                 flash("Missing parameters. Make sure you have sent the correct inputs", "error")
@@ -97,6 +100,7 @@ def create_application():
 
                 application_profile.profile_job = request.form["submit_job_script"]
                 application_profile.profile_form = request.form["submit_job_form"]
+                application_profile.profile_interpreter = request.form["submit_job_interpreter"]
                 application_profile.profile_name = request.form["profile_name"]
                 db.session.commit()
                 flash(request.form["profile_name"] + " updated successfully.", "success")
