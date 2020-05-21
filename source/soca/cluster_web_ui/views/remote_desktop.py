@@ -190,6 +190,7 @@ def delete_job():
 
     return redirect("/remote_desktop")
 
+
 @remote_desktop.route('/remote_desktop/client', methods=['GET'])
 @login_required
 def generate_client():

@@ -7,6 +7,7 @@ from decorators import login_required
 logger = logging.getLogger("api_log")
 my_jobs = Blueprint('my_jobs', __name__, template_folder='templates')
 
+
 @my_jobs.route("/my_jobs", methods=["GET"])
 @login_required
 def index():

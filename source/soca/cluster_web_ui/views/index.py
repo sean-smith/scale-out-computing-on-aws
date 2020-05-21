@@ -13,12 +13,14 @@ index = Blueprint('index', __name__, template_folder='templates')
 def ping():
     return "Alive", 200
 
+
 @index.route('/', methods=['GET'])
 @login_required
 def home():
     user = session['user']
     sudoers = session['sudoers']
     return render_template('index.html', user=user, sudoers=sudoers)
+
 
 @index.route('/login', methods=['GET'])
 def login():
@@ -30,11 +32,13 @@ def login():
 
 
 @index.route('/logout', methods=['GET'])
+@login_required
 def logout():
     session_data = ["user", "sudoers", "api_key"]
     for param in session_data:
         session.pop(param, None)
     return redirect('/')
+
 
 @index.route('/auth', methods=['POST'])
 def authenticate():

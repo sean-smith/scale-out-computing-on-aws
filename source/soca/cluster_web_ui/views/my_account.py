@@ -60,6 +60,7 @@ def manage_group():
     return redirect('/my_account')
 
 @my_account.route("/reset_password", methods=["POST"])
+@login_required
 def reset_key():
     password = request.form.get("password", None)
     password_verif = request.form.get("password_verif", None)

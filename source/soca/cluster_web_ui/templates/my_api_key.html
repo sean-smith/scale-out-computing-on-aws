@@ -35,8 +35,9 @@
                               </div>
 
                               <div class="card-body">
-                                  <div class="alert alert-danger"><strong>API Documentation</strong><br>
-                                  You can interact with your SOCA cluster (create users, groups, queue, submit jobs, view jobs etc ..) via a simple REST interface. Documentation and examples can be found on <a href="{{ master_host }}/api/doc" target="_blank">{{ master_host }}/api/doc</a>
+                                  <div class="alert alert-warning"><strong>API Documentation</strong><br>
+                                  You can interact with your SOCA cluster (create users, groups, queue, submit jobs, view jobs etc ..) via a simple REST interface. <br>
+                                      Documentation and examples can be found on <a href="{{ master_host }}api/doc" target="_blank">{{ master_host }}api/doc</a>
                               </div>
 
                                   <h2>Example: How to submit/query and delete a job via HTTP API</h2>
@@ -72,33 +73,102 @@ $ echo "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9v
                                   You will need to specify three headers:
                                   <li>X-SOCA-USER and set the value to <code>{{  user }}</code></li>
                                   <li>X-SOCA-TOKEN and set the value to <code>{{  user_token }}</code></li>
-                                  <li>Content-Type and set the value to <code>application/json</code></li>
+                                  <li>Content-Type and set the value to <code>multipart/form-data</code></li>
 
                                   You will also need to pass the Base64 encoded string as payload. See below for examples:
-
-
-                                    <hr>
-                                  <h4>Submit a job using Bash</h4>
-                                  <pre><code class="language-bash">
-curl -X POST -H "Content-Type: application/json" \
-             -H "X-SOCA-TOKEN: {{ user_token }}" \
-             -H "X-SOCA-USER: {{ user }}" \
-             -d '{"payload":"IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="'}  \
-             {{ master_host }}/api/scheduler/job
-                                  </code></pre>
+                                    <br><br>
+                                  <h4>Submit a job</h4>
                                   <hr>
-                                  <h4>Submit a job using Python</h4>
-                                  <pre><code class="language-python">
+
+                                  <div class="row">
+                                          <div class="col-md-6">
+                                              <h5>Using Bash</h5>
+                                              <pre><code class="language-bash">
+curl -X POST -H "Content-Type: application/json" \
+   -H "X-SOCA-TOKEN: {{ user_token }}" \
+   -H "X-SOCA-USER: {{ user }}" \
+   -F '{"payload":"IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="'}  \
+   {{ master_host }}api/scheduler/job</code></pre>
+                                          </div>
+                                      <div class="col-md-6">
+                                          <h5>Using Python</h5>
+                                          <pre><code class="language-python">
 import requests
 import json
 hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
         "X-SOCA-USER": "{{ user }}",
-        "Content-Type": "application/json"}
+        "Content-Type": "multipart/form-data"}
+api_endpoint="{{ master_host }}api/scheduler/job"
 data = {"payload": "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="}
-req = requests.post(" {{ master_host }}/api/scheduler/job", headers=hdrs, data=json.dumps(data))
+req = requests.post(api_endpoint,
+                   headers=hdrs,
+                   data=json.dumps(data))
 print(req.status_code)
 print(req.json())
-</code></pre>
+                                  </code></pre>
+                                      </div>
+                                      Both commands will return the ID associated to the job you just submitted
+                                  </div>
+                                  <!-- row -->
+                                   <br>
+                                  <h4>Query a job</h4>
+                                  <hr>
+                                  <div class="row">
+                                          <div class="col-md-6">
+                                              <h5>Using Bash</h5>
+                                              <pre><code class="language-bash">
+curl -X GET  \
+   -H "X-SOCA-TOKEN: {{ user_token }}" \
+   -H "X-SOCA-USER: {{ user }}" \
+   {{ master_host }}api/scheduler/job?job_id=%YOUR_JOB_ID%</code></pre>
+                                          </div>
+                                      <div class="col-md-6">
+                                          <h5>Using Python</h5>
+                                          <pre><code class="language-python">
+import requests
+import json
+hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
+        "X-SOCA-USER": "{{ user }}",
+        "Content-Type": "multipart/form-data"}
+api_endpoint="{{ master_host }}api/scheduler/job"
+data = {"job_id": "%YOUR_JOB_ID%"}
+req = requests.get(api_endpoint, headers=hdrs, params=json.dumps(data))
+print(req.status_code)
+print(req.json())
+                                  </code></pre>
+                                      </div>
+                                      Both commands will return a JSON object with all information regarding your job.
+                                  </div>
+                                  <!-- row -->
+                                   <br>
+                                  <h4>Delete a job</h4>
+                                  <hr>
+                                  <div class="row">
+                                          <div class="col-md-6">
+                                              <h5>Using Bash</h5>
+                                              <pre><code class="language-bash">
+curl -X DELETE  \
+   -H "X-SOCA-TOKEN: {{ user_token }}" \
+   -H "X-SOCA-USER: {{ user }}" \
+   {{ master_host }}api/scheduler/job?job_id=%YOUR_JOB_ID%</code></pre>
+                                          </div>
+                                      <div class="col-md-6">
+                                          <h5>Using Python</h5>
+                                          <pre><code class="language-python">
+import requests
+import json
+hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
+        "X-SOCA-USER": "{{ user }}",
+        "Content-Type": "multipart/form-data"}
+api_endpoint="{{ master_host }}api/scheduler/job"
+data = {"job_id": "%YOUR_JOB_ID%"}
+req = requests.delete(api_endpoint, headers=hdrs, params=json.dumps(data))
+print(req.status_code)
+print(req.json())
+                                  </code></pre>
+                                      </div>
+                                  </div>
+                                  <!-- row -->
 
 
                               </div>
