@@ -62,6 +62,8 @@
                                               <div class="alert alert-warning" role="alert">
                                                   Please wait, your session is starting and will be ready within 20 minutes (<a href="/my_jobs">check session creation progress</a>)
                                                   This page will automatically be refreshed when the session is active.
+                                              <hr>
+                                                  Note: You can reduce <a href="https://awslabs.github.io/scale-out-computing-on-aws/tutorials/reduce-compute-node-launch-time-with-custom-ami/" target="_blank"> the wait time by creating your own AMI</a>
                                               </div>
 
                                           {% elif session_data.session_state == 'running' %}

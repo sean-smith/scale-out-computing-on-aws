@@ -118,10 +118,7 @@ class Job(Resource):
             # Basic Input verification
             check_job_name = re.search(r'#PBS -N (.+)', payload)
             if check_job_name:
-                if " " in check_job_name.group(1):
-                    return {"succes": False, "message": "Space are not authorized in job name"}, 500
-
-                job_name = re.sub(r'\W+', '', check_job_name.group(1))
+                job_name = re.sub(r'\W+', '', check_job_name.group(1))  # remove invalid char,space etc...
             else:
                 job_name = ""
 
