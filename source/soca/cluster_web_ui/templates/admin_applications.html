@@ -75,7 +75,11 @@
                                       <div class="nav nav-tabs" id="nav-tab" role="tablist">
                                           <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-designform" role="tab" aria-controls="nav-designform" aria-selected="true">Step1: Design the form</a>
                                           <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-designscript" role="tab" aria-controls="nav-designscript" aria-selected="false">Step2: Design the job script</a>
-                                          <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-save" role="tab" aria-controls="nav-sav" aria-selected="false">Step3: Create the profile</a>
+                                         {% if action == "edit" %}
+                                             <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-save" role="tab" aria-controls="nav-sav" aria-selected="false">Step3: Update the profile</a>
+                                          {% else %}
+                                             <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-save" role="tab" aria-controls="nav-sav" aria-selected="false">Step3: Create the profile</a>
+                                          {% endif %}
                                       </div>
                                   </nav>
 
@@ -191,7 +195,7 @@ Compress output, send output to S3 etc ...
                                           {% if action == "edit" %}
                                               <form  name="manageprofile" id="manageprofile" method="post" action="/admin/applications/create">
                                                   <div class="form-group">
-                                                      <label for="profile_name">How do you want to name this application profile?</label>
+                                                      <label for="profile_name" >How do you want to name this application profile?</label>
                                                       <input type="text" class="form-control"  name="profile_name" required value="{{ profile_name }}">
                                                   </div>
                                                   <div class="input-group">
@@ -326,9 +330,13 @@ Compress output, send output to S3 etc ...
 
                               <script>
                               $('#manageprofile').submit(function(event) {
-                                  getJobScriptData = btoa($('#job-script').val());
+                                  getJobScriptData = btoa(unescape(encodeURIComponent($('#job-script').val())));
                                   getInterpreterValue = $('#interpreter').val();
                                   getFormBuilderData = btoa(formBuilder.actions.getData('json', true));
+                                  console.log(getJobScriptData);
+                                  console.log(getInterpreterValue);
+                                  console.log(getFormBuilderData);
+
                                   document.getElementById("submit_job_script").value = getJobScriptData;
                                   document.getElementById("submit_job_form").value = getFormBuilderData;
                                   document.getElementById("submit_job_interpreter").value = getInterpreterValue;

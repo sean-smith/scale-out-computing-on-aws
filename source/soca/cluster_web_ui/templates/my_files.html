@@ -68,7 +68,7 @@
   <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Upload to SOCA</h5>
+        <h5 class="modal-title" id="exampleModalLabel">Upload your content to SOCA</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -82,7 +82,7 @@
           </form>
           <hr>
           Do not close the page while uploading<br>
-          Upload limited to 500 MB and 5 minutes timeout. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files or edit the configuration files.
+          Upload limited to {{ max_upload_size / 1024 }} GB and {{ max_upload_timeout / 60000 }} minutes timeout. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files or edit the configuration files.
       </div>
 
     </div>
@@ -261,8 +261,8 @@
                           url: "/my_files/upload",
                           addRemoveLinks : true,
                           dictDefaultMessage: '<i class="fas fa-cloud-upload-alt fa-3x"></i> <h4>Drag and Drop files to upload or click</h4> File(s) will be uploaded under {{ path }}',
-                          maxFilesize: {{max_upload_size | safe}}, // 5 GB Max Upload
-                          timeout: {{max_upload_timeout | safe }}, //  5 minutes
+                          maxFilesize: {{max_upload_size | safe}},
+                          timeout: {{max_upload_timeout | safe }},
                           params: {
                                  path: "{{ path }}/"
                           },
@@ -270,23 +270,27 @@
                           headers: {
                               'X-CSRFToken': "{{ csrf_token() | safe }}"
                           },
+                          success: function(file) {
+                              $('#update-div').append('<div class="alert alert-success alert-dismissible fade show" role="alert"><strong>'+file.name+'</strong> has been uploaded to SOCA<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><div>');
+                          },
                           complete: function(file, response)
                           {
                               if (this.getUploadingFiles().length === 0 && this.getQueuedFiles().length === 0) {
-                                  $('#update-div').html('<div class="alert alert-success">File(s) uploaded successfully. Page will reload automatically in 5 seconds (<a href="/my_files?path={{ path }}">click here for manual reload</a> <div>');
+                                  $('#update-div').append('<div class="alert alert-info">All operations have completed. Page will reload automatically in 5 seconds (<a href="/my_files?path={{ path }}">click here for manual reload</a>) <div>');
                                   setTimeout(() => { location.reload(); }, 5000);
                               }
-                              else
-                              {
-                                  $('#update-div').html('<div class="alert alert-success">Some files have been uploaded. Please wait for the others in the queue.<div>');
-                              }
-                          },
 
-                          errors: function(file, response)
+                          },
+                          canceled: function(file, response)
                           {
-                              console.log("ERROR " + file)
-                              console.log(response)
-                              $('#update-div').html('<div class="alert alert-danger">Error uploading ' + file.name + ' because of ' + response + '</div>');
+                              $('#update-div').append('<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>'+file.name+'</strong> upload was canceled<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><div>');
+                          },
+                          error: function(file, response)
+                          {
+                              console.log("SOCAUploadError: " + file)
+                              console.log("SOCAUploadError: " + response)
+                              $('#update-div').append('<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong> Error during '+file.name+'</strong> upload because of '+response+'<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><div>');
+
                           },
                       });
 

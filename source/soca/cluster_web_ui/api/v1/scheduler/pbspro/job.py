@@ -117,10 +117,19 @@ class Job(Resource):
 
             # Basic Input verification
             check_job_name = re.search(r'#PBS -N (.+)', payload)
+            check_job_project = re.search(r'#PBS -P (.+)', payload)
+
             if check_job_name:
-                job_name = re.sub(r'\W+', '', check_job_name.group(1))  # remove invalid char,space etc...
+                sanitized_job_name = re.sub(r'\W+', '', check_job_name.group(1))  # remove invalid char,space etc...
+                payload = payload.replace("#PBS -N " + check_job_name.group(1), "#PBS -N " + sanitized_job_name)
             else:
-                job_name = ""
+                sanitized_job_name = ""
+
+            if check_job_project:
+                sanitized_job_project = re.sub(r'\W+', '', check_job_project.group(1))  # remove invalid char,space etc...
+                payload = payload.replace("#PBS -P " + check_job_project.group(1), "#PBS -P " + sanitized_job_project)
+
+
 
             if args['interpreter'] is None:
                 interpreter = config.Config.PBS_QSUB
@@ -130,7 +139,7 @@ class Job(Resource):
                 # Prepare job directory
                 random_id = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
                 job_output_folder = config.Config.USER_HOME + "/" + request_user + "/soca_job_output/"
-                job_output_path = job_output_folder + job_name + "_" + str(random_id)
+                job_output_path = job_output_folder + sanitized_job_name + "_" + str(random_id)
                 os.makedirs(job_output_path)
                 os.chdir(job_output_path)
 
@@ -164,7 +173,7 @@ class Job(Resource):
 
             except Exception as err:
                 return {"succes": False, "message": {"error": "Unable to run Qsub command.",
-                                                     "trace": err,
+                                                     "trace": str(err),
                                                      "job_script": str(payload)}}, 500
 
 

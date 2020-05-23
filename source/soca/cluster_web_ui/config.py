@@ -24,7 +24,7 @@ class Config(object):
     USER_HOME = "/data/home"
     APPS_LOCATION = "/apps/"
     DEFAULT_CACHE_TIME = 500  # 5 minutes
-    MAX_UPLOAD_FILE = 5000  # 5 GB
+    MAX_UPLOAD_FILE = 5120  # 5 GB
     MAX_UPLOAD_TIMEOUT = 1800000  # 30 minutes
     MAX_SIZE_ONLINE_PREVIEW = 150000000  # in bytes (150mb by default), maximum size of file that can be visualized via the web editor
 
