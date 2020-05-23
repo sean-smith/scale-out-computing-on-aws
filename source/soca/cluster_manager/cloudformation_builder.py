@@ -21,7 +21,9 @@ from troposphere.ec2 import PlacementGroup, \
     InstanceMarketOptions, \
     NetworkInterfaces, \
     SpotOptions, \
-    CpuOptions
+    CpuOptions,\
+    LaunchTemplateBlockDeviceMapping
+
 from troposphere.fsx import FileSystem, LustreConfiguration
 import troposphere.ec2 as ec2
 
@@ -189,7 +191,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         )]
         ltd.UserData = Base64(Sub(UserData))
         ltd.BlockDeviceMappings = [
-            BlockDeviceMapping(
+            LaunchTemplateBlockDeviceMapping(
                 DeviceName="/dev/xvda" if params["BaseOS"] == "amazonlinux2" else "/dev/sda1",
                 Ebs=EBSBlockDevice(
                     VolumeSize=params["RootSize"],

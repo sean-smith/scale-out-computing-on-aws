@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] -TBD
+### Added
+- Added REST API to interact with SOCA
+- Web UI: Added file explorer
+- We
+
+### Changed
+- NVIDIA drivers are now automatically installed when a GPU instance is provisioned
+- Deployed MATE Desktop for DCV for Amazon Linux 2
+
 ## [2.0.1] - 2020-04-20
 ### Added
 - Support for SpotFleet
