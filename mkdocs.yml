@@ -9,8 +9,8 @@
 site_name: Scale-Out Computing on AWS Knowledge Base
 theme:
   name: 'material'
-  feature:
-    tabs: true
+  features:
+    - tabs
 
 # Repository
 repo_name: 'awslabs/scale-out-computing-on-aws'
@@ -28,8 +28,6 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.critic
   - pymdownx.details
-  - pymdownx.emoji:
-      emoji_generator: !!python/name:pymdownx.emoji.to_svg
   - pymdownx.inlinehilite
   - pymdownx.magiclink
   - pymdownx.mark
