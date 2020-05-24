@@ -44,22 +44,10 @@
                                 <input class="form-control" type="text" placeholder="What sofware do you want to run?" aria-label="Search">
                               </form>
                               <hr>
-
-
-                             <!-- <h4 style="display: inline">
-                              <form action="/submit_job" method="post" class="form-inline" style="display: inline">
-                                      <select class="form-control" name='app' id="app" required>
-                                          {% for app_id, app_data in application_profiles.items() %}
-                                              <option value="{{app_id}}">{{  app_data.profile_name }}</option>
-                                          {% endfor %}
-                                      </select>
-                                      <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
-                                      <input type="hidden" name="input_file" value="{{input_file}}">
-                                      <button type="submit"  class="btn btn-primary">Select this application</button>
-                              </form> or choose your application from the calalog</h4>
-                              <br><br>>-->
-
                           <div class="row">
+                          {% if not application_profiles %}
+                              No applications found. <a href="/admin/applications">Create one first.</a>
+                          {% else %}
                                   {% for app_id, app_data in application_profiles.items() %}
                                       <div name="application-card" id="{{ application }}" class="col-md-auto" style="margin-top: 5px">
                                           <form action="/submit_job" method="post">
@@ -73,6 +61,7 @@
                                           </form>
                                       </div>
                                   {% endfor %}
+                          {% endif %}
                               </div>
                           </div>
                       </div>
