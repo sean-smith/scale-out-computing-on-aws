@@ -110,6 +110,7 @@ def send_job():
                 flash("You must specify cpus and instance_type parameters", "error")
                 return redirect("/my_files")
 
+        # Calculate the number of nodes to be provisioned for the simulation
         cpus = request.form["cpus"]
         instance_type = request.form["instance_type"]
         if cpus is None:
@@ -121,6 +122,26 @@ def send_job():
             else:
                 cpu_per_system = 2
             nodect = math.ceil(int(cpus) / cpu_per_system)
+
+        find_shebang = re.search(r'#!([^\s]+)', job_to_submit)
+        check_job_node_count = re.search(r'#PBS -l select=(\d+)', job_to_submit)
+        if find_shebang:
+            shebang = find_shebang.group(1)
+        else:
+            shebang = False
+
+        if check_job_node_count:
+            if str(check_job_node_count.group(1)) != str(nodect):
+                job_to_submit = job_to_submit.replace("#PBS -l select=" + str(check_job_node_count.group(1)),
+                                                      "#PBS -l select=" + str(nodect))
+        else:
+            if shebang:
+                # Add right after shebang
+                job_to_submit = job_to_submit.replace(shebang,
+                                                      shebang + "\n #Added by SOCA Web UI \n" + "#PBS -l select=" + str(nodect) + ":ncpus=" + str(cpu_per_system) + "\n")
+            else:
+                # Add first line
+                job_to_submit = "#PBS -l select=" + str(nodect) + ":ncpus=" + str(cpu_per_system) + " \n #Added by SOCA Web UI \n" + job_to_submit
 
     for param in request.form:
         if param != "csrf_token":

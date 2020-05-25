@@ -129,8 +129,6 @@ class Job(Resource):
                 sanitized_job_project = re.sub(r'\W+', '', check_job_project.group(1))  # remove invalid char,space etc...
                 payload = payload.replace("#PBS -P " + check_job_project.group(1), "#PBS -P " + sanitized_job_project)
 
-
-
             if args['interpreter'] is None:
                 interpreter = config.Config.PBS_QSUB
             else:
