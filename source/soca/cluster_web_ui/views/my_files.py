@@ -101,74 +101,76 @@ def user_has_permission(path, permission_required, type):
     else:
         # When we create a new folder, the last existing folder is 2 level up in the array
         last_folder = folder_hierarchy[-2]
+    try:
+        for folder in folder_hierarchy:
+            if folder != "":
+                folder_path = "/".join(folder_hierarchy[:folder_level])
+                if CACHE_FOLDER_PERMISSION_PREFIX + folder_path not in cache.keys():
+                    check_folder = {}
+                    check_folder["folder_owner"] = os.stat(folder_path).st_uid
+                    check_folder["folder_group_id"] = os.stat(folder_path).st_gid
+                    try:
+                        check_folder["folder_group_name"] = grp.getgrgid(check_folder["folder_group_id"]).gr_name
+                    except:
+                        check_folder["folder_group_name"] = "UNKNOWN"
 
-    for folder in folder_hierarchy:
-        if folder != "":
-            folder_path = "/".join(folder_hierarchy[:folder_level])
-            if CACHE_FOLDER_PERMISSION_PREFIX + folder_path not in cache.keys():
-                check_folder = {}
-                check_folder["folder_owner"] = os.stat(folder_path).st_uid
-                check_folder["folder_group_id"] = os.stat(folder_path).st_gid
-                try:
-                    check_folder["folder_group_name"] = grp.getgrgid(check_folder["folder_group_id"]).gr_name
-                except:
-                    check_folder["folder_group_name"] = "UNKNOWN"
-
-                check_folder["folder_permission"] = oct(os.stat(folder_path).st_mode)[-3:]
-                check_folder["group_permission"] = int(check_folder["folder_permission"][-2])
-                check_folder["other_permission"] = int(check_folder["folder_permission"][-1])
-                cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path] = check_folder
-            else:
-                check_folder = cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path]
-
-            if CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"] not in cache.keys():
-                check_group_membership = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
-                                             headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                                             params={"group": check_folder["folder_group_name"]},
-                                             verify=False)
-
-                if check_group_membership.status_code == 200:
-                    group_members = check_group_membership.json()["message"]["members"]
+                    check_folder["folder_permission"] = oct(os.stat(folder_path).st_mode)[-3:]
+                    check_folder["group_permission"] = int(check_folder["folder_permission"][-2])
+                    check_folder["other_permission"] = int(check_folder["folder_permission"][-1])
+                    cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path] = check_folder
                 else:
-                    print("Unable to check group membership because of " + check_group_membership.text)
-                    group_members = []
-                cache[CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"]] = group_members
-            else:
-                group_members = cache[CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"]]
+                    check_folder = cache[CACHE_FOLDER_PERMISSION_PREFIX + folder_path]
 
-            if session["user"] in group_members:
-                user_belong_to_group = True
-            else:
-                user_belong_to_group = False
+                if CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"] not in cache.keys():
+                    check_group_membership = get(config.Config.FLASK_ENDPOINT + "/api/ldap/group",
+                                                 headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                                                 params={"group": check_folder["folder_group_name"]},
+                                                 verify=False)
 
-            # Verify if user has the required permissions on the folder
-            if folder == last_folder:
-                # Last folder, must have at least R or W permission
-                if check_folder["folder_owner"] != user_uid:
-                    if user_belong_to_group is True:
-                        if check_folder["group_permission"] < min_permission_level[permission_required]:
-                            print("user do not have " + permission_required + " permission for " + folder_path)
-                            return False
+                    if check_group_membership.status_code == 200:
+                        group_members = check_group_membership.json()["message"]["members"]
                     else:
-                        if check_folder["other_permission"] < min_permission_level[permission_required]:
-                            print("user do not have " + permission_required + " permission for " + folder_path)
-                            return False
-            else:
-                # Folder chain, must have at least Execute permission
-                if check_folder["folder_owner"] != user_uid:
-                    if user_belong_to_group is True:
-                        if check_folder["group_permission"] < min_permission_level[permission_required]:
-                            print("user do not have " + permission_required + " permission for " + folder_path)
-                            return False
-                    else:
-                        if (check_folder["other_permission"] < min_permission_level["execute"]):
-                            print("user do not have EXECUTE permission for " + folder_path)
-                            return False
+                        print("Unable to check group membership because of " + check_group_membership.text)
+                        group_members = []
+                    cache[CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"]] = group_members
+                else:
+                    group_members = cache[CACHE_GROUP_MEMBERSHIP_PREFIX + check_folder["folder_group_name"]]
 
-        folder_level += 1
+                if session["user"] in group_members:
+                    user_belong_to_group = True
+                else:
+                    user_belong_to_group = False
 
-    print("Permissions valid.")
-    return True
+                # Verify if user has the required permissions on the folder
+                if folder == last_folder:
+                    # Last folder, must have at least R or W permission
+                    if check_folder["folder_owner"] != user_uid:
+                        if user_belong_to_group is True:
+                            if check_folder["group_permission"] < min_permission_level[permission_required]:
+                                print("user do not have " + permission_required + " permission for " + folder_path)
+                                return False
+                        else:
+                            if check_folder["other_permission"] < min_permission_level[permission_required]:
+                                print("user do not have " + permission_required + " permission for " + folder_path)
+                                return False
+                else:
+                    # Folder chain, must have at least Execute permission
+                    if check_folder["folder_owner"] != user_uid:
+                        if user_belong_to_group is True:
+                            if check_folder["group_permission"] < min_permission_level[permission_required]:
+                                print("user do not have " + permission_required + " permission for " + folder_path)
+                                return False
+                        else:
+                            if (check_folder["other_permission"] < min_permission_level["execute"]):
+                                print("user do not have EXECUTE permission for " + folder_path)
+                                return False
+
+            folder_level += 1
+
+        print("Permissions valid.")
+        return True
+    except FileNotFoundError:
+        return False
 
 
 @my_files.route('/my_files', methods=['GET'])
@@ -198,7 +200,6 @@ def index():
                 flash("You are not authorized to access this location. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
                 return redirect("/my_files")
 
-
         # Build breadcrumb
         count = 1
         for level in path.split("/"):
@@ -211,6 +212,7 @@ def index():
 
         # Retrieve files/folders
         if CACHE_FOLDER_CONTENT_PREFIX + path not in cache.keys():
+            is_cached = False
             try:
                 for entry in os.scandir(path):
                     if not entry.name.startswith("."):
@@ -232,7 +234,7 @@ def index():
                     flash("Could not locate the directory: " + str (err), "error")
                 return redirect("/my_files")
         else:
-            print(path + " is cached")
+            is_cached = True
             filesystem = cache[CACHE_FOLDER_CONTENT_PREFIX + path]
 
 
@@ -242,8 +244,10 @@ def index():
                                max_upload_size=config.Config.MAX_UPLOAD_FILE,
                                max_upload_timeout=config.Config.MAX_UPLOAD_TIMEOUT,
                                max_online_preview=config.Config.MAX_SIZE_ONLINE_PREVIEW,
+                               default_cache_time=config.Config.DEFAULT_CACHE_TIME,
                                path=path,
-                               page="my_files")
+                               page="my_files",
+                               is_cached=is_cached)
     except Exception as err:
         flash("Error, this path probably does not exist. "+str(err), "error")
         print(err)
@@ -261,7 +265,7 @@ def download():
     if file_information["success"] is True:
         file_info = json.loads(file_information["message"])
         if user_has_permission(file_info["file_path"], "read", "file") is False:
-            flash(" You are not authorized to download this file")
+            flash(" You are not authorized to download this file or this file is no longer available on the filesystem")
             return redirect("/my_files")
 
         current_user = session["user"]
@@ -411,7 +415,7 @@ def editor():
     if file_information["success"] is True:
         file_info = json.loads(file_information["message"])
         if user_has_permission(file_info["file_path"], "write", "file") is False:
-            flash("You do not have permission to edit this file")
+            flash("You are not authorized to download this file or this file is no longer available on the filesystem")
             return redirect("/my_files")
 
         text = get(config.Config.FLASK_ENDPOINT + '/api/system/files',

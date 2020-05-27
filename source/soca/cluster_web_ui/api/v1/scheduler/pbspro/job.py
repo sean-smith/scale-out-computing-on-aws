@@ -100,6 +100,7 @@ class Job(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('payload', type=str, location='form')
         parser.add_argument('interpreter', type=str, location='form')
+        parser.add_argument('input_file_path', type=str, location='form')
         args = parser.parse_args()
         try:
             payload = base64.b64decode(args['payload']).decode()
@@ -134,24 +135,26 @@ class Job(Resource):
             else:
                 interpreter = args['interpreter']
             try:
-                # Prepare job directory
                 random_id = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(10))
-                job_output_folder = config.Config.USER_HOME + "/" + request_user + "/soca_job_output/"
-                job_output_path = job_output_folder + sanitized_job_name + "_" + str(random_id)
-                os.makedirs(job_output_path)
+                job_submit_file = "job_submit_" + str(random_id) + ".sh"
+
+                if args['input_file_path']:
+                    job_output_path = args['input_file_path']
+                else:
+                    # create new job directory if needed
+                    job_output_folder = config.Config.USER_HOME + "/" + request_user + "/soca_job_output/"
+                    job_output_path = job_output_folder + sanitized_job_name + "_" + str(random_id)
+                    os.makedirs(job_output_path)
+                    os.chmod(job_output_folder, 0o700)
+                    shutil.chown(job_output_folder, user=request_user, group=request_user)
+                    os.chmod(job_output_path, 0o700)
+
                 os.chdir(job_output_path)
-
-                with open("job_submit.sh", "w") as text_file:
+                with open(job_submit_file, "w") as text_file:
                     text_file.write(payload)
-
-                shutil.chown(job_output_folder, user=request_user, group=request_user)
-                shutil.chown(job_output_path, user=request_user, group=request_user)
-                shutil.chown(job_output_path + "/job_submit.sh", user=request_user, group=request_user)
-                os.chmod(job_output_folder, 0o700)
-                os.chmod(job_output_path, 0o700)
-                os.chmod(job_output_path + "/job_submit.sh", 0o700)
-
-                submit_job_command = interpreter + " job_submit.sh"
+                shutil.chown(job_output_path + "/" + job_submit_file, user=request_user, group=request_user)
+                os.chmod(job_output_path + "/"+job_submit_file, 0o700)
+                submit_job_command = interpreter + " " + job_submit_file
 
                 launch_job = subprocess.check_output(['su', request_user, '-c', submit_job_command], stderr=subprocess.PIPE)
                 if interpreter == config.Config.PBS_QSUB:

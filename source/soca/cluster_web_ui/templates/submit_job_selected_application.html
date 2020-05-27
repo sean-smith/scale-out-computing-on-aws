@@ -4,8 +4,6 @@
 <head>
      {% include 'common/header.html' %}
 
-    <script src="{{ url_for('static', filename='vendor/jquery-formbuilder/form-render.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='vendor/jquery-ui/jquery-ui.min.js') }}"></script>
 </head>
 
 <body id="page-top">
@@ -47,6 +45,7 @@
                                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                       <input type="hidden" name="job_script" value="{{ profile_job }}">
                                       <input type="hidden" name="profile_interpreter" value="{{ profile_interpreter | safe }}">
+                                      <input type="hidden" name="input_file_path" value="{{ input_file_path | safe }}">
                                       <button type="submit" class="btn btn-success"><i class="fas fa-play"></i> Submit job</button>
                                   </form>
                               </div>

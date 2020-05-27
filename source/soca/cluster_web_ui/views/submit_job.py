@@ -19,38 +19,23 @@ submit_job = Blueprint('submit_job', __name__, template_folder='templates')
 @submit_job.route('/submit_job', methods=['GET'])
 @login_required
 def index():
-    app = request.args.get("app", None)
     input_file = request.args.get("input_file", None)
     if input_file is None or input_file == "":
         # User must specify input first
         flash("What input file do you want to use? <hr> Navigate to the folder where your input file is located then click 'Use as Simulation Input' icon: <i class='fas fa-microchip fa-lg'  style='color: grey'></i>","info")
         return redirect("/my_files")
 
-    if app is None:
-        application_profiles = {}
-        get_all_application_profiles = ApplicationProfiles.query.all()
-        for profile in get_all_application_profiles:
-            application_profiles[profile.id] = {"profile_name": profile.profile_name,
-                                                "profile_thumbnail": profile.profile_thumbnail}
+    application_profiles = {}
+    get_all_application_profiles = ApplicationProfiles.query.all()
+    for profile in get_all_application_profiles:
+        application_profiles[profile.id] = {"profile_name": profile.profile_name,
+                                            "profile_thumbnail": profile.profile_thumbnail}
 
-        return render_template('submit_job.html',
-                               user=session["user"],
-                               application_profiles=OrderedDict(sorted(application_profiles.items(), key=lambda x: x[1]['profile_name'].lower())),
-                               input_file=False if input_file is None else input_file)
-    else:
-        # input and app specified
-        input_file_info = request.args.get('input_file')
-        get_application_profile = ApplicationProfiles.query.filter_by(id=app).first()
-        if get_application_profile:
-            profile_form = base64.b64decode(get_application_profile.profile_form)
-            profile_job = get_application_profile.profile_job
-            return render_template('submit_job_selected_application.html',
-                                   user=session["user"],
-                                   profile_form=profile_form,
-                                   profile_job=profile_job)
-        else:
-            flash("Application not found.", "error")
-            return redirect("/submit_job")
+    return render_template('submit_job.html',
+                           user=session["user"],
+                           application_profiles=OrderedDict(sorted(application_profiles.items(), key=lambda x: x[1]['profile_name'].lower())),
+                           input_file=False if input_file is None else input_file)
+
 
 
 @submit_job.route('/submit_job', methods=['POST'])
@@ -78,15 +63,18 @@ def job_submission():
 
         input_path = json.loads(file_info["message"])["file_path"]
         input_name = input_path.split("/")[-1]
+        input_file_path = "/".join(input_path.split("/")[:-1])
 
         return render_template('submit_job_selected_application.html',
                                profile_name=get_application_profile.profile_name,
                                user=session["user"],
                                profile_form=profile_form,
                                profile_job=profile_job,
+                               page="submit_job",
                                profile_interpreter=profile_interpreter,
                                pbs_interpreter=config.Config.PBS_QSUB,
                                input_path=input_path.rstrip().lstrip(),
+                               input_file_path=input_file_path,
                                input_name=input_name)
 
     else:
@@ -147,12 +135,14 @@ def send_job():
         if param != "csrf_token":
             job_to_submit = job_to_submit.replace("%" + param + "%", request.form[param])
 
+
     payload = base64.b64encode(job_to_submit.encode()).decode()
     send_to_to_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
                         headers={"X-SOCA-TOKEN": session["api_key"],
                                  "X-SOCA-USER": session["user"]},
                         data={"payload": payload,
-                              "interpreter": request.form["profile_interpreter"]},
+                              "interpreter": request.form["profile_interpreter"],
+                              "input_file_path": request.form["input_file_path"]},
                         verify=False)
     if send_to_to_queue.status_code == 200:
         if request.form["profile_interpreter"] == config.Config.PBS_QSUB:
