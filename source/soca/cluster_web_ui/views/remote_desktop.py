@@ -11,6 +11,7 @@ import string
 import base64
 import datetime
 import read_secretmanager
+import re
 
 logger = logging.getLogger("api_log")
 remote_desktop = Blueprint('remote_desktop', __name__, template_folder='templates')
@@ -25,6 +26,7 @@ def index():
         session_state = session_info.session_state
         session_password = session_info.session_password
         session_uuid = session_info.session_uuid
+        session_name = session_info.session_name
         job_id = session_info.job_id
 
         get_job_info = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
@@ -58,7 +60,8 @@ def index():
 
             user_sessions[session_number] = {
                 "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + job_info.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
-                "session_state": session_state}
+                "session_state": session_state,
+                "session_name": session_name}
 
     max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
@@ -77,7 +80,7 @@ def index():
 @login_required
 def create():
     parameters = {}
-    for parameter in ["walltime", "instance_type", "session_number", "instance_ami", "base_os", "scratch_size"]:
+    for parameter in ["walltime", "instance_type", "session_number", "instance_ami", "base_os", "scratch_size", "session_name"]:
         if not request.form[parameter]:
             parameters[parameter] = False
         else:
@@ -85,9 +88,15 @@ def create():
 
     session_uuid = str(uuid.uuid4())
     session_password = ''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(80))
-
     command_dcv_create_session = "create-session --user " + session["user"] + " --owner " + session["user"] + " " + session_uuid
-    params = {'pbs_job_name': 'Desktop' + str(parameters["session_number"]),
+
+    # sanitize session_name, limit to 255 chars
+    if parameters["session_name"] is False:
+        session_name = 'Desktop' + str(parameters["session_number"])
+    else:
+        session_name = re.sub(r'\W+', '', parameters["session_name"])[:255]
+
+    params = {'pbs_job_name': session_name,
               'pbs_queue': 'desktop',
               'pbs_project': 'gui',
               'instance_type': parameters["instance_type"],
@@ -148,6 +157,7 @@ done
         new_session = DCVSessions(user=session["user"],
                                   job_id=job_id,
                                   session_number=parameters["session_number"],
+                                  session_name=session_name,
                                   session_state="pending",
                                   session_host=False,
                                   session_password=session_password,

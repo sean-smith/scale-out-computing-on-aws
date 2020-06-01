@@ -67,7 +67,7 @@
                                               </div>
 
                                           {% elif session_data.session_state == 'running' %}
-                                              <h5>Access your Session</h5>
+                                              <h5>{{ session_data.session_name }}</h5>
                                               <hr>
                                               <h6>Option1: Browser access</h6>
                                               <a target="_blank" href="{{ session_data.url }}" class="btn btn-success btn-icon-split">
@@ -105,6 +105,12 @@
                                   {% endfor %}
                               {% else %}
                                   <form method="post" action="/remote_desktop/create">
+                                    <div class="form-group row">
+                                        <label for="walltime" class="col-sm-4 col-form-label">Session Name</label>
+                                        <div class="col-sm-8">
+                                            <input id="session_name" class="form-control"  placeholder="Desktop{{ n }}" type="text"  name="session_name" maxlength="255">
+                                        </div>
+                                    </div>
                                       <div class="form-group row">
                                           <label for="walltime" class="col-sm-4 col-form-label">Session Validity</label>
                                           <div class="col-sm-8">

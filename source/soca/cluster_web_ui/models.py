@@ -37,6 +37,7 @@ class DCVSessions(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user = db.Column(db.String(255), nullable=False)
     job_id = db.Column(db.String(255), nullable=False)
+    session_name = db.Column(db.String(255))
     session_number = db.Column(db.Integer, nullable=False)
     session_state = db.Column(db.String(255), nullable=False)
     session_host = db.Column(db.String(255))

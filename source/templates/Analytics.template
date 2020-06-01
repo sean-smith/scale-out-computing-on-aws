@@ -30,7 +30,7 @@ Resources:
       EncryptionAtRestOptions:
          Enabled: True
       EBSOptions:
-        VolumeSize: 50
+        VolumeSize: 100
         VolumeType: gp2
         EBSEnabled: true
       ElasticsearchClusterConfig:
