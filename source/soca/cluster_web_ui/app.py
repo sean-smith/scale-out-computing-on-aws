@@ -39,6 +39,7 @@ from flask_swagger import swagger
 from swagger_ui import api_doc
 import config
 
+
 app = Flask(__name__)
 csrf = CSRFProtect(app)
 csrf.exempt("api")

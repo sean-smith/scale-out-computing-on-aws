@@ -134,8 +134,9 @@
               formData: {{ profile_form | safe }}
           })
 
-          // populate input file path by default
+          // populate input file path by default if they exist
           $("#input_file").val('{{ input_path }}');
+          $("#job_name").val('{{ input_name }}');
 
           if ( "{{profile_interpreter | safe }}" == "{{ pbs_interpreter | safe}}") {
               $("form").change(function () {

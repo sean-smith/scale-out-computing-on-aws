@@ -11,14 +11,17 @@ import json
 import pwd
 from collections import OrderedDict
 import grp
+from flask import Flask
 from werkzeug.utils import secure_filename
 from cachetools import TTLCache
 
 logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
+app = Flask(__name__)
 
 # Set up caching
-cache = TTLCache(maxsize=10000, ttl=config.Config.DEFAULT_CACHE_TIME)  # default is 500 seconds
+with app.app_context():
+    cache = TTLCache(maxsize=10000, ttl=config.Config.DEFAULT_CACHE_TIME)  # default is 500 seconds
 CACHE_FOLDER_PERMISSION_PREFIX = "my_files_folder_permissions_"
 CACHE_GROUP_MEMBERSHIP_PREFIX = "my_files_group_membership_"
 CACHE_FOLDER_CONTENT_PREFIX = "my_files_folder_content_"

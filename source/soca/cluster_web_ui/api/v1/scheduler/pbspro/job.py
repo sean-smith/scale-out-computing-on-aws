@@ -90,7 +90,7 @@ class Job(Resource):
                   description: Base 64 encoding of a job submission file
                 interpreter:
                   type: string
-                  description: Interpreter to use (eg: qsub, /bin/bash ..)
+                  description: Interpreter to use qsub or bash
         responses:
           200:
             description: Job submitted correctly
@@ -147,6 +147,7 @@ class Job(Resource):
                     os.makedirs(job_output_path)
                     os.chmod(job_output_folder, 0o700)
                     shutil.chown(job_output_folder, user=request_user, group=request_user)
+                    shutil.chown(job_output_path, user=request_user, group=request_user)
                     os.chmod(job_output_path, 0o700)
 
                 os.chdir(job_output_path)
