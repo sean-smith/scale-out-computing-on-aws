@@ -153,10 +153,6 @@ while [[ $? -ne 0 ]] && [[ $LOOP_ENI_TAG -lt 5 ]]
 done
 
 
-# Begin USER Customization
-/bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1
-# End USER Customization
-
 if [[ $REQUIRE_REBOOT -eq 1 ]];
 then
     echo -e "
@@ -176,6 +172,11 @@ then
     " >> /etc/rc.local
     chmod +x /etc/rc.d/rc.local
     systemctl enable rc-local
+
+    echo "@reboot /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1" | crontab -
+    echo "@reboot /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeConfigureMetrics.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeConfigureMetrics.log 2>&1" | crontab -
+    # End USER Customization
+
     reboot
 else
     # Mount
@@ -191,6 +192,15 @@ else
                 echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
             done
     fi
+
+    # Begin USER Customization
+    /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1
+    # End USER Customization
+
+    # Begin Metric Customization
+    /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeConfigureMetrics.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeConfigureMetrics.log 2>&1
+    # End Metric Customization
+
     # Post-Boot routine completed, starting PBS
     systemctl start pbs
 fi

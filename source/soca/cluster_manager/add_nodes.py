@@ -85,6 +85,10 @@ def check_config(**kwargs):
         'capacity': 1200
     }
 
+    # Default System metrics to True unless explicitely set to False
+    if kwargs['system_metrics'] is not False:
+        kwargs['system_metrics'] = True
+
     if kwargs['fsx_lustre'] is not False:
         if kwargs['fsx_lustre'] is not True:
             # when fsx_lustre is set to True, only create a FSx without S3 backend
@@ -287,6 +291,7 @@ def main(**kwargs):
                                    'spot_allocation_strategy': 'lowest-price',
                                    'spot_price': False,
                                    'subnet_id': False,
+                                   'system_metrics': True,
                                    'scratch_iops': 0,
                                    'stack_uuid': str(uuid.uuid4())
                                    }
@@ -363,6 +368,10 @@ def main(**kwargs):
             'EFSDataDns': {
                 'Key': None,
                 'Default': aligo_configuration['EFSDataDns'],
+            },
+            'ESDomainEndpoint': {
+                'Key': None,
+                'Default': aligo_configuration['ESDomainEndpoint'],
             },
             'FSxLustreConfiguration': {
                 'Key': 'fsx_lustre_configuration',
@@ -472,6 +481,10 @@ def main(**kwargs):
             'SubnetId': {
                 'Key': 'subnet_id',
                 'Default': None
+            },
+            'SystemMetrics': {
+                'Key': 'system_metrics',
+                'Default': True
             },
             'ThreadsPerCore': {
                 'Key': 'ht_support',
