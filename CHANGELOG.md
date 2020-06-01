@@ -6,9 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.1.0] -TBD
 ### Added
+- Support for MetricBeat
 - Added REST API to interact with SOCA
 - Web UI: Added file explorer
-- We
+- 
 
 ### Changed
 - Updated Troposphere (2.6.1)
