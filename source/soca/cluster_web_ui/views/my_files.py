@@ -22,6 +22,7 @@ app = Flask(__name__)
 # Set up caching
 with app.app_context():
     cache = TTLCache(maxsize=10000, ttl=config.Config.DEFAULT_CACHE_TIME)  # default is 500 seconds
+
 CACHE_FOLDER_PERMISSION_PREFIX = "my_files_folder_permissions_"
 CACHE_GROUP_MEMBERSHIP_PREFIX = "my_files_group_membership_"
 CACHE_FOLDER_CONTENT_PREFIX = "my_files_folder_content_"
@@ -328,8 +329,8 @@ def create():
         access_right = 0o750
         os.makedirs(folder_to_create, access_right)
         change_ownership(folder_to_create)
-        if CACHE_FOLDER_CONTENT_PREFIX + folder_path in cache.keys():
-            del cache[CACHE_FOLDER_CONTENT_PREFIX + folder_path]
+        if CACHE_FOLDER_CONTENT_PREFIX + folder_path[:-1] in cache.keys():
+            del cache[CACHE_FOLDER_CONTENT_PREFIX + folder_path[:-1]]
         flash(folder_to_create + " created successfully.", "success")
     except OSError as err:
         if err.errno == errno.EEXIST:
