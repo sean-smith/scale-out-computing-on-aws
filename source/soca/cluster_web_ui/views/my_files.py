@@ -97,7 +97,7 @@ def user_has_permission(path, permission_required, type):
         if not path.lower().startswith(config.Config.USER_HOME.lower() + "/" + session["user"].lower()):
             return False
 
-    for restricted_path in config.Config.WEB_PATH_TO_RESTRICT:
+    for restricted_path in config.Config.PATH_TO_RESTRICT:
         if path.lower().startswith(restricted_path.lower()):
             return False
 

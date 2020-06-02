@@ -187,7 +187,7 @@
 #PBS -N %job_name%
 #PBS -P %project_name%
 #PBS -l instance_type=%instance_type% # https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
-#PBS -l walltime=%walltime%
+#PBS -l walltime=%wall_time%
 
 ## [Begin: Commands to be added before the solver. This cannot be changed by the users]
 export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...

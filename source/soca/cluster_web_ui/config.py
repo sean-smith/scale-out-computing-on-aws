@@ -24,8 +24,8 @@ class Config(object):
     APPS_LOCATION = "/apps/"
     USER_HOME = "/data/home"
     CHROOT_USER = False  # if True, user can only access their $HOME directory (aka: USER_HOME/<user>)
-    WEB_PATH_TO_RESTRICT = []  # eg: /apps/folder1 -> users can't access anything under /apps/folder1
-    DEFAULT_CACHE_TIME = 120  # 2 minutes
+    PATH_TO_RESTRICT = []  # eg: /apps/folder1 -> users can't access anything under /apps/folder1
+    DEFAULT_CACHE_TIME = 120  # 2 minutes. Change this value to optimize performance in case you have a large number of concurrent user
     MAX_UPLOAD_FILE = 5120  # 5 GB
     MAX_UPLOAD_TIMEOUT = 1800000  # 30 minutes
     MAX_SIZE_ONLINE_PREVIEW = 150000000  # in bytes (150mb by default), maximum size of file that can be visualized via the web editor
