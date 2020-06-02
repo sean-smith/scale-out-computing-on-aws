@@ -8,12 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for MetricBeat
 - Added REST API to interact with SOCA
-- Web UI: Added file explorer
+- Revamped Web Interface
+  - Added filesystem explorer
+  - Users can upload files/folders via drag & drop interface
+  - Users can now manage membership of their own LDAP group via web
+  - Admins can manage LDAP via web 
+  - Admins can creates application profiles for web based job submission
 
 
 ### Changed
 - Updated Troposphere (2.6.1)
 - You can specify a name for your DCV sessions 
+- You can now specify custom AMI, base OS or storage options for your DCV sessions
+- Project assigned to DCV jobs has been renamed to "remotedesktop" (previously "gui")
 
 ## [2.0.1] - 2020-04-20
 ### Added

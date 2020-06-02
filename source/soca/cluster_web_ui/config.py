@@ -21,12 +21,17 @@ class Config(object):
     SOCA_DATA_SHARING_SYMMETRIC_KEY = os.environ["SOCA_FLASK_FERNET_KEY"]
 
     # WEB
-    USER_HOME = "/data/home"
     APPS_LOCATION = "/apps/"
-    DEFAULT_CACHE_TIME = 300  # 5 minutes
+    USER_HOME = "/data/home"
+    CHROOT_USER = False  # if True, user can only access their $HOME directory (aka: USER_HOME/<user>)
+    WEB_PATH_TO_RESTRICT = []  # eg: /apps/folder1 -> users can't access anything under /apps/folder1
+    DEFAULT_CACHE_TIME = 120  # 2 minutes
     MAX_UPLOAD_FILE = 5120  # 5 GB
     MAX_UPLOAD_TIMEOUT = 1800000  # 30 minutes
     MAX_SIZE_ONLINE_PREVIEW = 150000000  # in bytes (150mb by default), maximum size of file that can be visualized via the web editor
+
+
+
 
     # UWSGI SETTINGS
     FLASK_HOST = "127.0.0.1"

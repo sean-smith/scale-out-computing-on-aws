@@ -95,10 +95,13 @@ def create():
         session_name = 'Desktop' + str(parameters["session_number"])
     else:
         session_name = re.sub(r'\W+', '', parameters["session_name"])[:255]
+        if session_name == "":
+            # handle case when session name specified by user only contains invalid char
+            session_name = 'Desktop' + str(parameters["session_number"])
 
     params = {'pbs_job_name': session_name,
               'pbs_queue': 'desktop',
-              'pbs_project': 'gui',
+              'pbs_project': 'remotedesktop',
               'instance_type': parameters["instance_type"],
               'instance_ami': "#PBS -l instance_ami=" + parameters["instance_ami"] if parameters["instance_ami"] is not False else "",
               'base_os': "#PBS -l base_os=" + parameters["base_os"] if parameters["base_os"] is not False else "",

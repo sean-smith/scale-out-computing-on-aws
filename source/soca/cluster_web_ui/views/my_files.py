@@ -89,6 +89,18 @@ def user_has_permission(path, permission_required, type):
         print("permission_required must be write or read")
         return False
 
+    if path.startswith("//"):
+        # Remove first slash if present. Case when user click "root" label on breadcrumb and then select a folder from the top level
+        path = path[1:]
+
+    if config.Config.CHROOT_USER is True:
+        if not path.lower().startswith(config.Config.USER_HOME.lower() + "/" + session["user"].lower()):
+            return False
+
+    for restricted_path in config.Config.WEB_PATH_TO_RESTRICT:
+        if path.lower().startswith(restricted_path.lower()):
+            return False
+
     min_permission_level = {"write": 6,  # Read+Write
                             "read": 5,  # Read+Execute
                             "execute": 1,  # Min permission to be able to CD into directory
