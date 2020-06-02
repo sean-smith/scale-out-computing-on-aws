@@ -48,12 +48,16 @@ def check_config(**kwargs):
         if str(v).lower() in ['false', 'no', 'n', 'off']:
             kwargs[k] = False
 
-     ## Must convert true,True into bool() and false/False
-    if kwargs['job_id'] is None and kwargs['keep_forever'] is None:
-        error = return_message('--job_id or --keep_forever must be specified')
+    # Validate terminate_when_idle
+    if 'terminate_when_idle' not in kwargs.keys():
+        kwargs['terminate_when_idle'] = 0
+
+    ## Must convert true,True into bool() and false/False
+    if kwargs['job_id'] is None and kwargs['keep_forever'] is False and int(kwargs['terminate_when_idle']) == 0:
+        error = return_message('--job_id, --keep_forever True, or --terminate_when_idle N>0 must be specified')
 
     # Ensure jobId is not None when using keep_forever
-    if kwargs['job_id'] is None and kwargs['keep_forever'] is not None:
+    if kwargs['job_id'] is None and (kwargs['keep_forever'] is True or int(kwargs['terminate_when_idle']) > 0):
         kwargs['job_id'] = kwargs['stack_uuid']
 
     # Ensure anonymous metric is either True or False.
@@ -150,7 +154,7 @@ def check_config(**kwargs):
     if 'placement_group' not in kwargs.keys():
         pg_user_defined = False
         # Default PG to True if not present
-        kwargs['placement_group'] = True
+        kwargs['placement_group'] = True if SpotFleet is False else False
     else:
         pg_user_defined = True
         if kwargs['placement_group'] not in [True, False]:
@@ -158,7 +162,7 @@ def check_config(**kwargs):
             error = return_message('Incorrect placement_group. Must be True or False')
 
     if int(kwargs['desired_capacity']) > 1:
-        if kwargs['subnet_id'].__len__() > 1 and pg_user_defined is True and kwargs['placement_group'] is True:
+        if kwargs['subnet_id'].__len__() > 1 and pg_user_defined is True and kwargs['placement_group'] is True and SpotFleet is False:
             # more than 1 subnet specified but placement group is also configured, default to the first subnet and enable PG
             kwargs['subnet_id'] = [kwargs['subnet_id'][0]]
         else:
@@ -173,7 +177,7 @@ def check_config(**kwargs):
 
 
     if kwargs['subnet_id'].__len__() > 1:
-        if kwargs['placement_group'] is True:
+        if kwargs['placement_group'] is True and SpotFleet is False:
             # if placement group is True and more than 1 subnet is defined, force default to 1 subnet
             kwargs['subnet_id'] = [kwargs['subnet_id'][0]]
 
@@ -221,6 +225,8 @@ def check_config(**kwargs):
         spot_allocation_strategy_allowed = ['lowestPrice', 'lowest-price', 'diversified', 'capacityOptimized', 'capacity-optimized']
         if kwargs['spot_allocation_strategy'] not in spot_allocation_strategy_allowed:
             error = return_message('spot_allocation_strategy_allowed (' + str(kwargs['spot_allocation_strategy']) + ') must be one of the following value: ' + ', '.join(spot_allocation_strategy_allowed))
+    else:
+        kwargs['spot_allocation_strategy'] = 'lowestPrice' if SpotFleet is True else 'lowest-price'
 
     # Validate Spot Allocation Percentage
     if kwargs['spot_allocation_count'] is not False:
@@ -322,6 +328,9 @@ def main(**kwargs):
         else:
             cfn_stack_name = aligo_configuration['ClusterId'] + '-job-' + str(params['job_id'])
             tags['soca:KeepForever'] = 'false'
+
+        if int(params['terminate_when_idle']) > 0:
+            tags['soca:TerminateWhenIdle'] = params['terminate_when_idle']
 
         if 'soca:NodeType' not in tags.keys():
             tags['soca:NodeType'] = 'soca-compute-node'
@@ -486,6 +495,10 @@ def main(**kwargs):
                 'Key': 'system_metrics',
                 'Default': True
             },
+            'TerminateWhenIdle': {
+                'Key': 'terminate_when_idle',
+                'Default': 0
+            },
             'ThreadsPerCore': {
                 'Key': 'ht_support',
                 'Default': False
@@ -566,6 +579,7 @@ if __name__ == "__main__":
 
     # Optional
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
+    parser.add_argument('--terminate_when_idle', default=0, nargs='?', help="If instances will be terminated when idle for N minutes")
     parser.add_argument('--fsx_lustre', default=False, help="Mount existing FSx by providing the DNS")
     parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
     parser.add_argument('--instance_ami', required=True, nargs='?', help="AMI to use")

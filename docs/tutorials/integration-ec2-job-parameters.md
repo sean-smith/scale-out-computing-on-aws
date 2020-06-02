@@ -75,8 +75,8 @@ Below is a list of parameters you can specify when you request your simulation t
 #### spot_allocation_strategy
 
 - Description: Choose allocation strategy when using multiple SPOT instances type
-- Allowed Value: `capacity-optimized` or `lowest-cost`
-- Default Value: `lowest-cost`
+- Allowed Values: `capacity-optimized` or `lowest-price` or `diversified` (only for SpotFleet deployments)
+- Default Value: `lowest-price`
 - Examples:
     - `-l spot_allocation_strategy=capacity-optimized`: AWS will provision compute nodes based on capacity availabilities
 

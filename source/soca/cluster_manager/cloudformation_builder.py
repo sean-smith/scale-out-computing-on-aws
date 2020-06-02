@@ -41,6 +41,7 @@ class CustomResourceSendAnonymousMetrics(AWSCustomObject):
         "BaseOS": (str, True),
         "StackUUID": (str, True),
         "KeepForever": (str, True),
+        "TerminateWhenIdle": (str, True),
         "FsxLustre": (str, True),
     }
 
@@ -224,6 +225,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                 _soca_StackId=stack_name,
                 _soca_JobOwner=str(params["JobOwner"]),
                 _soca_JobProject=str(params["JobProject"]),
+                _soca_TerminateWhenIdle=str(params["TerminateWhenIdle"]),
                 _soca_KeepForever=str(params["KeepForever"]).lower(),
                 _soca_ClusterId=str(params["ClusterId"]),
                 _soca_NodeType="soca-compute-node"))]
@@ -272,6 +274,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                 _soca_StackId=stack_name,
                 _soca_JobOwner=str(params["JobOwner"]),
                 _soca_JobProject=str(params["JobProject"]),
+                _soca_TerminateWhenIdle=str(params["TerminateWhenIdle"]),
                 _soca_KeepForever=str(params["KeepForever"]).lower(),
                 _soca_ClusterId=str(params["ClusterId"]),
                 _soca_NodeType="soca-compute-node"))
@@ -340,6 +343,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                 _soca_StackId=stack_name,
                 _soca_JobOwner=str(params["JobOwner"]),
                 _soca_JobProject=str(params["JobProject"]),
+                _soca_TerminateWhenIdle=str(params["TerminateWhenIdle"]),
                 _soca_KeepForever=str(params["KeepForever"]).lower(),
                 _soca_ClusterId=str(params["ClusterId"]),
                 _soca_NodeType="soca-compute-node")
@@ -367,6 +371,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                     _soca_JobId=str(params["JobId"]),
                     _soca_JobName=str(params["JobName"]),
                     _soca_JobQueue=str(params["JobQueue"]),
+                    _soca_TerminateWhenIdle=str(params["TerminateWhenIdle"]),
                     _soca_StackId=stack_name,
                     _soca_JobOwner=str(params["JobOwner"]),
                     _soca_JobProject=str(params["JobProject"]),
@@ -392,6 +397,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             metrics.StackUUID = str(params["StackUUID"])
             metrics.KeepForever = str(params["KeepForever"])
             metrics.FsxLustre = str(params["FSxLustreConfiguration"])
+            metrics.TerminateWhenIdle = str(params["TerminateWhenIdle"])
             t.add_resource(metrics)
         # End Custom Resource
 

@@ -105,6 +105,7 @@ echo "export PATH=\"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # Default AWS Resources
 cat <<EOF >>/var/spool/pbs/server_priv/resourcedef
 anonymous_metrics type=string
+asg_spotfleet_id type=string
 system_metrics type=string
 compute_node type=string flag=h
 instance_type_used type=string
@@ -112,6 +113,7 @@ instance_type type=string
 stack_id type=string
 availability_zone type=string
 subnet_id type=string
+instance_id type=string
 instance_ami type=string
 scratch_size type=string
 scratch_iops type=string

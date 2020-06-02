@@ -332,6 +332,7 @@ Resources:
                   - ec2:DescribeLaunchTemplateVersions
                   - ec2:DescribeNetworkInterfaces
                   - ec2:DescribeSpotFleetRequests
+                  - ec2:DescribeSpotFleetInstances
                   - fsx:DescribeFileSystems
                   - autoscaling:DescribeAutoScalingGroups
                   - autoscaling:DescribeScalingActivities
@@ -350,6 +351,7 @@ Resources:
                   - autoscaling:UpdateAutoScalingGroup
                   - autoscaling:DeleteAutoScalingGroup
                   - autoscaling:CreateAutoScalingGroup
+                  - autoscaling:DetachInstances
                   - ec2:DeleteLaunchTemplate
                   - ec2:CreateLaunchTemplate
                   - fsx:CreateDataRepositoryTask
@@ -379,6 +381,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - ec2:RunInstances
+                  - ec2:TerminateInstances
                   - ec2:CreatePlacementGroup
                   - ec2:DeletePlacementGroup
                 Resource:
@@ -438,6 +441,7 @@ Resources:
                   - ec2:CreatePlacementGroup
                   - ec2:DeletePlacementGroup
                   - ec2:RequestSpotFleet
+                  - ec2:ModifySpotFleetRequest
                   - ec2:CancelSpotFleetRequests
                 Resource: "*"
                 Condition:
