@@ -87,7 +87,7 @@
                                                {% endif %}
 
                                                {% if job_data.Resource_List.error_message %}
-                                                   <button type="button" class="btn btn-info" data-toggle="modal" data-target="#error{{ job_id.split(".")[0] }}"><i class="fas fa-exclamation-triangle"></i> JOB ERROR DETECTED</button>
+                                                   <button type="button" class="btn btn-info" data-toggle="modal" data-target="#error{{ job_id.split(".")[0] }}"><i class="fas fa-exclamation-triangle"></i> JOB CANNOT START</button>
                                                    <!-- Modal error -->
                                                   <div class="modal fade" id="error{{ job_id.split(".")[0] }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                                       <div class="modal-dialog" role="document">

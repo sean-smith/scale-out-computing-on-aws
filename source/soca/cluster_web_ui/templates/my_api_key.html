@@ -73,7 +73,6 @@ $ echo "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9v
                                   You will need to specify three headers:
                                   <li>X-SOCA-USER and set the value to <code>{{  user }}</code></li>
                                   <li>X-SOCA-TOKEN and set the value to <code>{{  user_token }}</code></li>
-                                  <li>Content-Type and set the value to <code>multipart/form-data</code></li>
 
                                   You will also need to pass the Base64 encoded string as payload. See below for examples:
                                     <br><br>
@@ -84,10 +83,10 @@ $ echo "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9v
                                           <div class="col-md-6">
                                               <h5>Using Bash</h5>
                                               <pre><code class="language-bash">
-curl -X POST -H "Content-Type: application/json" \
+curl -X POST \
    -H "X-SOCA-TOKEN: {{ user_token }}" \
    -H "X-SOCA-USER: {{ user }}" \
-   -F '{"payload":"IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="'}  \
+   -F payload="IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="  \
    {{ master_host }}api/scheduler/job</code></pre>
                                           </div>
                                       <div class="col-md-6">
@@ -96,13 +95,12 @@ curl -X POST -H "Content-Type: application/json" \
 import requests
 import json
 hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
-        "X-SOCA-USER": "{{ user }}",
-        "Content-Type": "multipart/form-data"}
+        "X-SOCA-USER": "{{ user }}"}
 api_endpoint="{{ master_host }}api/scheduler/job"
-data = {"payload": "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="}
+payload = {"payload": "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="}
 req = requests.post(api_endpoint,
                    headers=hdrs,
-                   data=json.dumps(data))
+                   data=payload)
 print(req.status_code)
 print(req.json())
                                   </code></pre>
@@ -128,11 +126,10 @@ curl -X GET  \
 import requests
 import json
 hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
-        "X-SOCA-USER": "{{ user }}",
-        "Content-Type": "multipart/form-data"}
+        "X-SOCA-USER": "{{ user }}",}
 api_endpoint="{{ master_host }}api/scheduler/job"
 data = {"job_id": "%YOUR_JOB_ID%"}
-req = requests.get(api_endpoint, headers=hdrs, params=json.dumps(data))
+req = requests.get(api_endpoint, headers=hdrs, params=data)
 print(req.status_code)
 print(req.json())
                                   </code></pre>
@@ -158,11 +155,10 @@ curl -X DELETE  \
 import requests
 import json
 hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
-        "X-SOCA-USER": "{{ user }}",
-        "Content-Type": "multipart/form-data"}
+        "X-SOCA-USER": "{{ user }}"}
 api_endpoint="{{ master_host }}api/scheduler/job"
 data = {"job_id": "%YOUR_JOB_ID%"}
-req = requests.delete(api_endpoint, headers=hdrs, params=json.dumps(data))
+req = requests.delete(api_endpoint, headers=hdrs, params=data)
 print(req.status_code)
 print(req.json())
                                   </code></pre>

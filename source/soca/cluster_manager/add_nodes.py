@@ -36,7 +36,7 @@ def can_launch_capacity(instance_type, count, image_id,subnet_id):
                 return True
             else:
                 print('Dry Run Failed, capacity ' + instance + ' can not be added: ' + str(e), 'error')
-                return False
+                return str(instance + ' can not be added: ' + str(e))
 
 
 def check_config(**kwargs):
@@ -557,6 +557,7 @@ def main(**kwargs):
 
         else:
             return return_message('Dry Run failed: ' + str(can_launch))
+
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
