@@ -85,6 +85,26 @@
                                                {% if job_data.Variable_List.PBS_O_WORKDIR %}
                                                    <a target="_blank" href="/my_files?path={{ job_data.Variable_List.PBS_O_WORKDIR  }}"><button type="button" class="btn btn-warning">Job Directory</button></a>
                                                {% endif %}
+
+                                               {% if job_data.Resource_List.error_message %}
+                                                   <button type="button" class="btn btn-info" data-toggle="modal" data-target="#error{{ job_id.split(".")[0] }}"><i class="fas fa-exclamation-triangle"></i> JOB ERROR DETECTED</button>
+                                                   <!-- Modal error -->
+                                                  <div class="modal fade" id="error{{ job_id.split(".")[0] }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                      <div class="modal-dialog" role="document">
+                                                          <div class="modal-content">
+                                                              <div class="modal-body">
+                                                                  <div class="alert alert-danger">
+                                                                      <strong>Attention: Your job cannot run</strong>
+                                                                  </div>
+                                                                  {{ job_data.Resource_List.error_message | replace("_"," ") }}
+                                                                  <hr>
+                                                                  Your job will stay in the queue until the issue is fixed.
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                                    <!-- End -->
+                                               {% endif %}
                                            </th>
                                            </tr>
                                           <!-- Modal Delete -->
@@ -97,7 +117,7 @@
                                                               <span aria-hidden="true">&times;</span>
                                                           </button>
                                                       </div>
-                                                      <div class="modal-body">
+                                                      <div class="modal-body container">
                                                           <div class="alert alert-danger">
                                                               <strong>Attention</strong> <br>
                                                               You are about to remove this job from the queue. Any logs/output created by this job may be lost if not copied to a persistent storage.

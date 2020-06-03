@@ -88,7 +88,7 @@ def create():
 
     session_uuid = str(uuid.uuid4())
     session_password = ''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(80))
-    command_dcv_create_session = "create-session --user " + session["user"] + " --owner " + session["user"] + " " + session_uuid
+    command_dcv_create_session = "create-session --owner " + session["user"] + " " + session_uuid
 
     # sanitize session_name, limit to 255 chars
     if parameters["session_name"] is False:
@@ -143,7 +143,7 @@ while true
             then
                 exit 0
         fi
-        sleep 3600
+        sleep 600
 done
     '''
 

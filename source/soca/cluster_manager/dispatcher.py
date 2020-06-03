@@ -13,7 +13,7 @@ import re
 import subprocess
 import sys
 from datetime import timedelta
-
+import socket
 import boto3
 import pytz
 import yaml
@@ -35,6 +35,18 @@ def run_command(cmd, type):
         return command
     except subprocess.CalledProcessError as e:
         return ""
+
+
+def get_lock(process_name):
+    get_lock._lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    pid = os.getpid()
+    try:
+        get_lock._lock_socket.bind('\0' + process_name)
+        #print('Obtained the lock {} - PID {}'.format(process_name, pid))
+        return True
+    except socket.error:
+        logpush("lock {} exists. Exiting PID {}".format(process_name, pid), "info")
+        return str(pid)
 
 
 def fair_share_job_id_order(sorted_queued_job, user_fair_share):
@@ -252,6 +264,11 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--type', nargs='?', required=True, help="queue type - ex: graphics, compute .. Open YML file for more info")
     arg = parser.parse_args()
     queue_type = (arg.type)
+    # Try to get a lock; if another dispatcher for the same queue is running, this instance will exit
+    process_lock = get_lock("{} {}".format(__file__, queue_type))
+    if process_lock is not True:
+        print("Dispatcher.py for this queue is already is already running with process id " + process_lock + ". Stop it first")
+        sys.exit(1)
 
     if not "SOCA_CONFIGURATION" in os.environ:
         print("SOCA_CONFIGURATION not found, make sure to source /etc/environment first")
@@ -431,6 +448,8 @@ if __name__ == "__main__":
                                     license_requirement[res] = int(job_required_resource[res])
                                 else:
                                     logpush('Ignoring job_' + job_id + ' as we we dont have enough: ' + str(res))
+                                    sanitized_license_error_message = re.sub(r'\W+', '_', "Not enough " + str(res) +". Requested " + str(job_required_resource[res]) + ", available " + str(license_available[res]))
+                                    run_command([system_cmds['qalter'], "-l", "error_message=" + sanitized_license_error_message, str(job_id)], "call")
                                     can_run = False
                         except:
                             logpush('One required PBS resource has not been specified on the JSON input for ' + job_id + ': ' + str(res) +' . Please update custom_flexlm_resources on ' +str(arg.config))
@@ -494,12 +513,16 @@ if __name__ == "__main__":
 
                                 run_command([system_cmds['qalter'], "-l", "select="+select, str(job_id)], "call")
                                 run_command([system_cmds['qalter'], "-l", "stack_id=" + stack_id, str(job_id)], "call")
+                                # flush error if any
+                                run_command([system_cmds['qalter'], "-l", "error_message=", str(job_id)], "call")
 
                                 for resource, count_to_substract in license_requirement.items():
                                     license_available[resource] = (license_available[resource] - count_to_substract)
                                     logpush('License available: ' + str(license_available[resource]))
 
                             else:
+                                sanitized_error = re.sub(r'\W+', '_',  create_new_asg["message"])
+                                run_command([system_cmds['qalter'], "-l", "error_message=" + sanitized_error, str(job_id)], "call")
                                 logpush('Error while trying to create ASG: ' + str(create_new_asg))
 
 

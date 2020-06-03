@@ -149,6 +149,10 @@ def get_scheduler_all_nodes():
                     if str(data['state']) == 'free' and data['pcpus'] == data['resources_available']['ncpus']:
                         if 'last_used_time' in data.keys():
                             pbs_hosts_free[hostname] = data['last_used_time']
+                        else:
+                            # Automatically remove capacity after 1 hour if not job ran on it
+                            pbs_hosts_free[hostname] = data['last_state_change_time'] + 3600
+
                     if str(data['state']) == 'offline':
                         pbs_hosts_offline.append(hostname)
                 pbs_hosts.append(hostname)
@@ -318,8 +322,7 @@ if __name__ == "__main__":
         if int(stack_data['terminate_when_idle']) > 0:
             for host in stack_data['instances']:
                 if host in pbs_nodes_free.keys():
-                    print('Found idle host: ' + str(host) + ' now: ' + str(int(datetime.datetime.now().timestamp())) + ' last_used_time: ' +
-                            str(pbs_nodes_free[host]) + ' terminate_when_idle: ' + str(int(stack_data['terminate_when_idle']) * 60))
+                    print('Found idle host: ' + str(host) + ' now: ' + str(int(datetime.datetime.now().timestamp())) + ' last_used_time: ' +str(pbs_nodes_free[host]) + ' terminate_when_idle: ' + str(int(stack_data['terminate_when_idle']) * 60))
                     if datetime.datetime.now().timestamp() > pbs_nodes_free[host] + int(stack_data['terminate_when_idle']) * 60:
                         compute_nodes_to_set_offline[host]=stack_data['terminate_when_idle']
                         # If the ASG/SpotFleet has a single host, then delete the cloudformation stack

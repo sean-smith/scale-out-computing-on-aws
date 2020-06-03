@@ -123,6 +123,7 @@ spot_price type=string
 spot_allocation_count type=string
 spot_allocation_strategy type=string
 efa_support type=string
+error_message type=text
 ht_support type=string
 keep_ebs type=string
 base_os type=string

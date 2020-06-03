@@ -4,23 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - TBD
+## [2.5.0] - TBD
 ### Added
-- Support for MetricBeat
-- Added REST API to interact with SOCA
+- Support for Elastic MetricBeat
+- Added HTTP REST API to interact with SOCA
 - Revamped Web Interface
   - Added filesystem explorer
   - Users can upload files/folders via drag & drop interface
+  - Users can edit files directly on SOCA using a cloud text editor
   - Users can now manage membership of their own LDAP group via web
-  - Admins can manage LDAP via web 
-  - Admins can creates application profiles for web based job submission
+  - Users can now understand why they job is not started  (eg: instance issue, misconfiguration, AWS limit, license limit) directly on the UI
+  - Users can kill their job via the web
+  - Admins can manage SOCA LDAP via web (create group, user, manage ownership and permissions)
+  - Admins can creates application profiles and let user submit job via web interface
+  - Ability to trigger Linux command via HTML form
 
 
 ### Changed
-- Updated Troposphere (2.6.1)
+- Updated Troposphere to 2.6.1
+- Updated EFA to 1.8.4
+- Updated Nice DCV to 2020.0-8428
 - You can specify a name for your DCV sessions 
 - You can now specify custom AMI, base OS or storage options for your DCV sessions
 - Project assigned to DCV jobs has been renamed to "remotedesktop" (previously "gui")
+- Dispatcher script is now running every minute
+
 
 ## [2.0.1] - 2020-04-20
 ### Added
