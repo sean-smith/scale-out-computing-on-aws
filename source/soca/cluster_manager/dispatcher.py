@@ -214,8 +214,8 @@ def clean_cloudformation_stack():
     # stakc will stay forever. Instead we need to describe all stacks and delete them if they are assigned to a job that no longer exist
 
 
-def check_cloudformation_status(stack_id, job_id, job_select_resource):
-    # This function is only called if we detect a queued job with an already assigned Compute Unit
+def capacity_being_provisioned(stack_id, job_id, job_select_resource):
+    # This function is only called if we detect a queued job with an already assigned Compute Node
     try:
         logpush('Checking existing cloudformation ' +str(stack_id))
         check_stack_status = cloudformation.describe_stacks(StackName=stack_id)
@@ -223,18 +223,19 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
             logpush(job_id + ' is queued but CI has been specified and CloudFormation has been created.')
             stack_creation_time = check_stack_status['Stacks'][0]['CreationTime']
             now = pytz.utc.localize(datetime.datetime.utcnow())
-            if now > (stack_creation_time + timedelta(hours=1)):
-                logpush(job_id + ' Stack has been created for more than 1 hour. Because job has not started by then, rollback compute_node value')
+            if now > (stack_creation_time + timedelta(minutes=30)):
+                logpush(job_id + ' Stack has been created for more than 30 minutes. Because job has not started by then, rollback compute_node value')
                 new_job_select = job_select_resource.split(':compute_node')[0] + ':compute_node=tbd'
                 qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "-l", "select=" + new_job_select, str(job_id)]
                 run_command(qalter_cmd, "call")
                 cloudformation.delete_stack(StackName=stack_id)
             else:
-                logpush(job_id + ' Stack has been created for less than 1 hour. Let wait a bit before killing the CI and reset the compute_node value')
+                logpush(job_id + ' Stack has been created for less than 30 minutes. Let wait a bit before killing the CI and reset the compute_node value')
+                return True
 
         elif check_stack_status['Stacks'][0]['StackStatus'] == 'CREATE_IN_PROGRESS':
             logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is not completed yet so we exit the script.')
-            return False
+            return True
 
         elif check_stack_status['Stacks'][0]['StackStatus'] in ['CREATE_FAILED', 'ROLLBACK_COMPLETE']:
             logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is ' + str(check_stack_status['Stacks'][0]['StackStatus']) +'.  Because job has not started by then, rollback compute_node value and delete stack')
@@ -242,7 +243,6 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
             qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "-l", "select=" + new_job_select, str(job_id)]
             run_command(qalter_cmd, "call")
             cloudformation.delete_stack(StackName=stack_id)
-
         else:
             pass
 
@@ -254,7 +254,7 @@ def check_cloudformation_status(stack_id, job_id, job_select_resource):
         qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "select=" + new_job_select, str(job_id)]
         run_command(qalter_cmd, "call")
 
-    return True
+    return False
 
 # END EC2 FUNCTIONS
 
@@ -264,18 +264,18 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--type', nargs='?', required=True, help="queue type - ex: graphics, compute .. Open YML file for more info")
     arg = parser.parse_args()
     queue_type = (arg.type)
+
     # Try to get a lock; if another dispatcher for the same queue is running, this instance will exit
     process_lock = get_lock("{} {}".format(__file__, queue_type))
     if process_lock is not True:
         print("Dispatcher.py for this queue is already is already running with process id " + process_lock + ". Stop it first")
         sys.exit(1)
 
-    if not "SOCA_CONFIGURATION" in os.environ:
+    if "SOCA_CONFIGURATION" not in os.environ:
         print("SOCA_CONFIGURATION not found, make sure to source /etc/environment first")
         sys.exit(1)
 
     aligo_configuration = configuration.get_aligo_configuration()
-
 
     # Begin Pre-requisite
     system_cmds = {
@@ -291,11 +291,18 @@ if __name__ == "__main__":
     ses = boto3.client('ses')
     ec2 = boto3.client('ec2')
     cloudformation = boto3.client('cloudformation')
+
+    # Variables
     queue_parameter_values = {}
+    queue_mode = 'fairshare'
     queues = False
     queues_only_parameters = ["allowed_users", "excluded_users", "excluded_instance_types", "allowed_instance_types", "restricted_parameters"]
+    asg_name = None
+    fair_share_running_job_malus = -60
+    fair_share_start_score = 100
+
     # Retrieve Default Queue parameters
-    stream_resource_mapping = open('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/queue_mapping.yml', "r")
+    stream_resource_mapping = open('/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/queue_mapping.yml', "r")
     docs = yaml.load_all(stream_resource_mapping, Loader=yaml.FullLoader)
     for doc in docs:
         for items in doc.values():
@@ -311,7 +318,7 @@ if __name__ == "__main__":
         stream_resource_mapping.close()
 
     # Generate FlexLM mapping
-    stream_flexlm_mapping = open('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/licenses_mapping.yml', "r")
+    stream_flexlm_mapping = open('/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/settings/licenses_mapping.yml', "r")
     docs = yaml.load_all(stream_flexlm_mapping, Loader=yaml.FullLoader)
     custom_flexlm_resources = {}
     for doc in docs:
@@ -320,18 +327,14 @@ if __name__ == "__main__":
                 custom_flexlm_resources[license_name] = license_output
     stream_flexlm_mapping.close()
 
-
-    # General Variables
-    asg_name = None
-    fair_share_running_job_malus = -60
-    fair_share_start_score = 100
     # End Pre-requisite
+
     if queues is False:
         print('No queues  detected either on the queue_mapping.yml. Exiting ...')
         exit(1)
 
     for queue_name in queues:
-        log_file = logging.FileHandler('/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/logs/' + queue_name + '.log','a')
+        log_file = logging.FileHandler('/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/logs/' + queue_name + '.log','a')
         formatter = logging.Formatter('[%(asctime)s] [%(lineno)d] [%(levelname)s] [%(message)s]')
         log_file.setFormatter(formatter)
         logger = logging.getLogger('tcpserver')
@@ -342,21 +345,26 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
         skip_queue = False
         get_jobs = get_jobs_infos(queue_name)
+
         # Check if there is any queued job with valid compute unit but has not started within 1 hour
+        # If yes, all other jobs will be paused unless they don't rely on licenses
         for job_id, job_data in get_jobs.items():
             if job_data['get_job_state'] == 'Q':
                 check_compute_unit = re.search(r'compute_node=(\w+)', job_data['get_job_resource_list']['select'])
                 if check_compute_unit:
                     job_data['get_job_resource_list']['compute_node'] = check_compute_unit.group(1)
                     try:
-                        if check_cloudformation_status(job_data['get_job_resource_list']['stack_id'], job_id, job_data['get_job_resource_list']['select']) is False:
-                            logpush('Skipping ' + str(job_id))
-                            # Because applications are license dependant, we want to make sure we won't launch any new jobs until previous launched jobs are running and using the license
-                            #skip_queue = True
-                    except KeyError:
-                        # in certain very rare case, stack_id is not present (after a AWS outage causing some API to fail), in this case we just ignore
-                        pass
+                        if capacity_being_provisioned(job_data['get_job_resource_list']['stack_id'], job_id, job_data['get_job_resource_list']['select']) is True:
+                            logpush('Skipping ' + str(job_id) + ' as this job already has a valid compute node')
+                            resource_name = job_data['get_job_resource_list'].keys()
+                            if fnmatch.filter(resource_name, '*_lic*'):
+                                # Because applications are license dependant, we want to make sure we won't launch any new jobs until previous launched jobs are running and using the license
+                                logpush("Job is being provisioned and has license requirement. We ignore all others job in queue to prevent license double usage due to race condition. Provisioning for " + queue_name + " will continue as soon as this job start running")
+                                skip_queue = True
 
+                    except KeyError:
+                        # in certain very rare case, stack_id is not present, in this case we just ignore as the stack will automatically be generated
+                        pass
                 else:
                     get_jobs[job_id]['get_job_resource_list']['compute_node'] = 'tbd'
 
@@ -383,11 +391,10 @@ if __name__ == "__main__":
 
             license_available = check_available_licenses(custom_flexlm_resources, licenses_required)
             logpush('License Available: ' + str(license_available))
-
             logpush('User Fair Share: ' + str(user_fair_share))
             job_id_order_based_on_fairshare = fair_share_job_id_order(sorted(queued_jobs, key=lambda k: k['get_job_order_in_queue']), user_fair_share)
             logpush('Job_id_order_based_on_fairshare: ' + str(job_id_order_based_on_fairshare))
-            queue_mode = 'fairshare'
+
             if queue_mode == 'fairshare':
                 job_list = job_id_order_based_on_fairshare
             elif queue_mode == 'fifo':

@@ -45,7 +45,9 @@ class Groups(Resource):
                         if user:
                             members.append(user.group(1))
                         else:
-                            return {"success": False, "message": "Unable to retrieve memberUid for this group"}, 500
+                            # handle case where lDAP ownership was done outside of SOCA
+                            members.append(member.decode("utf-8"))
+                            # return {"success": False, "message": "Unable to retrieve memberUid for this group: " + str(group_base) + "members: "+str(group[1]["memberUid"])}, 500
 
                 all_ldap_groups[group_name] = {"group_dn": group_base, "members": members}
 

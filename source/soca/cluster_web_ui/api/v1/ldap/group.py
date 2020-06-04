@@ -62,7 +62,8 @@ class Group(Resource):
                         if user:
                             members.append(user.group(1))
                         else:
-                            return {"success": False, "message": "Unable to retrieve memberUid for this group"}, 500
+                            members.append(member.decode("utf-8"))
+                            # return {"success": False, "message": "Unable to retrieve memberUid for this group: " + str(group_base) + "members: "+str(group[1]["memberUid"])}, 500
 
             return {"success": True, "message": {"group_dn": group_base, "members": members}}
 

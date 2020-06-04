@@ -18,7 +18,7 @@ def all_errors(error_name, trace=False):
         "INVALID_CREDENTIALS": ["Invalid user credentials", 401],
         "LDAP_SERVER_DOWN": ["LDAP server seems to be down or unreachable", 500],
         "X-SOCA-USER_MISSING": ["Unable to retrieve request owner. X-SOCA-USER must be set", 500],
-        "COULD_NOT_CREATE_GROUP": ["Unable to create LDAP group", 500],
+        "COULD_NOT_CREATE_GROUP": ["Unable to create LDAP group. " + str(trace), 500],
         "UNICODE_ERROR": ["Unicode error. " +str(trace), 500]
     }
 
