@@ -358,13 +358,16 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                 fsx_lustre.StorageCapacity = params["FSxLustreConfiguration"]["capacity"]
                 fsx_lustre.SecurityGroupIds = [params["SecurityGroupId"]]
                 fsx_lustre.SubnetIds = params["SubnetId"]
+                fsx_lustre_configuration = LustreConfiguration()
+                fsx_lustre_configuration.DeploymentType = params["FSxLustreConfiguration"]["deployment_type"].upper()
+                if params["FSxLustreConfiguration"]["deployment_type"].upper() == "PERSISTENT_1":
+                    fsx_lustre_configuration.PerUnitStorageThroughput = params["FSxLustreConfiguration"]["per_unit_throughput"]
 
                 if params["FSxLustreConfiguration"]["s3_backend"] is not False:
-                    fsx_lustre_configuration = LustreConfiguration()
                     fsx_lustre_configuration.ImportPath = params["FSxLustreConfiguration"]["import_path"] if params["FSxLustreConfiguration"]["import_path"] is not False else params["FSxLustreConfiguration"]["s3_backend"]
                     fsx_lustre_configuration.ExportPath = params["FSxLustreConfiguration"]["import_path"] if params["FSxLustreConfiguration"]["import_path"] is not False else params["FSxLustreConfiguration"]["s3_backend"] + "/" + params["ClusterId"] + "-fsxoutput/job-" +  params["JobId"] + "/"
-                    fsx_lustre.LustreConfiguration = fsx_lustre_configuration
 
+                fsx_lustre.LustreConfiguration = fsx_lustre_configuration
                 fsx_lustre.Tags = base_Tags(
                     # False disable PropagateAtLaunch
                     Name=str(params["ClusterId"] + "-compute-job-" + params["JobId"]),

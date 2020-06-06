@@ -15,7 +15,7 @@ Below is a list of parameters you can specify when you request your simulation t
 #### base_os
 
 - Description: Reference to the base OS of the AMI you are using
-- Allowed Values: `amazonlinux2` `centos7` `rhel7`
+- Allowed Valuess: `amazonlinux2` `centos7` `rhel7`
 - Default: If not specified, value default to the OS of the install AMI
 - Examples: 
     - `-l base_os=centos7`: Instances provisioned will be deployed against CentOS manifest
@@ -25,7 +25,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Disabled by default*
 
 - Description: Enable support for hyper-threading
-- Allowed Value: `yes` `true` `no` `false` (case insensitive) 
+- Allowed Values: `yes` `true` `no` `false` (case insensitive) 
 - Examples:
     - `-l ht_support=True`: Enable hyper-threading for all instances
     - `-l ht_support=False`: Disable hyper-threading for all instances (default)
@@ -61,7 +61,7 @@ Below is a list of parameters you can specify when you request your simulation t
 #### spot_allocation_count
 
 - Description: Specify the number of SPOT instances to launch when provisioning both OD (On Demand) and SPOT instances
-- Allowed Value: Integer
+- Allowed Values: Integer
 - Examples:
     - `-l nodes=10 -l spot_price=auto -l spot_allocation_count=8`: Provision 10 instances, 2 OD and 8 SPOT with max spot price capped to OD price
     - `-l nodes=10 -l spot_price=1.4 -l spot_allocation_count=5`: Provision 10 instances, 5 OD and 5 SPOT with max spot price set to $1.4 
@@ -75,7 +75,7 @@ Below is a list of parameters you can specify when you request your simulation t
 #### spot_allocation_strategy
 
 - Description: Choose allocation strategy when using multiple SPOT instances type
-- Allowed Values: `capacity-optimized` or `lowest-price` or `diversified` (only for SpotFleet deployments)
+- Allowed Valuess: `capacity-optimized` or `lowest-price` or `diversified` (only for SpotFleet deployments)
 - Default Value: `lowest-price`
 - Examples:
     - `-l spot_allocation_strategy=capacity-optimized`: AWS will provision compute nodes based on capacity availabilities
@@ -84,7 +84,7 @@ Below is a list of parameters you can specify when you request your simulation t
 #### spot_price
 
 - Description: Enable support for SPOT instances
-- Allowed Value: any float value or `auto`
+- Allowed Values: any float value or `auto`
 - Examples:
     - `-l spot_price=auto`: Max price will be capped to the On-Demand price
     - `-l spot_price=1.4`: Max price you are willing to pay for this instance will be $1.4 an hour.
@@ -115,7 +115,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Disabled by default*
 
 - Description: Retain or not the EBS disks once the simulation is complete
-- Allowed Value: `yes` `true` `false` `no` (case insensitive)
+- Allowed Values: `yes` `true` `false` `no` (case insensitive)
 - Default Value: `False`
 - Example: 
     - `-l keep_ebs=False`: (Default) All EBS disks associated to the job will be deleted
@@ -131,7 +131,7 @@ Below is a list of parameters you can specify when you request your simulation t
 #### scratch_size
 
 - Description: Define the size of the local root volume
-- Unity: GB
+- Unit: GB
 - Example: `-l scratch_size=500`: Provision a 500 GB SSD disk for `/scratch`
 
 !!!info
@@ -147,7 +147,7 @@ Below is a list of parameters you can specify when you request your simulation t
 #### scratch_iops
 
 - Description: Define the number of provisioned IOPS to allocate for your `/scratch` device
-- Unity: IOPS
+- Unit: IOPS
 - Example: `-l scratch_iops=3000`: Your EBS disks provisioned for `/scratch` will have 3000 dedicated IOPS
 
 !!!info
@@ -196,14 +196,42 @@ Below is a list of parameters you can specify when you request your simulation t
 
 !!!info    
     If `fsx_lustre_size` is not specified, default to 1200 GB (smallest size supported)
-    
+
+!!!warning "Pre-Requisite"
+    This parameter is ignored unless you have specified `fsx_lustre=True`
+
+#### fsx_lustre_deployment_type
+
+- Description: Choose what type of FSx for Lustre you want to deploy
+- Allowed Valuess: `SCRATCH_1` `SCRATCH_2` `PERSISTENT_1` (case insensitive)
+- Default Value: `SCRATCH_1`
+- Example: `-l fsx_lustre_deployment_type=scratch_2`: Provision a FSx for Lustre with SCRATCH_2 type
+
+!!!info    
+    If `fsx_lustre_size` is not specified, default to 1200 GB (smallest size supported)
+
+!!!warning "Pre-Requisite"
+    This parameter is ignored unless you have specified `fsx_lustre=True`
+
+#### fsx_lustre_per_unit_throughput 
+
+- Description: Select the baseline disk throughput available for that file system 
+- Allowed Values: `50` `100` `200`
+- Unit: MB/s
+- Example: `-l fsx_lustre_per_unit_throughput=250`: 
+
+!!!info    
+    Per Unit Throughput is only avaible when using `PERSISTENT_1` FSx for Lustre
+ 
+!!!warning "Pre-Requisite"
+    This parameter is ignored unless you have specified `fsx_lustre=True`   
 
 ## Network
 
 #### efa_support
 
 - Description: Enable EFA support
-- Allowed Value: yes, true, True 
+- Allowed Values: yes, true, True 
 - Example: `-l efa_support=True`: Deploy an EFA device on all the nodes
 
 !!!info    
@@ -215,7 +243,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Disabled by default*
 
 - Description: Enable support for hyper-threading
-- Allowed Value: `yes` `true` (case insensitive) 
+- Allowed Values: `yes` `true` (case insensitive) 
 - Example: `-l ht_support=True`: Enable hyper-threading for all instances
 
 #### placement_group
@@ -223,7 +251,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Enabled by default*
 
 - Description: Disable placement group
-- Allowed Value: `yes` `true` (case insensitive) 
+- Allowed Values: `yes` `true` (case insensitive) 
 - Example: `-l placement_group=True`: Instances will not use placement groups
 
 !!!info
@@ -237,7 +265,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Default to True*
 
 - Description: Send host level metrics to your ElasticSearch backend
-- Allowed Value: `yes` `no` `true` `false` (case insensitive) 
+- Allowed Values: `yes` `no` `true` `false` (case insensitive) 
 - Example: `-l system_metrics=False`
 
 #### anonymous_metrics
@@ -245,7 +273,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Default to the value specified during SOCA installation*
 
 - Description: [Send anonymous operational metrics to AWS](https://docs.aws.amazon.com/solutions/latest/scale-out-computing-on-aws/appendix-d.html)
-- Allowed Value: `yes` `true` (case insensitive) 
+- Allowed Values: `yes` `true` (case insensitive) 
 - Example: `-l anonymous_metrics=True`
 
 

@@ -32,6 +32,16 @@ You will see a success message if the user is deleted correctly
     Users without "Sudo" are not authorized to manage LDAP accounts.
     ![](../imgs/user-4.png)
 
+### Reset password for a given user
+
+Users can change their own password via the web ui. However, in case an admin need to reset 
+
+![](../imgs/user-9.png)
+
+### Manage SUDO (admin permission)
+
+![](../imgs/user-8.png)
+
 ## Using command-line interface
 
 If you need to manage the permission programatically, access the scheduler host and execute `/apps/soca/<CLUSTER_ID>/cluster_manager/ldap_manager.py`

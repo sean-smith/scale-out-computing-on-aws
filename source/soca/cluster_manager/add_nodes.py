@@ -5,9 +5,7 @@ import random
 import re
 import sys
 import uuid
-
 import boto3
-
 sys.path.append(os.path.dirname(__file__))
 import configuration
 from botocore import exceptions
@@ -52,7 +50,7 @@ def check_config(**kwargs):
     if 'terminate_when_idle' not in kwargs.keys():
         kwargs['terminate_when_idle'] = 0
 
-    ## Must convert true,True into bool() and false/False
+    # Must convert true,True into bool() and false/False
     if kwargs['job_id'] is None and kwargs['keep_forever'] is False and int(kwargs['terminate_when_idle']) == 0:
         error = return_message('--job_id, --keep_forever True, or --terminate_when_idle N>0 must be specified')
 
@@ -63,6 +61,10 @@ def check_config(**kwargs):
     # Ensure anonymous metric is either True or False.
     if kwargs['anonymous_metrics'] not in [True, False]:
         kwargs['anonymous_metrics'] = True
+
+    # Default System metrics to True unless explicitly set to False
+    if kwargs['system_metrics'] is not False:
+        kwargs['system_metrics'] = True
 
     if not isinstance(int(kwargs['desired_capacity']), int):
         return_message('Desired Capacity must be an int')
@@ -78,22 +80,38 @@ def check_config(**kwargs):
             error = return_message('Tags must be a valid dictionary')
 
     # FSx Management
+
     kwargs['fsx_lustre_configuration'] = {
         'fsx_lustre': kwargs['fsx_lustre'],
         's3_backend': False,
         'existing_fsx': False,
         'import_path': False,
         'export_path': False,
-        'deployment_type': 'SCRATCH_1',  # limited to scratch1 for now
-        'per_unit_throughput': 200,  # will be used in future release
+        'deployment_type':  kwargs['fsx_lustre_deployment_type'],
+        'per_unit_throughput': False,
         'capacity': 1200
     }
 
-    # Default System metrics to True unless explicitely set to False
-    if kwargs['system_metrics'] is not False:
-        kwargs['system_metrics'] = True
-
     if kwargs['fsx_lustre'] is not False:
+        fsx_deployment_type_allowed = ["scratch_1", "scratch_2", "persistent_1"]
+        fsx_lustre_per_unit_throughput_allowed = [50, 100, 200]
+
+        # Default to SCRATCH_1 if incorrect value is specified
+        if kwargs["fsx_lustre_deployment_type"].lower() not in fsx_deployment_type_allowed:
+                return_message('FSx Deployment Type must be: ' + ",".join(fsx_deployment_type_allowed))
+        else:
+            kwargs["fsx_lustre_configuration"]["fsx_lustre_deployment_type"] = kwargs["fsx_lustre_deployment_type"].upper()
+
+        # If deployment_type is PERSISTENT, configure Per unit throughput and default to 200mb/s
+        if kwargs["fsx_lustre_configuration"]["fsx_lustre_deployment_type"].lower() == "persistent_1":
+            if not isinstance(int(kwargs['fsx_lustre_per_unit_throughput']), int):
+                return_message('FSx Per Unit Throughput must be an int')
+            else:
+                if kwargs["fsx_lustre_per_unit_throughput"] not in fsx_lustre_per_unit_throughput_allowed:
+                    return_message('FSx Deployment Type must be: ' + ",".join(fsx_lustre_per_unit_throughput_allowed))
+                else:
+                    kwargs["fsx_lustre_configuration"]["per_unit_throughput"] = int(kwargs["fsx_lustre_per_unit_throughput"])
+
         if kwargs['fsx_lustre'] is not True:
             # when fsx_lustre is set to True, only create a FSx without S3 backend
             if kwargs['fsx_lustre'].startswith("fs-"):
@@ -145,10 +163,18 @@ def check_config(**kwargs):
         else:
             kwargs['subnet_id'] = [random.choice(soca_private_subnets)]
     else:
-        kwargs['subnet_id'] = kwargs['subnet_id'].split('+')
-        for subnet in kwargs['subnet_id']:
-            if subnet not in soca_private_subnets:
-                error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
+        if isinstance(kwargs['subnet_id'], int):
+            if kwargs['subnet_id'] == 2:
+                kwargs['subnet_id'] = random.sample(soca_private_subnets, 2)
+            elif kwargs['subnet_id'] == 3:
+                kwargs['subnet_id'] = random.sample(soca_private_subnets, 3)
+            else:
+                error = return_message('Approved value for subnet_id are either the actual subnet ID or 2 or 3')
+        else:
+            kwargs['subnet_id'] = kwargs['subnet_id'].split('+')
+            for subnet in kwargs['subnet_id']:
+                if subnet not in soca_private_subnets:
+                    error = return_message('Incorrect subnet_id. Must be one of ' + ','.join(soca_private_subnets))
 
     # Handle placement group logic
     if 'placement_group' not in kwargs.keys():
@@ -289,6 +315,8 @@ def main(**kwargs):
                                    'efa_support': False,
                                    'fsx_lustre': False,
                                    'fsx_lustre_size': False,
+                                   'fsx_lustre_deployment_type': "SCRATCH_1",
+                                   'fsx_lustre_per_unit_throughput': 200,
                                    'ht_support': False,
                                    'keep_ebs': False,
                                    'root_size': 10,
@@ -307,6 +335,7 @@ def main(**kwargs):
                 kwargs[k] = v
 
         required_job_parameters = []
+
         # Validate Job parameters
         try:
             params = check_config(**kwargs)
@@ -315,7 +344,7 @@ def main(**kwargs):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             return return_message('Unable to verify parameters ' + str(e) + ': error:' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno) + ' ' + str(kwargs))
 
-        # If error is detected, return error message to be logged on the queue.log files
+        # If error is detected, return error message
         if 'message' in params.keys():
             return params
 
@@ -583,6 +612,8 @@ if __name__ == "__main__":
     parser.add_argument('--terminate_when_idle', default=0, nargs='?', help="If instances will be terminated when idle for N minutes")
     parser.add_argument('--fsx_lustre', default=False, help="Mount existing FSx by providing the DNS")
     parser.add_argument('--fsx_lustre_size', default=False, help="Specify size of your FSx")
+    parser.add_argument('--fsx_lustre_per_unit_throughput', default=200, help="Storage baseline if FSX type is Persistent")
+    parser.add_argument('--fsx_lustre_deployment_type', default="SCRATCH_1", help="Type of your FSx for Lustre")
     parser.add_argument('--instance_ami', required=True, nargs='?', help="AMI to use")
     parser.add_argument('--job_id', nargs='?', help="Job ID for which the capacity is being provisioned")
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")

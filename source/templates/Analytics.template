@@ -25,8 +25,10 @@ Resources:
             reason: "Domain Name is required if we want to restrict AccessPolicies to this resource only"
     Type: AWS::Elasticsearch::Domain
     Properties:
-      ElasticsearchVersion: 7.1
+      ElasticsearchVersion: 7.4
       DomainName: !Sub ${ClusterId}
+      NodeToNodeEncryptionOptions:
+         Enabled: True
       EncryptionAtRestOptions:
          Enabled: True
       EBSOptions:
@@ -34,8 +36,9 @@ Resources:
         VolumeType: gp2
         EBSEnabled: true
       ElasticsearchClusterConfig:
-        InstanceCount: 1
+        InstanceCount: 2
         InstanceType: m5.large.elasticsearch
+        ZoneAwarenessEnabled: True
       SnapshotOptions:
         AutomatedSnapshotStartHour: '0'
       AccessPolicies:

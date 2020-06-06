@@ -24,11 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Troposphere to 2.6.1
 - Updated EFA to 1.8.4
 - Updated Nice DCV to 2020.0-8428
+- Updated ElasticSearch to 7.4
 - You can specify a name for your DCV sessions 
 - You can now specify custom AMI, base OS or storage options for your DCV sessions
 - Project assigned to DCV jobs has been renamed to "remotedesktop" (previously "gui")
 - Dispatcher script is now running every minute
-
+- SOCA now deploys 2 instances for ElasticSearch for high availability
+- Users can now specify DEPLOYMENT_TYPE for their FSX for Lustre filesystems
+- Users can specify PerUnitThroughput when FSx for Lustre deployment type is set to PERSISTENT
 
 ## [2.0.1] - 2020-04-20
 ### Added

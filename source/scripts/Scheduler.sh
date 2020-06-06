@@ -129,6 +129,8 @@ keep_ebs type=string
 base_os type=string
 fsx_lustre type=string
 fsx_lustre_size type=string
+fsx_lustre_deployment_type type=string
+fsx_lustre_per_unit_throughput type=string
 EOF
 
 systemctl enable pbs
