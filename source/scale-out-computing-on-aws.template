@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: (SO0072) - Scale-Out Computing on AWS. Template version 2.0.1
+Description: (SO0072) - Scale-Out Computing on AWS. Template version 2.5.0
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -121,7 +121,7 @@ Mappings:
   Info:
     Data:
       ClusterIdPrefix: soca
-      Version: 2.0.1
+      Version: 2.5.0
     User:
       centos7: centos
       amazonlinux2: ec2-user
@@ -363,6 +363,7 @@ Resources:
         ClusterId: !Join [ "-", [ !FindInMap [ Info, Data, ClusterIdPrefix ], !Ref "AWS::StackName"] ]
         ClientIp: !Ref ClientIp
         SchedulerPublicIP: !GetAtt Scheduler.Outputs.SchedulerPublicIP
+        EIPNat: !GetAtt Network.Outputs.EIPNat
 
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Analytics.template"] ]
       TimeoutInMinutes: 30

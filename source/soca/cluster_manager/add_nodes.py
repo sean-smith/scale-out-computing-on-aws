@@ -592,6 +592,7 @@ def main(**kwargs):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         return return_message(str(e) + ': error:' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno) + ' ' + str(kwargs))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -619,7 +620,7 @@ if __name__ == "__main__":
     parser.add_argument('--job_project', nargs='?', default=False, help="Job Owner for which the capacity is being provisioned")
     parser.add_argument('--placement_group', default=True, help="Enable or disable placement group")
     parser.add_argument('--root_size', default=10, nargs='?', help="Size of Root partition in GB")
-    parser.add_argument('--scratch_iops', default=0, nargs='?', help="Size of /scratch in GB")
+    parser.add_argument('--scratch_iops', default=0, nargs='?', help="IOPS for /scratch")
     parser.add_argument('--scratch_size', default=0, nargs='?', help="Size of /scratch in GB")
     parser.add_argument('--spot_allocation_count', default=False, nargs='?', help="When using mixed OD and SPOT, choose %% of SPOT")
     parser.add_argument('--spot_allocation_strategy', default=False, nargs='?', help="lowest-price or capacity-optimized or diversified (supported only for SpotFleet)")

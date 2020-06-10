@@ -7,6 +7,10 @@ source /etc/environment
 source /root/config.cfg
 cd /root
 
+# Checks. You can combine with $SOCA_JOB_QUEUE (or other) to specify different periods for different app/queue
+SYSTEM_CHECK_PERIOD="3m"  # check system (network, cpus, memory, process) every 3 minutes
+FS_CHECK_PERIOD="3m" # check filesystem every 3 minutes
+PROCESS_COUNT_TO_TRACK=15 # how many process do you want to return on the web ui
 
 if [[ $SOCA_SYSTEM_METRICS == "true" ]];
 then
@@ -22,9 +26,22 @@ then
 
   # Copy custom SOCA configuration file
   cp /apps/soca/$SOCA_CONFIGURATION/cluster_analytics/metricbeat/system.yml /etc/metricbeat/modules.d/
+  sed -i "s/%SYSTEM_CHECK_PERIOD%/$SYSTEM_CHECK_PERIOD/g" /etc/metricbeat/modules.d/system.yml
+  sed -i "s/%FS_CHECK_PERIOD%/$FS_CHECK_PERIOD/g" /etc/metricbeat/modules.d/system.yml
+  sed -i "s/%PROCESS_COUNT_TO_TRACK%/$PROCESS_COUNT_TO_TRACK/g" /etc/metricbeat/modules.d/system.yml
 
   # Enable AWS module (only if using commercial binary)
   # $METRICBEAT module enable aws
+
+  # First deployment only. Initialize the dashboard (this will take 2 or 3 minutes max, and it's one time thing)
+  if [[ ! -f "/apps/soca/$SOCA_CONFIGURATION/cluster_analytics/metricbeat/.dashboard_initialized" ]];
+  then
+    echo "No dashboard configured, first installation detected"
+    $METRICBEAT setup --dashboards -E "setup.kibana.host='https://$SOCA_ESDOMAIN_ENDPOINT:443/_plugin/kibana'" \
+    -E "output.elasticsearch.hosts=['https://$SOCA_ESDOMAIN_ENDPOINT:443']" \
+    -E "setup.ilm.enabled='false'"
+    touch /apps/soca/$SOCA_CONFIGURATION/cluster_analytics/metricbeat/.dashboard_initialized
+  fi
 
   # Start MetricBeat in background
   $METRICBEAT run -E "setup.kibana.host='https://$SOCA_ESDOMAIN_ENDPOINT:443/_plugin/kibana'" \
