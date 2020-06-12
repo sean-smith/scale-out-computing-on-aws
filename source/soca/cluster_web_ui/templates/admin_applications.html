@@ -186,8 +186,10 @@
 #PBS -q %queue_name%
 #PBS -N %job_name%
 #PBS -P %project_name%
-#PBS -l instance_type=%instance_type% # https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
+# https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
+#PBS -l instance_type=%instance_type%
 #PBS -l walltime=%wall_time%
+#PBS -l allow_on_demand=%allow_on_demand%
 
 ## [Begin: Commands to be added before the solver. This cannot be changed by the users]
 export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...
@@ -423,13 +425,32 @@ Compress output, send output to S3 etc ...
       }
     ]
   },
+  {
+    "type": "select",
+    "required": true,
+    "label": "Do you want to limit your job to Reserved Instance only? (allow_on_demand)",
+    "className": "form-control",
+    "name": "allow_on_demand",
+    "description": "If allow_on_demand is False, the job must ONLY run on Reserved Instance. If there is not enough RI, job will stay in the queue. Parameter is ignored if you use Spot",
+    "multiple": false,
+    "values": [
+      {
+        "label": "No",
+        "value": "True"
+      },
+      {
+        "label": "Yes",
+        "value": "False"
+      }
+    ]
+  },
    {
     "type": "text",
     "required": true,
     "label": "How many CPUs do you want ? (cpus)",
     "placeholder": "Number of EC2 instance will automatically be calculated based on Instance Type and CPUs count",
     "className": "form-control",
-             "description": "Number of CPUs to allocate to the simulation. This will be used along with instance_type to calculate the number of nodes to provision",
+    "description": "Number of CPUs to allocate to the simulation. This will be used along with instance_type to calculate the number of nodes to provision",
 
     "name": "cpus",
     "subtype": "text",
@@ -485,7 +506,7 @@ Compress output, send output to S3 etc ...
       }
     ]
   },
-                                 {
+    {
     "type": "select",
     "required": true,
     "label": "How much storage do you want (SSD under /scratch)",

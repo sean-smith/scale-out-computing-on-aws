@@ -20,6 +20,9 @@ Below is a list of parameters you can specify when you request your simulation t
 - Examples: 
     - `-l allow_on_demand=False`: Job can only run if there is enough reserved instances available for this instance type
     - `-l allow_on_demand=True`: Job will use On-Demand capacity if there is not enough reserved instance available
+ 
+ !!!info 
+    This parameter is ignored if you run spot instances
     
 #### base_os
 

@@ -18,7 +18,6 @@ aligo_configuration = configuration.get_aligo_configuration()
 
 
 def verify_ri_saving_availabilities(instance_type, instance_type_info):
-    ec2_client = boto3.client("ec2", region_name="us-west-2")
     if instance_type not in instance_type_info.keys():
         instance_type_info[instance_type] = {'current_instance_in_use': 0,
                                              'current_ri_purchased': 0}
@@ -26,7 +25,7 @@ def verify_ri_saving_availabilities(instance_type, instance_type_info):
         next_token = ''
         # List all instance from this type currently running
         while token is True:
-            response = ec2_client.describe_instances(
+            response = ec2.describe_instances(
                 Filters=[
                     {'Name': 'instance-type', 'Values': [instance_type]},
                     {'Name': 'instance-state-name', 'Values': ['running', 'pending']}],
@@ -49,7 +48,7 @@ def verify_ri_saving_availabilities(instance_type, instance_type_info):
                         print(exc_type, fname, exc_tb.tb_lineno)
 
         # Now list of many RI we have for this instance type
-        get_ri_count = ec2_client.describe_reserved_instances(
+        get_ri_count = ec2.describe_reserved_instances(
             Filters=[{'Name': 'instance-type', 'Values': [instance_type]},
                      {'Name': 'state', 'Values': ['active']}]
         )
@@ -124,7 +123,7 @@ def check_config(**kwargs):
 
         check_ri = verify_ri_saving_availabilities(kwargs["instance_type"], instance_type_info)
         if (check_ri[kwargs["instance_type"]]["current_instance_in_use"] + int(kwargs['desired_capacity'])) > check_ri[kwargs["instance_type"]]["current_ri_purchased"]:
-            error = return_message("Not enough RI to cover for this job. Instance type: {}, number of running instance(s): {}, number of purchased RI(s): {}, capacity requested: {}. Either purchase more RI or allow usage of On Demand".format(
+            error = return_message("Not enough RI to cover for this job. Instance type: {}, number of running instances: {}, number of purchased RIs: {}, capacity requested: {}. Either purchase more RI or allow usage of On Demand".format(
                         kwargs["instance_type"],
                         check_ri[kwargs["instance_type"]]["current_instance_in_use"],
                         check_ri[kwargs["instance_type"]]["current_ri_purchased"],
@@ -132,7 +131,6 @@ def check_config(**kwargs):
         else:
             # Update the number of current_instance_in_use with the number of new instance that this job will launch
             instance_type_info[kwargs["instance_type"]] = {'current_instance_in_use': check_ri[kwargs["instance_type"]]["current_instance_in_use"] + int(kwargs['desired_capacity'])}
-            return True
 
     # Default System metrics to True unless explicitly set to False
     if kwargs['system_metrics'] is not False:
