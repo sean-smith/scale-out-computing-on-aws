@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support for Elastic MetricBeat
 - Added HTTP REST API to interact with SOCA
+- Users can now decide to restrict a job to Reserved Instances
 - Revamped Web Interface
   - Added filesystem explorer
   - Users can upload files/folders via drag & drop interface

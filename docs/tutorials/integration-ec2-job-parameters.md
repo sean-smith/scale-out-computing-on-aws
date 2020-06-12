@@ -12,10 +12,19 @@ Below is a list of parameters you can specify when you request your simulation t
 
 ## Compute
 
+#### allow_on_demand
+
+- Description: Allow job to use [OnDemand capacity](https://aws.amazon.com/ec2/pricing/on-demand/) or restrict it to [Reserved Instance](https://aws.amazon.com/ec2/pricing/reserved-instances/)
+- Allowed Values: `True` `False`
+- Default: `True`
+- Examples: 
+    - `-l allow_on_demand=False`: Job can only run if there is enough reserved instances available for this instance type
+    - `-l allow_on_demand=True`: Job will use On-Demand capacity if there is not enough reserved instance available
+    
 #### base_os
 
 - Description: Reference to the base OS of the AMI you are using
-- Allowed Valuess: `amazonlinux2` `centos7` `rhel7`
+- Allowed Values: `amazonlinux2` `centos7` `rhel7`
 - Default: If not specified, value default to the OS of the install AMI
 - Examples: 
     - `-l base_os=centos7`: Instances provisioned will be deployed against CentOS manifest

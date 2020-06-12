@@ -105,6 +105,7 @@ echo "export PATH=\"/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # Default AWS Resources
 cat <<EOF >>/var/spool/pbs/server_priv/resourcedef
 anonymous_metrics type=string
+allow_on_demand type=string
 asg_spotfleet_id type=string
 system_metrics type=string
 compute_node type=string flag=h

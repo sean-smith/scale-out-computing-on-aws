@@ -17,7 +17,55 @@ ec2 = boto3.client('ec2')
 aligo_configuration = configuration.get_aligo_configuration()
 
 
-def can_launch_capacity(instance_type, count, image_id,subnet_id):
+def verify_ri_saving_availabilities(instance_type, instance_type_info):
+    ec2_client = boto3.client("ec2", region_name="us-west-2")
+    if instance_type not in instance_type_info.keys():
+        instance_type_info[instance_type] = {'current_instance_in_use': 0,
+                                             'current_ri_purchased': 0}
+        token = True
+        next_token = ''
+        # List all instance from this type currently running
+        while token is True:
+            response = ec2_client.describe_instances(
+                Filters=[
+                    {'Name': 'instance-type', 'Values': [instance_type]},
+                    {'Name': 'instance-state-name', 'Values': ['running', 'pending']}],
+                MaxResults=1000,
+                NextToken=next_token,
+            )
+            try:
+                next_token = response['NextToken']
+            except KeyError:
+                token = False
+
+            for reservation in response['Reservations']:
+                for instance in reservation['Instances']:
+                    try:
+                        if instance['InstanceType'] == instance_type:
+                            instance_type_info[instance_type]["current_instance_in_use"] += 1
+                    except Exception as e:
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(exc_type, fname, exc_tb.tb_lineno)
+
+        # Now list of many RI we have for this instance type
+        get_ri_count = ec2_client.describe_reserved_instances(
+            Filters=[{'Name': 'instance-type', 'Values': [instance_type]},
+                     {'Name': 'state', 'Values': ['active']}]
+        )
+
+        if get_ri_count["ReservedInstances"]:
+            for reservation in get_ri_count["ReservedInstances"]:
+                instance_type_info[instance_type]["current_ri_purchased"] += reservation["InstanceCount"]
+
+
+    print("Detected {} running {} instance ".format(instance_type_info[instance_type]["current_instance_in_use"],instance_type))
+    print("Detected {} RI for {} instance ".format(instance_type_info[instance_type]["current_ri_purchased"], instance_type))
+
+    return instance_type_info
+
+
+def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id, allow_on_demand):
     instance_to_test = instance_type.split('+')
     for instance in instance_to_test:
         try:
@@ -25,12 +73,13 @@ def can_launch_capacity(instance_type, count, image_id,subnet_id):
                 ImageId=image_id,
                 InstanceType=instance,
                 SubnetId=subnet_id,
-                MaxCount=int(count),
-                MinCount=int(count),
+                MaxCount=int(desired_capacity),
+                MinCount=int(desired_capacity),
                 DryRun=True)
 
         except Exception as e:
             if e.response['Error'].get('Code') == 'DryRunOperation':
+                # Dry Run Succeed.
                 return True
             else:
                 print('Dry Run Failed, capacity ' + instance + ' can not be added: ' + str(e), 'error')
@@ -61,6 +110,29 @@ def check_config(**kwargs):
     # Ensure anonymous metric is either True or False.
     if kwargs['anonymous_metrics'] not in [True, False]:
         kwargs['anonymous_metrics'] = True
+
+    # Ensure allow_on_demand is either True or False.
+    if kwargs['allow_on_demand'] not in [True, False]:
+        kwargs['allow_on_demand'] = True
+
+    if kwargs['allow_on_demand'] is False and kwargs['spot_price'] is False:
+        # OnDemand is restricted and job does not use Spot, so we enforce reserved Instance
+        try:
+            instance_type_info
+        except NameError:
+            instance_type_info = {}
+
+        check_ri = verify_ri_saving_availabilities(kwargs["instance_type"], instance_type_info)
+        if (check_ri[kwargs["instance_type"]]["current_instance_in_use"] + int(kwargs['desired_capacity'])) > check_ri[kwargs["instance_type"]]["current_ri_purchased"]:
+            error = return_message("Not enough RI to cover for this job. Instance type: {}, number of running instance(s): {}, number of purchased RI(s): {}, capacity requested: {}. Either purchase more RI or allow usage of On Demand".format(
+                        kwargs["instance_type"],
+                        check_ri[kwargs["instance_type"]]["current_instance_in_use"],
+                        check_ri[kwargs["instance_type"]]["current_ri_purchased"],
+                        kwargs['desired_capacity']))
+        else:
+            # Update the number of current_instance_in_use with the number of new instance that this job will launch
+            instance_type_info[kwargs["instance_type"]] = {'current_instance_in_use': check_ri[kwargs["instance_type"]]["current_instance_in_use"] + int(kwargs['desired_capacity'])}
+            return True
 
     # Default System metrics to True unless explicitly set to False
     if kwargs['system_metrics'] is not False:
@@ -311,6 +383,7 @@ def main(**kwargs):
     try:
         # Create default value for optional parameters if needed
         optional_job_parameters = {'anonymous_metrics': aligo_configuration["DefaultMetricCollection"],
+                                   'allow_on_demand': True,
                                    'base_os': False,
                                    'efa_support': False,
                                    'fsx_lustre': False,
@@ -333,8 +406,6 @@ def main(**kwargs):
         for k, v in optional_job_parameters.items():
             if k not in kwargs.keys():
                 kwargs[k] = v
-
-        required_job_parameters = []
 
         # Validate Job parameters
         try:
@@ -373,7 +444,7 @@ def main(**kwargs):
         if 'Name' not in tags.keys():
             tags['Name'] = cfn_stack_name.replace('_', '-')
 
-        # List Parameters, retrieve values and set Default value if needed
+        # These parameters will be used to build the cloudformation template
         parameters_list = {
             'BaseOS': {
                 'Key': 'base_os',
@@ -539,7 +610,7 @@ def main(**kwargs):
             'VolumeTypeIops': {
                 'Key': 'scratch_iops',
                 'Default': 0
-            },
+            }
         }
 
         cfn_stack_parameters = {}
@@ -561,11 +632,12 @@ def main(**kwargs):
             return return_message(cfn_stack_body['output'])
         cfn_stack_tags = [{'Key': str(k), 'Value': str(v)} for k, v in tags.items() if v]
 
-        # Dry Run
+        # Dry Run (note: licenses checks is handled by dispatcher.py. This dry run only check for AWS related commands)
         can_launch = can_launch_capacity(cfn_stack_parameters['InstanceType'],
                                          cfn_stack_parameters['DesiredCapacity'],
                                          cfn_stack_parameters['ImageId'],
-                                         cfn_stack_parameters['SubnetId'][0])
+                                         cfn_stack_parameters['SubnetId'][0],
+                                         params['allow_on_demand'])
 
         if can_launch is True:
             try:
@@ -609,6 +681,7 @@ if __name__ == "__main__":
     parser.add_argument('--keep_forever', default=False, help="Whether or not capacity will stay forever")
 
     # Optional
+    parser.add_argument('--allow_on_demand', default=True, help='If false, job can only run if we have reserved instance available')
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
     parser.add_argument('--terminate_when_idle', default=0, nargs='?', help="If instances will be terminated when idle for N minutes")
     parser.add_argument('--fsx_lustre', default=False, help="Mount existing FSx by providing the DNS")
