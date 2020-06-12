@@ -15,11 +15,19 @@ systemctl stop pbs
 
 # Install latest NVIDIA driver if GPU instance is detected
 INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-type | cut -d. -f1`
-GPU_INSTANCE_FAMILY=(g2 g3 g4 p2 p3 p3dn)
+GPU_INSTANCE_FAMILY=(g2 g3 g4 g4dn p2 p3 p3dn)
+G4_GPUS=(g4 g4dn) #G4 instance use a different driver
+
 if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_TYPE}" ]];
 then
-    echo "Detected GPU instance .. installing the latest NVIDIA driver"
-    $AWS s3 cp --recursive s3://ec2-linux-nvidia-drivers/latest/ .
+    if [[ "${G4_GPUS[@]}" =~ "${INSTANCE_TYPE}" ]];
+    then
+      echo "Detected G4 instance .. installing NVIDIA Drivers"
+      $AWS s3 cp --recursive s3://ec2-linux-nvidia-drivers/g4/latest/ .
+    else
+      echo "Detected GPU instance .. installing NVIDIA driver"
+      $AWS s3 cp --recursive s3://ec2-linux-nvidia-drivers/latest/ .
+    fi
     /bin/sh /root/NVIDIA-Linux-x86_64*.run -q -a -n -X -s
     NVIDIAXCONFIG=$(which nvidia-xconfig)
     $NVIDIAXCONFIG --preserve-busid --enable-all-gpus

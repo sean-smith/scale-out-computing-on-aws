@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SOCA now deploys 2 instances for ElasticSearch for high availability
 - Users can now specify DEPLOYMENT_TYPE for their FSX for Lustre filesystems
 - Users can specify PerUnitThroughput when FSx for Lustre deployment type is set to PERSISTENT
+- DCV now supports G4 instance type
 
 ## [2.0.1] - 2020-04-20
 ### Added

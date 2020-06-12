@@ -5,7 +5,7 @@ source /root/config.cfg
 DCV_HOST_ALTNAME=$(hostname | cut -d. -f1)
 AWS=$(which aws)
 INSTANCE_TYPE=`curl --silent  http://169.254.169.254/latest/meta-data/instance-type | cut -d. -f1`
-GPU_INSTANCE_FAMILY=(g2 g3 g4 p2 p3 p3dn)
+GPU_INSTANCE_FAMILY=(g2 g3 g4 g4dn p2 p3 p3dn)
 
 # Install Gnome & Mate Desktop
 if [[ $SOCA_BASE_OS == "rhel7" ]]
