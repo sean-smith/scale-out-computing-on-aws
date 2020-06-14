@@ -57,7 +57,7 @@ Parameters:
     Description: If you use your own AMI, you still have to specify the base os (see above)
 
   SchedulerInstanceType:
-    Default: m5.large
+    Default: m5.xlarge
     Type: String
     Description: Choose the type of instance to use for the scheduler
 

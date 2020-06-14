@@ -85,9 +85,21 @@
   </div>
 </div>
                       <div class="row">
-                           <div class="col-md-7">
+                           <div class="col-md-5">
                               <input type="text" id="searchFiles"  class="form-control" placeholder="Search for a file or a folder" aria-controls="list_files_table">
                           </div>
+                          {% if filesystem %}
+                          <div class="col-md-2">
+                              <div id="download_all">
+                                  <a href="/my_files/download_all?path={{ path }}">
+                                    <button type="button" data-toggle="tooltip" data-placement="top" title="Download all {{ get_all_uid_count }} files on this folder" class="btn btn-info form-control">Download all</button>
+                                  </a>
+                              </div>
+                              <a id="download_selected_link" href="#" style="display: none">
+                                  <button data-toggle="tooltip" data-placement="top" title="Download selected files" type="button" class="btn btn-info form-control">Download selected</button>
+                              </a>
+                          </div>
+                          {% endif %}
                           <div class="col-md-3">
                             <form class="form-inline" method="POST" action="/my_files/create_folder">
                               <div class="input-group">
@@ -103,14 +115,9 @@
 
                           <div class="col-md-2">
                               <button type="button" class="btn btn-warning form-control" data-toggle="modal" data-target="#uploadModal">Upload file(s)</button>
+                          </div>
 
-                          </div>
-                          <div class="col-md-1">
-                              <form action="/my_files/flush_cache" method="post">
-                              <input type="hidden" name="path" value="{{ path }}">
-                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                </form>
-                          </div>
+
                       </div>
                       <div class="row">
                       <div class="col-md-12">
@@ -129,13 +136,17 @@
              <tr>
                  <td>
                     {% if file_data.type == "folder" %}
-
                         <i class="far fa-folder-open fa-lg"></i>
                         <strong><a href="/my_files?path={{ file_data.path }}"> {{ file_name }}</a></strong>
                         <div class="float-right">
                             <a href="/my_files/delete?uid={{ file_data.uid }}"><i data-toggle="tooltip" data-placement="top" title="Delete the folder" class="fas fa-trash-alt fa-lg"  style="color: grey"></i></a>
                         </div>
                     {% else %}
+                        {% if file_data.st_size_default > max_online_preview %}
+                            <input data-toggle="tooltip" data-placement="top" title="This file is too big to be compressed via web. Download file separately or use SFTP." type="checkbox" class="form-check-input">
+                        {% else %}
+                            <input type="checkbox" onchange="SelectedFiles(this.id)" class="form-check-input" id="{{ file_data.uid }}">
+                        {% endif %}
 
                         {% if file_name.endswith('.png') or file_name.endswith('.jpg') or file_name.endswith('.jpeg') %}
                             <i class="far fa-file-image fa-lg"></i>
@@ -320,6 +331,36 @@
                           $('.dataTables_filter input[type="search"]').css({'display':'none'});
                       });
                   </script>
+
+                  <script>
+                      var selected_files = []
+                      function SelectedFiles(uid){
+                          dl_link = document.getElementById("download_selected_link");
+                          download_all = document.getElementById("download_all");
+                          if (document.getElementById(uid).checked) {
+                               if(selected_files.length > 40) {
+                                  // URL/Payload limit. Limit the number of uid to 40
+                                  document.getElementById(uid).checked = false;
+                                  alert("Sorry you cannot download more than 40 files in a single call")
+                               }
+                               else{
+                                   selected_files.push(uid)
+                               }
+                          }
+                          else {selected_files = selected_files.filter(v => v !== uid);}
+                          if (selected_files.length > 0) {
+                              download_all.setAttribute("style", "display: none;");
+                              dl_link.setAttribute("style", "display: visible;");
+                              dl_link.setAttribute("href", "/my_files/download?uid="+selected_files.join(','))
+
+                          }
+                          else{
+                              dl_link.setAttribute("style", "display: none;");
+                              download_all.setAttribute("style", "display: visible;");
+                          }
+                      }
+                  </script>
+
 
 
 

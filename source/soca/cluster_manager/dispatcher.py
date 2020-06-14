@@ -283,8 +283,8 @@ if __name__ == "__main__":
         'qmgr': '/opt/pbs/bin/qmgr',
         'qalter': '/opt/pbs/bin/qalter',
         'qdel': '/opt/pbs/bin/qdel',
-        'aligoqstat': '/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/aligoqstat.py',
-        'python': '/apps/soca/'+ os.environ["SOCA_CONFIGURATION"] + '/python/latest/bin/python3'
+        'aligoqstat': '/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/cluster_manager/aligoqstat.py',
+        'python': '/apps/soca/' + os.environ["SOCA_CONFIGURATION"] + '/python/latest/bin/python3'
     }
 
     # AWS Clients
@@ -294,7 +294,7 @@ if __name__ == "__main__":
 
     # Variables
     queue_parameter_values = {}
-    queue_mode = 'fairshare'
+    queue_mode = 'fifo'
     queues = False
     queues_only_parameters = ["allowed_users", "excluded_users", "excluded_instance_types", "allowed_instance_types", "restricted_parameters"]
     asg_name = None
@@ -344,6 +344,7 @@ if __name__ == "__main__":
         logger.addHandler(log_file)  # set the new handler
         logger.setLevel(logging.DEBUG)
         skip_queue = False
+        limit_running_jobs = False
         get_jobs = get_jobs_infos(queue_name)
 
         # Check if there is any queued job with valid compute unit but has not started within 1 hour
@@ -357,6 +358,7 @@ if __name__ == "__main__":
                         if capacity_being_provisioned(job_data['get_job_resource_list']['stack_id'], job_id, job_data['get_job_resource_list']['select']) is True:
                             logpush('Skipping ' + str(job_id) + ' as this job already has a valid compute node')
                             resource_name = job_data['get_job_resource_list'].keys()
+                            # If you want to make sure ANY job cannot start if there is a queue job with a valid compute_node, then force skip_queue to True
                             if fnmatch.filter(resource_name, '*_lic*'):
                                 # Because applications are license dependant, we want to make sure we won't launch any new jobs until previous launched jobs are running and using the license
                                 logpush("Job is being provisioned and has license requirement. We ignore all others job in queue to prevent license double usage due to race condition. Provisioning for " + queue_name + " will continue as soon as this job start running")
@@ -403,9 +405,29 @@ if __name__ == "__main__":
                 print('queue mode must either be fairshare or fifo')
                 exit(1)
 
+            # Limit number of concurrent running jobs if "max_running_jobs" is set for this queue
+            if 'max_running_jobs' in queue_parameter_values.keys():
+                # consider queued_job with valid compute_node as valid running job
+                queued_job_with_computenode = 0
+                for job_data in queued_jobs:
+                    if "compute_node" in job_data["get_job_resource_list"]["select"]:
+                        queued_job_with_computenode += 1
+
+                running_jobs = len(running_jobs) + queued_job_with_computenode
+                if running_jobs >= queue_parameter_values['max_running_jobs']:
+                    logpush("Maximum number of running job or queued job with computenode assigned reached, exiting ...")
+                    limit_running_jobs = True
+
+                elif running_jobs + len(queued_jobs) > queue_parameter_values['max_running_jobs']:
+                    queued_jobs_to_be_started = queue_parameter_values['max_running_jobs'] - running_jobs
+                    logpush("Current running + queued job will exceed the number of authorized running_jobs. We will limit the number of queued job that can be processed to {}".format(queued_jobs_to_be_started))
+                    job_list = job_list[:queued_jobs_to_be_started]
+                    logpush("New job_list: " + str(job_list))
+                else:
+                    pass
+
             for job_id in job_list:
                 job_parameter_values = {}
-
                 if queue_mode == 'fifo':
                     job = job_id
                 else:
@@ -418,8 +440,10 @@ if __name__ == "__main__":
                     skip_job = True
                 else:
                     skip_job = False
+                    if limit_running_jobs is True:
+                        run_command([system_cmds['qalter'], "-l", "error_message=Number_of_concurrent_running_jobs_reached_please_wait" ,str(job_id)], "call")
 
-                if skip_job is False:
+                if skip_job is False and limit_running_jobs is False:
                     job_required_resource = job['get_job_resource_list']
                     license_requirement = {}
                     logpush('Checking if we have enough resources available to run job_' + job_id)
@@ -445,7 +469,7 @@ if __name__ == "__main__":
                             job_parameter_values[res] = job_required_resource[res]
 
                         else:
-                            logpush("No default value for " + res + ". Creating new entry with value: " +  str(job_required_resource[res]))
+                            logpush("No default value for " + res + ". Creating new entry with value: " + str(job_required_resource[res]))
                             job_parameter_values[res] = job_required_resource[res]
 
                         try:
@@ -455,8 +479,8 @@ if __name__ == "__main__":
                                     license_requirement[res] = int(job_required_resource[res])
                                 else:
                                     logpush('Ignoring job_' + job_id + ' as we we dont have enough: ' + str(res))
-                                    sanitized_license_error_message = re.sub(r'\W+', '_', "Not enough " + str(res) +". Requested " + str(job_required_resource[res]) + ", available " + str(license_available[res]))
-                                    run_command([system_cmds['qalter'], "-l", "error_message=" + sanitized_license_error_message, str(job_id)], "call")
+                                    license_error_message = "Not enough licenses " + str(res) +". You have requested " + str(job_required_resource[res]) + " but there is only " + str(license_available[res]) + " licenses available."
+                                    run_command([system_cmds['qalter'], "-l", "error_message='" + license_error_message.replace(" ", "_") + "'", str(job_id)], "call")
                                     can_run = False
                         except:
                             logpush('One required PBS resource has not been specified on the JSON input for ' + job_id + ': ' + str(res) +' . Please update custom_flexlm_resources on ' +str(arg.config))
@@ -477,7 +501,8 @@ if __name__ == "__main__":
                             job_parameter_values['instance_ami'] = aligo_configuration['CustomAMI']
 
                         # Append new resource to job resource for better tracking
-                        alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['select', 'ncpus', 'ngpus', 'place','nodect', 'queues', 'compute_node', 'stack_id'])
+                        # Ignore queue resources which are not configurable at job level
+                        alter_job_res = ' '.join('-l {}={}'.format(key, value) for key, value in job_parameter_values.items() if key not in ['select', 'ncpus', 'ngpus', 'place','nodect', 'queues', 'compute_node', 'stack_id', 'max_running_jobs'])
                         run_command([system_cmds['qalter']] + alter_job_res.split() + [str(job_id)], "call")
 
 
@@ -496,7 +521,6 @@ if __name__ == "__main__":
 
                         logpush('job_' + job_id + ' can run, doing dry run test with following parameters: ' + job_parameter_values['instance_type'] + ' *  ' +str(desired_capacity))
                         try:
-
                             # Adding extra parameters to job_parameter_values
                             job_parameter_values['desired_capacity'] = desired_capacity
                             job_parameter_values['queue'] = queue_name
@@ -520,6 +544,7 @@ if __name__ == "__main__":
 
                                 run_command([system_cmds['qalter'], "-l", "select="+select, str(job_id)], "call")
                                 run_command([system_cmds['qalter'], "-l", "stack_id=" + stack_id, str(job_id)], "call")
+
                                 # flush error if any
                                 run_command([system_cmds['qalter'], "-l", "error_message=", str(job_id)], "call")
 
@@ -529,7 +554,8 @@ if __name__ == "__main__":
 
                             else:
                                 sanitized_error = re.sub(r'\W+', '_',  create_new_asg["message"])
-                                run_command([system_cmds['qalter'], "-l", "error_message=" + sanitized_error, str(job_id)], "call")
+                                sanitized_error = create_new_asg["message"].replace("'", "_").replace("!", "_").replace(" ","_")
+                                run_command([system_cmds['qalter'], "-l", "error_message='" + sanitized_error + "'", str(job_id)], "call")
                                 logpush('Error while trying to create ASG: ' + str(create_new_asg))
 
 
@@ -537,6 +563,7 @@ if __name__ == "__main__":
                             exc_type, exc_obj, exc_tb = sys.exc_info()
                             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                             logpush('Create ASG (refer to add_nodes.py) failed for job_'+job_id + ' with error: ' + str(e) + ' ' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno), 'error')
-
                     else:
-                        pass
+                        logpush("can_run is False for " + str(job_id))
+                else:
+                    logpush("Skip " + str(job_id))

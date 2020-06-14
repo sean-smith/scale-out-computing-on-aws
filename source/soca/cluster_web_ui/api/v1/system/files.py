@@ -36,7 +36,6 @@ class Files(Resource):
         try:
             with open(file_to_read) as file:
                 data = file.read()
-
             return {"success": True, "message": list(filter(lambda x: x != "", data.split("\n")))}
         except IsADirectoryError:
             return {"success": False,

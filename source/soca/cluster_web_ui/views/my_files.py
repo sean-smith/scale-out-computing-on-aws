@@ -1,10 +1,12 @@
 import logging
 import config
+import zipfile
 from decorators import login_required
 from flask import render_template, request, redirect, session, flash, Blueprint, send_file
 import errno
 import math
 import os
+import base64
 from requests import get
 from cryptography.fernet import Fernet, InvalidToken, InvalidSignature
 import json
@@ -46,12 +48,13 @@ def convert_size(size_bytes):
     return "%s %s" % (s, size_name[i])
 
 
-def encrypt(file_path):
+def encrypt(file_path, file_size):
     try:
         key = config.Config.SOCA_DATA_SHARING_SYMMETRIC_KEY
         cipher_suite = Fernet(key)
         payload = {"file_owner": session["user"],
-                   "file_path": file_path}
+                   "file_path": file_path,
+                   "file_size": file_size}
         encrypted_text = cipher_suite.encrypt(json.dumps(payload).encode("utf-8"))
         return {"success": True, "message": encrypted_text.decode()}
     except Exception as err:
@@ -233,7 +236,7 @@ def index():
                 for entry in os.scandir(path):
                     if not entry.name.startswith("."):
                         filesystem[entry.name] = {"path": path + "/" + entry.name,
-                                                  "uid": encrypt(path + "/" + entry.name)["message"],
+                                                  "uid": encrypt(path + "/" + entry.name, entry.stat().st_size)["message"],
                                                   "type": "folder" if entry.is_dir() else "file",
                                                   "st_size": convert_size(entry.stat().st_size),
                                                   "st_size_default": entry.stat().st_size,
@@ -253,9 +256,12 @@ def index():
             is_cached = True
             filesystem = cache[CACHE_FOLDER_CONTENT_PREFIX + path]
 
+        get_all_uid = [file_info['uid'] for file_info in filesystem.values() if file_info["type"] == "file"]
 
         return render_template('my_files.html', user=session["user"],
                                filesystem=OrderedDict(sorted(filesystem.items(), key=lambda t: t[0].lower())),
+                               get_all_uid=base64.b64encode(",".join(get_all_uid).encode()).decode(),
+                               get_all_uid_count=len(get_all_uid),
                                breadcrumb=breadcrumb,
                                max_upload_size=config.Config.MAX_UPLOAD_FILE,
                                max_upload_timeout=config.Config.MAX_UPLOAD_TIMEOUT,
@@ -277,29 +283,136 @@ def download():
     if uid is None:
         return redirect("/my_files")
 
-    file_information = decrypt(uid)
-    if file_information["success"] is True:
-        file_info = json.loads(file_information["message"])
-        if user_has_permission(file_info["file_path"], "read", "file") is False:
-            flash(" You are not authorized to download this file or this file is no longer available on the filesystem")
-            return redirect("/my_files")
-
-        current_user = session["user"]
-        if current_user == file_info["file_owner"]:
-            try:
-                return send_file(file_info["file_path"],
-                                 as_attachment=True,
-                                 attachment_filename=file_info["file_path"].split("/")[-1])
-            except Exception as err:
-                flash("Unable to download file. Did you remove it?", "error")
+    files_to_download = uid.split(",")
+    if len(files_to_download) == 1:
+        file_information = decrypt(files_to_download[0])
+        if file_information["success"] is True:
+            file_info = json.loads(file_information["message"])
+            if user_has_permission(file_info["file_path"], "read", "file") is False:
+                flash(" You are not authorized to download this file or this file is no longer available on the filesystem")
                 return redirect("/my_files")
+
+            current_user = session["user"]
+            if current_user == file_info["file_owner"]:
+                try:
+                    return send_file(file_info["file_path"],
+                                     as_attachment=True,
+                                     attachment_filename=file_info["file_path"].split("/")[-1])
+                except Exception as err:
+                    flash("Unable to download file. Did you remove it?", "error")
+                    return redirect("/my_files")
+            else:
+                flash("You do not have the permission to download this file", "error")
+                return redirect("/my_files")
+
         else:
-            flash("You do not have the permission to download this file", "error")
+            flash("Unable to download " + file_information["message"], "error")
+            return redirect("/my_files")
+    else:
+        valid_file_path = []
+        total_size = 0
+        total_files = 0
+        for file_to_download in files_to_download:
+            file_information = decrypt(file_to_download)
+            if file_information["success"] is True:
+                file_info = json.loads(file_information["message"])
+                if user_has_permission(file_info["file_path"], "read", "file") is False:
+                    flash("You are not authorized to download this file or this file is no longer available on the filesystem")
+                    return redirect("/my_files")
+
+                current_user = session["user"]
+                if current_user == file_info["file_owner"]:
+                    valid_file_path.append(file_info["file_path"])
+                    total_size = total_size + file_info["file_size"]
+                    total_files = total_files + 1
+        if total_size > config.Config.MAX_ARCHIVE_SIZE:
+            flash("Sorry, the maximum archive size is {:.2f} MB. Your archive was {:.2f} MB. To mitigate this issue, you can create a smaller archive, download files individually, use SFTP or edit the maximum archive size authorized.".format(config.Config.MAX_ARCHIVE_SIZE/1024/1024, total_size/1024/1024), "error")
+            return redirect("/my_files")
+        # Limit HTTP payload size
+        if total_files > 45:
+            flash("Sorry, you cannot download more than 45 files in a single call. Your archive contained {} files".format(total_files), "error")
             return redirect("/my_files")
 
-    else:
-        flash("Unable to download " + file_information["message"], "error")
+        try:
+            os.makedirs("zip_downloads", mode=0o700)
+        except FileExistsError:
+            pass
+
+        archive_name = "zip_downloads/SOCA_Download_"+session["user"]+".zip"
+        zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
+        for file_to_zip in valid_file_path:
+            zipf.write(file_to_zip)
+        zipf.close()
+        return send_file(archive_name,
+                         mimetype='zip',
+                         attachment_filename=archive_name.split("/")[-1],
+                         as_attachment=True)
+
+@my_files.route('/my_files/download_all', methods=['GET'])
+@login_required
+def download_all():
+    path = request.args.get("path", None)
+    if path is None:
         return redirect("/my_files")
+    filesystem = {}
+    if CACHE_FOLDER_CONTENT_PREFIX + path not in cache.keys():
+        is_cached = False
+        try:
+            for entry in os.scandir(path):
+                if not entry.name.startswith("."):
+                    filesystem[entry.name] = {"path": path + "/" + entry.name,
+                                              "uid": encrypt(path + "/" + entry.name, entry.stat().st_size)["message"],
+                                              "type": "folder" if entry.is_dir() else "file",
+                                              "st_size": convert_size(entry.stat().st_size),
+                                              "st_size_default": entry.stat().st_size,
+                                              "st_mtime": entry.stat().st_mtime
+                                              }
+            cache[CACHE_FOLDER_CONTENT_PREFIX + path] = filesystem
+
+        except Exception as err:
+            if err.errno == errno.EPERM:
+                flash(
+                    "Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync.",
+                    "error")
+            elif err.errno == errno.ENOENT:
+                flash("Could not locate the directory. Did you delete it ?", "error")
+            else:
+                flash("Could not locate the directory: " + str(err), "error")
+            return redirect("/my_files")
+    else:
+        filesystem = cache[CACHE_FOLDER_CONTENT_PREFIX + path]
+
+    valid_file_path = []
+    total_size = 0
+    total_files = 0
+    for file_name, file_info in filesystem.items():
+        if user_has_permission(file_info["path"], "read", "file") is False:
+            flash("You are not authorized to download some files (double check if your user own ALL files in this directory).")
+            return redirect("/my_files")
+
+        valid_file_path.append(file_info["path"])
+        total_size = total_size + file_info["st_size_default"]
+        total_files = total_files + 1
+
+    if total_size > config.Config.MAX_ARCHIVE_SIZE:
+        flash("Sorry, the maximum archive size is {:.2f} MB. Your archive was {:.2f} MB. To mitigate this issue, you can create a smaller archive, download files individually, use SFTP or edit the maximum archive size authorized.".format(config.Config.MAX_ARCHIVE_SIZE/1024/1024, total_size/1024/1024), "error")
+        return redirect("/my_files")
+
+    try:
+        os.makedirs("zip_downloads", mode=0o700)
+    except FileExistsError:
+        pass
+
+    archive_name = "zip_downloads/SOCA_Download_"+session["user"]+".zip"
+    zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
+    for file_to_zip in valid_file_path:
+        zipf.write(file_to_zip)
+    zipf.close()
+    return send_file(archive_name,
+                         mimetype='zip',
+                         attachment_filename=archive_name.split("/")[-1],
+                         as_attachment=True)
+
 
 
 @my_files.route('/my_files/upload', methods=['POST'])

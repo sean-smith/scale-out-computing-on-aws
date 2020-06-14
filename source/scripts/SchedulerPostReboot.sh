@@ -24,6 +24,8 @@ cat <<EOT >> /apps/soca/$SOCA_CONFIGURATION/cluster_manager/settings/queue_mappi
 queue_type:
   compute:
     queues: ["high", "normal", "low"]
+    # Uncomment to limit the number of concurrent running jobs
+    # max_running_jobs: 50
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
@@ -43,6 +45,8 @@ queue_type:
     # .. Refer to the doc for more supported parameters
   desktop:
     queues: ["desktop"]
+    # Uncomment to limit the number of concurrent running jobs
+    # max_running_jobs: 50
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
@@ -59,6 +63,8 @@ queue_type:
     # .. Refer to the doc for more supported parameters
   test:
     queues: ["test"]
+    # Uncomment to limit the number of concurrent running jobs
+    # max_running_jobs: 50
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
