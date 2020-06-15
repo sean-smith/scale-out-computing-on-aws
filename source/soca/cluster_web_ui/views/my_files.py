@@ -325,9 +325,11 @@ def download():
                     valid_file_path.append(file_info["file_path"])
                     total_size = total_size + file_info["file_size"]
                     total_files = total_files + 1
+
         if total_size > config.Config.MAX_ARCHIVE_SIZE:
             flash("Sorry, the maximum archive size is {:.2f} MB. Your archive was {:.2f} MB. To mitigate this issue, you can create a smaller archive, download files individually, use SFTP or edit the maximum archive size authorized.".format(config.Config.MAX_ARCHIVE_SIZE/1024/1024, total_size/1024/1024), "error")
             return redirect("/my_files")
+
         # Limit HTTP payload size
         if total_files > 45:
             flash("Sorry, you cannot download more than 45 files in a single call. Your archive contained {} files".format(total_files), "error")
@@ -337,6 +339,9 @@ def download():
             os.makedirs("zip_downloads", mode=0o700)
         except FileExistsError:
             pass
+
+        if valid_file_path.__len__() == 0:
+            return redirect("/my_files")
 
         archive_name = "zip_downloads/SOCA_Download_"+session["user"]+".zip"
         zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
@@ -402,6 +407,10 @@ def download_all():
         os.makedirs("zip_downloads", mode=0o700)
     except FileExistsError:
         pass
+
+    if valid_file_path.__len__() == 0:
+        return redirect("/my_files")
+
 
     archive_name = "zip_downloads/SOCA_Download_"+session["user"]+".zip"
     zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)

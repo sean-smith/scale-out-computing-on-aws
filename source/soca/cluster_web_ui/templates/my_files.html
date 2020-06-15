@@ -59,44 +59,44 @@
                           </ol>
                       </nav>
 
-<!-- Modal -->
-<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Upload your content to SOCA</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-          <div id="update-div" name="update-div"></div>
-          <form action="/upload"  id="drop" class="dropzone" style="border: 2px dashed #0087F7;height: 500px">
-              <div class="fallback">
-                  <input name="file" type="file" multiple />
-              </div>
-          </form>
-          <hr>
-          Do not close the page while uploading<br>
-          Upload limited to {{ max_upload_size / 1024 }} GB and {{ max_upload_timeout / 60000 }} minutes timeout. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files or edit the configuration files.
-      </div>
+                        <!-- Modal -->
+                        <div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                          <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Upload your content to SOCA</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                  <div id="update-div" name="update-div"></div>
+                                  <form action="/upload"  id="drop" class="dropzone" style="border: 2px dashed #0087F7;height: 500px">
+                                      <div class="fallback">
+                                          <input name="file" type="file" multiple />
+                                      </div>
+                                  </form>
+                                  <hr>
+                                  Do not close the page while uploading<br>
+                                  Upload limited to {{ max_upload_size / 1024 }} GB and {{ max_upload_timeout / 60000 }} minutes timeout. Use the <a href="/sftp">SOCA SFTP solution</a> for larger files or edit the configuration files.
+                              </div>
 
-    </div>
-  </div>
-</div>
+                            </div>
+                          </div>
+                        </div>
                       <div class="row">
                            <div class="col-md-5">
                               <input type="text" id="searchFiles"  class="form-control" placeholder="Search for a file or a folder" aria-controls="list_files_table">
                           </div>
                           {% if filesystem %}
                           <div class="col-md-2">
-                              <div id="download_all">
+                              <div id="div_download_all">
                                   <a href="/my_files/download_all?path={{ path }}">
                                     <button type="button" data-toggle="tooltip" data-placement="top" title="Download all {{ get_all_uid_count }} files on this folder" class="btn btn-info form-control">Download all</button>
                                   </a>
                               </div>
-                              <a id="download_selected_link" href="#" style="display: none">
-                                  <button data-toggle="tooltip" data-placement="top" title="Download selected files" type="button" class="btn btn-info form-control">Download selected</button>
+                              <a id="link_download_selected" href="#" style="display: none">
+                                  <button id="btn_download_selected" data-toggle="tooltip" data-placement="top" title="Download selected files" type="button" class="btn btn-info form-control">Download selected</button>
                               </a>
                           </div>
                           {% endif %}
@@ -143,7 +143,7 @@
                         </div>
                     {% else %}
                         {% if file_data.st_size_default > max_online_preview %}
-                            <input data-toggle="tooltip" data-placement="top" title="This file is too big to be compressed via web. Download file separately or use SFTP." type="checkbox" class="form-check-input">
+                            <i class="far fa-question-circle form-check-input" data-toggle="tooltip" data-placement="top" title="This file is too big to be compressed via web. Download file separately or use SFTP."></i>
                         {% else %}
                             <input type="checkbox" onchange="SelectedFiles(this.id)" class="form-check-input" id="{{ file_data.uid }}">
                         {% endif %}
@@ -335,8 +335,8 @@
                   <script>
                       var selected_files = []
                       function SelectedFiles(uid){
-                          dl_link = document.getElementById("download_selected_link");
-                          download_all = document.getElementById("download_all");
+                          dl_link = document.getElementById("link_download_selected");
+                          download_all = document.getElementById("div_download_all");
                           if (document.getElementById(uid).checked) {
                                if(selected_files.length > 40) {
                                   // URL/Payload limit. Limit the number of uid to 40
@@ -347,12 +347,14 @@
                                    selected_files.push(uid)
                                }
                           }
-                          else {selected_files = selected_files.filter(v => v !== uid);}
+                          else {
+                              selected_files = selected_files.filter(v => v !== uid);
+                          }
+
                           if (selected_files.length > 0) {
                               download_all.setAttribute("style", "display: none;");
                               dl_link.setAttribute("style", "display: visible;");
                               dl_link.setAttribute("href", "/my_files/download?uid="+selected_files.join(','))
-
                           }
                           else{
                               dl_link.setAttribute("style", "display: none;");
