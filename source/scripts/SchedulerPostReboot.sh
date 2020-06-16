@@ -134,7 +134,10 @@ echo "
 * * * * * source /etc/environment;  /apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3  /apps/soca/$SOCA_CONFIGURATION/cluster_manager/nodes_manager.py >> /apps/soca/$SOCA_CONFIGURATION/cluster_manager/nodes_manager.py.log 2>&1
 
 ## Cluster Web UI
+### Restart UI at reboot
 @reboot /apps/soca/$SOCA_CONFIGURATION/cluster_web_ui/socawebui.sh start
+### Remove user ZIP download after one day
+@daily source /etc/environment; find /apps/soca/$SOCA_CONFIGURATION/cluster_web_ui/zip_downloads/* -type f -mtime +1 -print | xargs -I {} rm -rf '{}'
 
 ## Automatic Host Provisioning
 * * * * * source /etc/environment;  /apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/$SOCA_CONFIGURATION/cluster_manager/dispatcher.py -c /apps/soca/$SOCA_CONFIGURATION/cluster_manager/settings/queue_mapping.yml -t compute

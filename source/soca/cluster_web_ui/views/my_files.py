@@ -16,6 +16,7 @@ import grp
 from flask import Flask
 from werkzeug.utils import secure_filename
 from cachetools import TTLCache
+import datetime
 
 logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
@@ -335,15 +336,10 @@ def download():
             flash("Sorry, you cannot download more than 45 files in a single call. Your archive contained {} files".format(total_files), "error")
             return redirect("/my_files")
 
-        try:
-            os.makedirs("zip_downloads", mode=0o700)
-        except FileExistsError:
-            pass
-
         if valid_file_path.__len__() == 0:
             return redirect("/my_files")
-
-        archive_name = "zip_downloads/SOCA_Download_"+session["user"]+".zip"
+        ts = datetime.datetime.utcnow().strftime("%s")
+        archive_name = "zip_downloads/SOCA_Download_"+session["user"]+"_"+ ts + ".zip"
         zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
         for file_to_zip in valid_file_path:
             zipf.write(file_to_zip)
@@ -360,36 +356,29 @@ def download_all():
     if path is None:
         return redirect("/my_files")
     filesystem = {}
-    if CACHE_FOLDER_CONTENT_PREFIX + path not in cache.keys():
-        is_cached = False
-        try:
-            for entry in os.scandir(path):
-                if not entry.name.startswith("."):
-                    if entry.is_dir():
-                        # Ignore folder. We only include files
-                        pass
-                    else:
-                        filesystem[entry.name] = {"path": path + "/" + entry.name,
+    try:
+        for entry in os.scandir(path):
+            if not entry.name.startswith("."):
+                if entry.is_dir():
+                    # Ignore folder. We only include files
+                    pass
+                else:
+                    filesystem[entry.name] = {"path": path + "/" + entry.name,
                                               "uid": encrypt(path + "/" + entry.name, entry.stat().st_size)["message"],
                                               "type": "file",
                                               "st_size": convert_size(entry.stat().st_size),
                                               "st_size_default": entry.stat().st_size,
                                               "st_mtime": entry.stat().st_mtime
                                               }
-            cache[CACHE_FOLDER_CONTENT_PREFIX + path] = filesystem
 
-        except Exception as err:
-            if err.errno == errno.EPERM:
-                flash(
-                    "Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync.",
-                    "error")
-            elif err.errno == errno.ENOENT:
-                flash("Could not locate the directory. Did you delete it ?", "error")
-            else:
-                flash("Could not locate the directory: " + str(err), "error")
-            return redirect("/my_files")
-    else:
-        filesystem = cache[CACHE_FOLDER_CONTENT_PREFIX + path]
+    except Exception as err:
+        if err.errno == errno.EPERM:
+            flash("Sorry we could not access this location due to a permission error. If you recently changed the permissions, please allow up to 10 minutes for sync.","error")
+        elif err.errno == errno.ENOENT:
+            flash("Could not locate the directory. Did you delete it ?", "error")
+        else:
+            flash("Could not locate the directory: " + str(err), "error")
+        return redirect("/my_files")
 
     valid_file_path = []
     total_size = 0
@@ -407,24 +396,19 @@ def download_all():
         flash("Sorry, the maximum archive size is {:.2f} MB. Your archive was {:.2f} MB. To avoid this issue, you can create a smaller archive, download files individually, use SFTP or edit the maximum archive size authorized.".format(config.Config.MAX_ARCHIVE_SIZE/1024/1024, total_size/1024/1024), "error")
         return redirect("/my_files")
 
-    try:
-        os.makedirs("zip_downloads", mode=0o700)
-    except FileExistsError:
-        pass
-
     if valid_file_path.__len__() == 0:
         return redirect("/my_files")
 
-
-    archive_name = "zip_downloads/SOCA_Download_"+session["user"]+".zip"
+    ts = datetime.datetime.utcnow().strftime("%s")
+    archive_name = "zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
     zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
     for file_to_zip in valid_file_path:
         zipf.write(file_to_zip)
     zipf.close()
     return send_file(archive_name,
-                         mimetype='zip',
-                         attachment_filename=archive_name.split("/")[-1],
-                         as_attachment=True)
+                    mimetype='zip',
+                    attachment_filename=archive_name.split("/")[-1],
+                    as_attachment=True)
 
 
 
