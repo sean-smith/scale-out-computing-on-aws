@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Admins can manage SOCA LDAP via web (create group, user, manage ownership and permissions)
   - Admins can creates application profiles and let user submit job via web interface
   - Ability to trigger Linux command via HTML form
+- Admins can now limit the number of running jobs per queue
+- Admins can now limit the number of running instances per queue
 
 
 ### Changed

@@ -26,6 +26,8 @@ queue_type:
     queues: ["high", "normal", "low"]
     # Uncomment to limit the number of concurrent running jobs
     # max_running_jobs: 50
+    # Uncomment to limit the number of concurrent running instances
+    # max_provisioned_instances: 30
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
@@ -47,6 +49,8 @@ queue_type:
     queues: ["desktop"]
     # Uncomment to limit the number of concurrent running jobs
     # max_running_jobs: 50
+    # Uncomment to limit the number of concurrent running instances
+    # max_provisioned_instances: 30
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
@@ -65,6 +69,8 @@ queue_type:
     queues: ["test"]
     # Uncomment to limit the number of concurrent running jobs
     # max_running_jobs: 50
+    # Uncomment to limit the number of concurrent running instances
+    # max_provisioned_instances: 30
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
