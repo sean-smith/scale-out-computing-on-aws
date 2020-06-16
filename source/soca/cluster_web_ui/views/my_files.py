@@ -2,7 +2,7 @@ import logging
 import config
 import zipfile
 from decorators import login_required
-from flask import render_template, request, redirect, session, flash, Blueprint, send_file
+from flask import render_template, request, redirect, session, flash, Blueprint, send_file, after_this_request
 import errno
 import math
 import os
@@ -270,7 +270,8 @@ def index():
                                default_cache_time=config.Config.DEFAULT_CACHE_TIME,
                                path=path,
                                page="my_files",
-                               is_cached=is_cached)
+                               is_cached=is_cached,
+                               timestamp=datetime.datetime.utcnow().strftime("%s"))
     except Exception as err:
         flash("Error, this path probably does not exist. "+str(err), "error")
         print(err)
@@ -339,11 +340,18 @@ def download():
         if valid_file_path.__len__() == 0:
             return redirect("/my_files")
         ts = datetime.datetime.utcnow().strftime("%s")
-        archive_name = "zip_downloads/SOCA_Download_"+session["user"]+"_"+ ts + ".zip"
+        archive_name = "tmp/zip_downloads/SOCA_Download_"+session["user"]+"_" + ts + ".zip"
         zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
         for file_to_zip in valid_file_path:
             zipf.write(file_to_zip)
         zipf.close()
+        @after_this_request
+        def remove_file(response):
+            try:
+                os.remove(archive_name)
+            except Exception as error:
+                logger.error("Error removing archive")
+            return response
         return send_file(archive_name,
                          mimetype='zip',
                          attachment_filename=archive_name.split("/")[-1],
@@ -400,11 +408,18 @@ def download_all():
         return redirect("/my_files")
 
     ts = datetime.datetime.utcnow().strftime("%s")
-    archive_name = "zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
+    archive_name = "tmp/zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
     zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
     for file_to_zip in valid_file_path:
         zipf.write(file_to_zip)
     zipf.close()
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(archive_name)
+        except Exception as error:
+            logger.error("Error removing archive")
+        return response
     return send_file(archive_name,
                     mimetype='zip',
                     attachment_filename=archive_name.split("/")[-1],

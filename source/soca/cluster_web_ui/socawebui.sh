@@ -38,6 +38,8 @@ case "$1" in
     ## Create the structure if does not exist
     mkdir -p tmp/ssh
     mkdir -p tmp/dcv_sessions
+    mkdir -p tmp/zip_downloads
+    chmod 700 tmp/
 
     status
         if [[ -z $status_check_process ]]; then
@@ -47,10 +49,9 @@ case "$1" in
                 cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 > flask_secret_key.txt
                 chmod 600 flask_secret_key.txt
             fi
-            mkdir -p zip_downloads
-            chmod -R zip_downloads
-            export SOCA_FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
 
+
+            export SOCA_FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
             # Creating unique, random and temp credentials
             export SOCA_FLASK_FERNET_KEY=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | openssl base64)
             export SOCA_FLASK_API_ROOT_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)

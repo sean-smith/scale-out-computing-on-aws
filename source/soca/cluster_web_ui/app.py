@@ -38,7 +38,9 @@ from models import db
 from flask_swagger import swagger
 from swagger_ui import api_doc
 import config
-
+from apscheduler.schedulers.background import BackgroundScheduler
+import glob
+import os
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
@@ -155,6 +157,17 @@ dict_config = {
 logger = logging.getLogger("api_log")
 logging.config.dictConfig(dict_config)
 app.logger.addHandler(logger)
+
+# Scheduled tasks
+def clean_zip():
+    logger.info("Remove all zip from the zip_downloads/ in case after_this_request@ did not run properly for /download and /download_all")
+    files = glob.glob('zip_downloads/*')
+    for f in files:
+        os.remove(f)
+
+sched = BackgroundScheduler(daemon=False)
+sched.add_job(clean_zip, 'interval', days=1)
+sched.start()
 
 with app.app_context():
     db.init_app(app)

@@ -10,10 +10,7 @@ CODE_OF_CONDUCT.md:4
 CONTRIBUTING.md:50
 
 # Docs
-docs/install-soca-cluster.md:20
-docs/tutorials/job-start-stop-email-notification.md:102
-docs/tutorials/job-licenses-flexlm.md:79
-docs/security/integrate-cognito-sso.md:19
+^docs/
 
 # False Positive
 source/soca/cluster_web_ui/static/vendor/jquery/jquery.js:7476
@@ -24,7 +21,8 @@ source/soca/cluster_web_ui/app.py:108
 source/solution-for-scale-out-computing-on-aws.yml:166
 source/soca/cluster_web_ui/templates/common/horizontal_menu_bar.html:5
 source/soca/cluster_hooks/job_notifications.py:54
-
+source/scripts/config.cfg:23
+tests/test_web_api.py
 
 # Python Bandit
 source/soca/cluster_hooks/execjob_begin/soca_aws_infos.py

@@ -20,7 +20,7 @@ def index():
                         verify=False).json()
 
     all_users = get_all_users["message"].keys()
-    return render_template('admin_users.html', user=session['user'], all_users=all_users)
+    return render_template('admin_users.html', user=session['user'], all_users=sorted(all_users))
 
 
 @admin_users.route('/admin/manage_sudo', methods=['POST'])

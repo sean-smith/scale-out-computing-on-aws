@@ -323,9 +323,9 @@ class Group(Resource):
                         "message": "Unable to retrieve list of LDAP users. " + str(get_all_users._content)}, 500
 
             if action == "add":
-                mod_attrs = [(ldap.MOD_ADD, 'memberUid', [user_dn.encode("utf-8")])]
+                mod_attrs = [(ldap.MOD_ADD, 'memberUid', [user.encode("utf-8")])]
             else:
-                mod_attrs = [(ldap.MOD_DELETE, 'memberUid', [user_dn.encode("utf-8")])]
+                mod_attrs = [(ldap.MOD_DELETE, 'memberUid', [user.encode("utf-8")])]
 
             conn.simple_bind_s(config.Config.ROOT_DN, config.Config.ROOT_PW)
             conn.modify_s(group_dn, mod_attrs)
