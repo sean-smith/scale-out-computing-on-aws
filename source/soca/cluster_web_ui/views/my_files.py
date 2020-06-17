@@ -197,7 +197,14 @@ def user_has_permission(path, permission_required, type):
 @login_required
 def index():
     try:
+        timestamp = datetime.datetime.utcnow().strftime("%s")
         path = request.args.get("path", None)
+        ts = request.args.get("ts", None)
+        if ts is None:
+            if path is None:
+                return redirect("/my_files?ts="+timestamp)
+            else:
+                return redirect("/my_files?path="+path+"&ts=" + timestamp)
         filesystem = {}
         breadcrumb = {}
         if path is None:
@@ -271,7 +278,7 @@ def index():
                                path=path,
                                page="my_files",
                                is_cached=is_cached,
-                               timestamp=datetime.datetime.utcnow().strftime("%s"))
+                               timestamp=timestamp)
     except Exception as err:
         flash("Error, this path probably does not exist. "+str(err), "error")
         print(err)
