@@ -205,6 +205,7 @@ def index():
                 return redirect("/my_files?ts="+timestamp)
             else:
                 return redirect("/my_files?path="+path+"&ts=" + timestamp)
+
         filesystem = {}
         breadcrumb = {}
         if path is None:
@@ -352,13 +353,14 @@ def download():
         for file_to_zip in valid_file_path:
             zipf.write(file_to_zip)
         zipf.close()
-        @after_this_request
-        def remove_file(response):
-            try:
-                os.remove(archive_name)
-            except Exception as error:
-                logger.error("Error removing archive")
-            return response
+        #@after_this_request
+        # using apscheduler for now
+        #def remove_file(response):
+        #    try:
+        #        os.remove(archive_name)
+        #    except Exception as error:
+        #        logger.error("Error removing archive")
+        #    return response
         return send_file(archive_name,
                          mimetype='zip',
                          attachment_filename=archive_name.split("/")[-1],
@@ -420,13 +422,14 @@ def download_all():
     for file_to_zip in valid_file_path:
         zipf.write(file_to_zip)
     zipf.close()
-    @after_this_request
-    def remove_file(response):
-        try:
-            os.remove(archive_name)
-        except Exception as error:
-            logger.error("Error removing archive")
-        return response
+    #@after_this_request
+    # using apscheduler for now
+    #def remove_file(response):
+    #    try:
+    #        os.remove(archive_name)
+    #    except Exception as error:
+    #        logger.error("Error removing archive")
+    #    return response
     return send_file(archive_name,
                     mimetype='zip',
                     attachment_filename=archive_name.split("/")[-1],

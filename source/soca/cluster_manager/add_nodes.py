@@ -64,9 +64,8 @@ def verify_ri_saving_availabilities(instance_type, instance_type_info):
     return instance_type_info
 
 
-def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id, allow_on_demand):
-    instance_to_test = instance_type.split('+')
-    for instance in instance_to_test:
+def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id):
+    for instance in instance_type:
         try:
             ec2.run_instances(
                 ImageId=image_id,
@@ -94,6 +93,8 @@ def check_config(**kwargs):
         if str(v).lower() in ['false', 'no', 'n', 'off']:
             kwargs[k] = False
 
+    # Transform instance_type as list in case multiple type are specified
+    kwargs['instance_type'] = kwargs['instance_type'].split("+")
     # Validate terminate_when_idle
     if 'terminate_when_idle' not in kwargs.keys():
         kwargs['terminate_when_idle'] = 0
@@ -110,27 +111,28 @@ def check_config(**kwargs):
     if kwargs['anonymous_metrics'] not in [True, False]:
         kwargs['anonymous_metrics'] = True
 
-    # Ensure allow_on_demand is either True or False.
-    if kwargs['allow_on_demand'] not in [True, False]:
-        kwargs['allow_on_demand'] = True
+    # Ensure force_ri is either True or False.
+    if kwargs['force_ri'] not in [True, False]:
+        kwargs['force_ri'] = False
 
-    if kwargs['allow_on_demand'] is False and kwargs['spot_price'] is False:
-        # OnDemand is restricted and job does not use Spot, so we enforce reserved Instance
+    if kwargs['force_ri'] is True and kwargs['spot_price'] is False:
+        # Job can only run on Reserved Instance. We ignore if SpotFleet is enabled
         try:
             instance_type_info
         except NameError:
             instance_type_info = {}
 
-        check_ri = verify_ri_saving_availabilities(kwargs["instance_type"], instance_type_info)
-        if (check_ri[kwargs["instance_type"]]["current_instance_in_use"] + int(kwargs['desired_capacity'])) > check_ri[kwargs["instance_type"]]["current_ri_purchased"]:
-            error = return_message("Not enough RI to cover for this job. Instance type: {}, number of running instances: {}, number of purchased RIs: {}, capacity requested: {}. Either purchase more RI or allow usage of On Demand".format(
-                        kwargs["instance_type"],
-                        check_ri[kwargs["instance_type"]]["current_instance_in_use"],
-                        check_ri[kwargs["instance_type"]]["current_ri_purchased"],
-                        kwargs['desired_capacity']))
-        else:
-            # Update the number of current_instance_in_use with the number of new instance that this job will launch
-            instance_type_info[kwargs["instance_type"]] = {'current_instance_in_use': check_ri[kwargs["instance_type"]]["current_instance_in_use"] + int(kwargs['desired_capacity'])}
+        for instance_type in kwargs["instance_type"]:
+            check_ri = verify_ri_saving_availabilities(instance_type, instance_type_info)
+            if (check_ri[instance_type]["current_instance_in_use"] + int(kwargs['desired_capacity'])) > check_ri[instance_type]["current_ri_purchased"]:
+                error = return_message("Not enough RI to cover for this job. Instance type: {}, number of running instances: {}, number of purchased RIs: {}, capacity requested: {}. Either purchase more RI or allow usage of On Demand".format(
+                            instance_type,
+                            check_ri[instance_type]["current_instance_in_use"],
+                            check_ri[instance_type]["current_ri_purchased"],
+                            kwargs['desired_capacity']))
+            else:
+                # Update the number of current_instance_in_use with the number of new instance that this job will launch
+                instance_type_info[instance_type] = {'current_instance_in_use': check_ri[instance_type]["current_instance_in_use"] + int(kwargs['desired_capacity'])}
 
     # Default System metrics to True unless explicitly set to False
     if kwargs['system_metrics'] is not False:
@@ -277,7 +279,7 @@ def check_config(**kwargs):
             # if placement group is True and more than 1 subnet is defined, force default to 1 subnet
             kwargs['subnet_id'] = [kwargs['subnet_id'][0]]
 
-    cpus_count_pattern = re.search(r'[.](\d+)', kwargs['instance_type'])
+    cpus_count_pattern = re.search(r'[.](\d+)', kwargs['instance_type'][0])
     if cpus_count_pattern:
         kwargs['core_count'] = int(cpus_count_pattern.group(1)) * 2
     else:
@@ -359,8 +361,9 @@ def check_config(**kwargs):
         kwargs['efa_support'] = False
     else:
         if kwargs['efa_support'] is True:
-            if 'n' not in kwargs['instance_type']:
-                error = return_message('You have requested EFA support but your instance type does not support EFA: ' + kwargs['instance_type'])
+            for instance_type in kwargs['instance_type']:
+                if 'n' not in instance_type:
+                    error = return_message('You have requested EFA support but your instance type does not support EFA: ' + instance_type)
 
     # Validate Keep EBS
     if kwargs['keep_ebs'] not in [True, False]:
@@ -381,7 +384,7 @@ def main(**kwargs):
     try:
         # Create default value for optional parameters if needed
         optional_job_parameters = {'anonymous_metrics': aligo_configuration["DefaultMetricCollection"],
-                                   'allow_on_demand': True,
+                                   'force_ri': False,
                                    'base_os': False,
                                    'efa_support': False,
                                    'fsx_lustre': False,
@@ -634,8 +637,7 @@ def main(**kwargs):
         can_launch = can_launch_capacity(cfn_stack_parameters['InstanceType'],
                                          cfn_stack_parameters['DesiredCapacity'],
                                          cfn_stack_parameters['ImageId'],
-                                         cfn_stack_parameters['SubnetId'][0],
-                                         params['allow_on_demand'])
+                                         cfn_stack_parameters['SubnetId'][0])
 
         if can_launch is True:
             try:
@@ -679,7 +681,7 @@ if __name__ == "__main__":
     parser.add_argument('--keep_forever', default=False, help="Whether or not capacity will stay forever")
 
     # Optional
-    parser.add_argument('--allow_on_demand', default=True, help='If false, job can only run if we have reserved instance available')
+    parser.add_argument('--force_ri', default=False, help='If True, job can only run if we have reserved instance available')
     parser.add_argument('--base_os', default=False, help="Specify custom Base OK")
     parser.add_argument('--terminate_when_idle', default=0, nargs='?', help="If instances will be terminated when idle for N minutes")
     parser.add_argument('--fsx_lustre', default=False, help="Mount existing FSx by providing the DNS")

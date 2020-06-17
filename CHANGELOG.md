@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated Troposphere to 2.6.1
-- Updated EFA to 1.8.4
+- Updated EFA to 1.9.3
 - Updated Nice DCV to 2020.0-8428
 - Updated ElasticSearch to 7.4
 - You can specify a name for your DCV sessions 

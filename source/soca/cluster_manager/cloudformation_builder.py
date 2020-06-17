@@ -55,7 +55,7 @@ def main(**params):
         allow_anonymous_data_collection = params["MetricCollectionAnonymous"]
         debug = False
         mip_usage = False
-        instances_list = params["InstanceType"].split("+")
+        instances_list = params["InstanceType"] # list of instance type. Use + to specify more than one type
         asg_lt = asg_LaunchTemplate()
         ltd = LaunchTemplateData("NodeLaunchTemplateData")
         mip = MixedInstancesPolicy()

@@ -159,14 +159,16 @@ logging.config.dictConfig(dict_config)
 app.logger.addHandler(logger)
 
 # Scheduled tasks
-def clean_zip():
-    logger.info("Remove all zip from the zip_downloads/ in case after_this_request@ did not run properly for /download and /download_all")
-    files = glob.glob('zip_downloads/*')
-    for f in files:
-        os.remove(f)
+def clean_tmp_folders():
+    logger.info("Remove tmp/ files")
+    directories = ["tmp/zip_downloads/*", "tmp/ssh/*"]
+    for directory in directories:
+        files = glob.glob(directory)
+        for f in files:
+            os.remove(f)
 
 sched = BackgroundScheduler(daemon=False)
-sched.add_job(clean_zip, 'interval', days=1)
+sched.add_job(clean_tmp_folders, 'interval', hours=1)
 sched.start()
 
 with app.app_context():

@@ -189,7 +189,7 @@
 # https://awslabs.github.io/scale-out-computing-on-aws/tutorials/integration-ec2-job-parameters/
 #PBS -l instance_type=%instance_type%
 #PBS -l walltime=%wall_time%
-#PBS -l allow_on_demand=%allow_on_demand%
+#PBS -l force_ri=%force_ri%
 
 ## [Begin: Commands to be added before the solver. This cannot be changed by the users]
 export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...
@@ -428,19 +428,19 @@ Compress output, send output to S3 etc ...
   {
     "type": "select",
     "required": true,
-    "label": "Do you want to limit your job to Reserved Instance only? (allow_on_demand)",
+    "label": "Do you want to limit your job to Reserved Instance only? (force_ri)",
     "className": "form-control",
-    "name": "allow_on_demand",
-    "description": "If allow_on_demand is False, the job must ONLY run on Reserved Instance. If there is not enough RI, job will stay in the queue. Parameter is ignored if you use Spot",
+    "name": "force_ri",
+    "description": "If force_ri is True, the job must ONLY run on Reserved Instance. If there is not enough RI, job will stay in the queue. Parameter is ignored if you use Spot",
     "multiple": false,
     "values": [
       {
         "label": "No",
-        "value": "True"
+        "value": "Fase"
       },
       {
         "label": "Yes",
-        "value": "False"
+        "value": "True"
       }
     ]
   },
