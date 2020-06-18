@@ -36,10 +36,13 @@ case "$1" in
     start)
 
     ## Create the structure if does not exist
-    mkdir -p tmp/ssh
-    mkdir -p tmp/dcv_sessions
-    mkdir -p tmp/zip_downloads
-    chmod 700 tmp/
+    if [[ ! -d "tmp/" ]]; then
+      echo "First configuration: Creating tmp/ folder structure, please wait 10 seconds"
+      mkdir -p tmp/ssh
+      mkdir -p tmp/zip_downloads
+      chmod 700 tmp/
+      sleep 10
+    fi
 
     status
         if [[ -z $status_check_process ]]; then
@@ -49,7 +52,6 @@ case "$1" in
                 cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 > flask_secret_key.txt
                 chmod 600 flask_secret_key.txt
             fi
-
 
             export SOCA_FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
             # Creating unique, random and temp credentials

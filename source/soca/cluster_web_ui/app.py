@@ -160,12 +160,13 @@ app.logger.addHandler(logger)
 
 # Scheduled tasks
 def clean_tmp_folders():
-    logger.info("Remove tmp/ files")
     directories = ["tmp/zip_downloads/*", "tmp/ssh/*"]
     for directory in directories:
+        logger.info("Remove files inside " + directory)
         files = glob.glob(directory)
         for f in files:
             os.remove(f)
+
 
 sched = BackgroundScheduler(daemon=False)
 sched.add_job(clean_tmp_folders, 'interval', hours=1)

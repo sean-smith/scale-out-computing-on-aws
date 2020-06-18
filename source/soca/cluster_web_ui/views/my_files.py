@@ -347,12 +347,21 @@ def download():
 
         if valid_file_path.__len__() == 0:
             return redirect("/my_files")
+
         ts = datetime.datetime.utcnow().strftime("%s")
         archive_name = "tmp/zip_downloads/SOCA_Download_"+session["user"]+"_" + ts + ".zip"
         zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
-        for file_to_zip in valid_file_path:
-            zipf.write(file_to_zip)
-        zipf.close()
+        logger.info("About to create archive: " + str(archive_name) + " with the following files: " +str(valid_file_path))
+        try:
+            for file_to_zip in valid_file_path:
+                zipf.write(file_to_zip)
+            zipf.close()
+            logger.info("Archive created")
+        except Exception as err:
+            logger.error("Unable to create archive due to: " + str(err))
+            flash("Unable to generate download link. Check the logs for more information", "error")
+            return redirect("/my_files")
+
         #@after_this_request
         # using apscheduler for now
         #def remove_file(response):
@@ -419,9 +428,16 @@ def download_all():
     ts = datetime.datetime.utcnow().strftime("%s")
     archive_name = "tmp/zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
     zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
-    for file_to_zip in valid_file_path:
-        zipf.write(file_to_zip)
-    zipf.close()
+    logger.info("About to create archive: " + str(archive_name) + " with the following files: " + str(valid_file_path))
+    try:
+        for file_to_zip in valid_file_path:
+            zipf.write(file_to_zip)
+        zipf.close()
+        logger.info("Archive created")
+    except Exception as err:
+        logger("Unable to create archive due to: " + str(err))
+        flash("Unable to generate download link. Check the logs for more information", "error")
+        return redirect("/my_files")
     #@after_this_request
     # using apscheduler for now
     #def remove_file(response):
