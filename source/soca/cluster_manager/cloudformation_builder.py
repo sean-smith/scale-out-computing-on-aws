@@ -62,7 +62,7 @@ def main(**params):
         stack_name = Ref("AWS::StackName")
 
         # Begin LaunchTemplateData
-        UserData = '''#!/bin/bash -xe
+        UserData = '''#!/bin/bash -x
 export PATH=$PATH:/usr/local/bin
 if [[ "''' + params['BaseOS'] + '''" == "centos7" ]] || [[ "''' + params['BaseOS'] + '''" == "rhel7" ]];
     then
@@ -122,6 +122,15 @@ mkdir -p /data
 echo "''' + params['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 echo "''' + params['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
 mount -a 
+EFS_MOUNT=0
+while [[ $? -ne 0 ]] && [[ $EFS_MOUNT -lt 5 ]]
+  do
+    SLEEP_TIME=$(( RANDOM % 60 ))
+    echo "Failed to mount EFS, retrying in $SLEEP_TIME seconds and Loop $EFS_MOUNT/5..."
+    sleep $SLEEP_TIME
+    ((EFS_MOUNT++))
+    mount -a
+  done
 
 # Configure NTP
 yum remove -y ntp

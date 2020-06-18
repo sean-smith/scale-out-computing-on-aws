@@ -335,6 +335,7 @@
                   <script>
                       var selected_files = []
                       function SelectedFiles(uid){
+                          now = new Date();
                           dl_link = document.getElementById("link_download_selected");
                           download_all = document.getElementById("div_download_all");
                           if (document.getElementById(uid).checked) {
@@ -354,7 +355,7 @@
                           if (selected_files.length > 0) {
                               download_all.setAttribute("style", "display: none;");
                               dl_link.setAttribute("style", "display: visible;");
-                              dl_link.setAttribute("href", "/my_files/download?uid="+selected_files.join(','))
+                              dl_link.setAttribute("href", "/my_files/download?uid="+selected_files.join(',')+"&ts=" + now.getTime())
                           }
                           else{
                               dl_link.setAttribute("style", "display: none;");

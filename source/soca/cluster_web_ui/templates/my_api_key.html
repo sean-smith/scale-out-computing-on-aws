@@ -83,7 +83,8 @@ $ echo "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9v
                                           <div class="col-md-6">
                                               <h5>Using Bash</h5>
                                               <pre><code class="language-bash">
-curl -X POST \
+# remove -k when using a trusted SSL cert
+curl -k -X POST \
    -H "X-SOCA-TOKEN: {{ user_token }}" \
    -H "X-SOCA-USER: {{ user }}" \
    -F payload="IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="  \
@@ -100,7 +101,8 @@ api_endpoint="{{ master_host }}api/scheduler/job"
 payload = {"payload": "IyEvYmluL2Jhc2gKI1BCUyAtTiB0ZXN0am9iCiNQQlMgLVYgLWogb2UgLW8gdGVzdGpvYl9vdXRwdXQucWxvZwojUEJTIC1QIG15cHJvamVjdAojUEJTIC1xIG5vcm1hbAojUEJTIC1sIG5vZGVzPTEsaW5zdGFuY2VfdHlwZT1jNS5sYXJnZQovYmluL2VjaG8gIkhlbGxvIFdvcmxkIgo="}
 req = requests.post(api_endpoint,
                    headers=hdrs,
-                   data=payload)
+                   data=payload,
+                   verify=False)  # change verify=True when using a trusted SSL cert
 print(req.status_code)
 print(req.json())
                                   </code></pre>
@@ -115,7 +117,8 @@ print(req.json())
                                           <div class="col-md-6">
                                               <h5>Using Bash</h5>
                                               <pre><code class="language-bash">
-curl -X GET  \
+# remove -k when using a trusted SSL cert
+curl -k -X GET  \
    -H "X-SOCA-TOKEN: {{ user_token }}" \
    -H "X-SOCA-USER: {{ user }}" \
    {{ master_host }}api/scheduler/job?job_id=%YOUR_JOB_ID%</code></pre>
@@ -129,7 +132,7 @@ hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
         "X-SOCA-USER": "{{ user }}",}
 api_endpoint="{{ master_host }}api/scheduler/job"
 data = {"job_id": "%YOUR_JOB_ID%"}
-req = requests.get(api_endpoint, headers=hdrs, params=data)
+req = requests.get(api_endpoint, headers=hdrs, params=data, verify=False) # change verify=True when using a trusted SSL cert
 print(req.status_code)
 print(req.json())
                                   </code></pre>
@@ -144,7 +147,8 @@ print(req.json())
                                           <div class="col-md-6">
                                               <h5>Using Bash</h5>
                                               <pre><code class="language-bash">
-curl -X DELETE  \
+# remove -k when using a trusted SSL cert
+curl -k -X DELETE  \
    -H "X-SOCA-TOKEN: {{ user_token }}" \
    -H "X-SOCA-USER: {{ user }}" \
    {{ master_host }}api/scheduler/job?job_id=%YOUR_JOB_ID%</code></pre>
@@ -158,7 +162,7 @@ hdrs = {"X-SOCA-TOKEN": "{{ user_token }}",
         "X-SOCA-USER": "{{ user }}"}
 api_endpoint="{{ master_host }}api/scheduler/job"
 data = {"job_id": "%YOUR_JOB_ID%"}
-req = requests.delete(api_endpoint, headers=hdrs, params=data)
+req = requests.delete(api_endpoint, headers=hdrs, params=data, verify=False) # change verify=True when using a trusted SSL cert
 print(req.status_code)
 print(req.json())
                                   </code></pre>
