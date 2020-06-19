@@ -271,11 +271,14 @@ Below is a list of parameters you can specify when you request your simulation t
 
 #### system_metrics
 
-*Default to True*
+*Default to False*
 
 - Description: Send host level metrics to your ElasticSearch backend
 - Allowed Values: `yes` `no` `true` `false` (case insensitive) 
 - Example: `-l system_metrics=False`
+
+!!!warning 
+    Enabling system_metrics generate a lot of data (especially if you are tracking 1000s of nodes). If needed, [you can add more storage to your AWS ElasticSearch cluster](https://aws.amazon.com/premiumsupport/knowledge-center/add-storage-elasticsearch/) 
 
 #### anonymous_metrics
 

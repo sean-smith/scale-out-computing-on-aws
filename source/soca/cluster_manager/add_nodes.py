@@ -134,9 +134,9 @@ def check_config(**kwargs):
                 # Update the number of current_instance_in_use with the number of new instance that this job will launch
                 instance_type_info[instance_type] = {'current_instance_in_use': check_ri[instance_type]["current_instance_in_use"] + int(kwargs['desired_capacity'])}
 
-    # Default System metrics to True unless explicitly set to False
-    if kwargs['system_metrics'] is not False:
-        kwargs['system_metrics'] = True
+    # Default System metrics to False unless explicitly set to True
+    if kwargs['system_metrics'] is not True:
+        kwargs['system_metrics'] = False
 
     if not isinstance(int(kwargs['desired_capacity']), int):
         return_message('Desired Capacity must be an int')
