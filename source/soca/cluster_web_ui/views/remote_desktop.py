@@ -71,6 +71,7 @@ def index():
     return render_template('remote_desktop.html',
                            user=session["user"],
                            user_sessions=user_sessions,
+                           terminate_idle_session=config.Config.DCV_TERMINATE_IDLE_SESSION,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -108,7 +109,8 @@ def create():
               'scratch_size': "#PBS -l scratch_size=" + parameters["scratch_size"] if parameters["scratch_size"] is not False else "",
               'session_password': session_password,
               'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
-              'walltime': parameters["walltime"]}
+              'walltime': parameters["walltime"],
+              'terminate_idle_session': str(config.Config.DCV_TERMINATE_IDLE_SESSION)}
 
     job_to_submit = '''#!/bin/bash
 #PBS -N ''' + params['pbs_job_name'] + '''
@@ -125,7 +127,7 @@ cd $PBS_O_WORKDIR
 # Create the DCV Session
 DCV="/bin/dcv"
 echo "DCV detected $DCV" >> dcv.log 2>&1
-/bin/dcv ''' + command_dcv_create_session + ''' >> dcv.log 2>&1
+$DCV ''' + command_dcv_create_session + ''' >> dcv.log 2>&1
     
 # Query dcvsimpleauth with add-user
 echo "''' + params['session_password_b64'] + '''" | base64 --decode | ''' + config.Config.DCV_SIMPLE_AUTH + ''' add-user --user ''' + session["user"] + ''' --session ''' + session_uuid + ''' --auth-dir ''' + config.Config.DCV_AUTH_DIR + ''' >> dcv.log 2>&1
@@ -139,11 +141,43 @@ echo "''' + params['session_password_b64'] + '''" | base64 --decode | ''' + conf
 while true
     do
         session_keepalive=$($DCV list-sessions | grep ''' + session_uuid + ''' | wc -l)
-        if [ $session_keepalive -ne 1 ]
+        if [[ $session_keepalive -ne 1 ]];
             then
                 exit 0
+        else
+            if [[ $terminate_idle_session -ne 0 ]];
+                then
+                    now=$(date +%s)
+                    terminate_idle_session=''' + params["terminate_idle_session"] + '''
+                    terminate_idle_session_in_seconds=$(( terminate_idle_session * 3600 ))
+                    dcv_create_time=$(dcv describe-session ''' + session_uuid + ''' -j | grep -oP '"creation-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
+                    dcv_create_time_epoch=$(date -d "$dcv_create_time" +"%s")
+                    dcv_last_disconnect_datetime=$($DCV describe-session ''' + session_uuid + ''' -j | grep -oP '"last-disconnection-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
+                    dcv_last_disconnect_epoch=$(date -d "$dcv_last_disconnect_datetime" +"%s")
+                    if [[ -z "$dcv_last_connect_datetime" ]];
+                        then
+                        # No previous connection detected, default to create_time
+                        disconnect_session_after=$(( dcv_create_time_epoch + terminate_idle_session_in_seconds ))
+                    else
+                        disconnect_session_after=$(( dcv_last_disconnect_epoch + terminate_idle_session_in_seconds ))
+                    fi
+                    
+                    if [[ $disconnect_session_after < $now ]];
+                       then
+                           echo "session was inactive for too long, terminate session ..."
+                           echo "terminate_idle_session: $terminate_idle_session"
+                           echo "dcv_create_time: $dcv_create_time"
+                           echo "dcv_create_time_epoch: $dcv_create_time_epoch"
+                           echo "dcv_last_connect_datetime: $dcv_last_connect_datetime"
+                           echo "dcv_last_connect_epoch: $dcv_last_disconnect_epoch"
+                           echo "terminate_idle_session_in_seconds: $terminate_idle_session_in_seconds"
+                           echo "disconnect_session_after: $disconnect_session_after"
+                           echo "now: $now"
+                           exit 0
+                    fi
+            fi
+            sleep 600  
         fi
-        sleep 600
 done
     '''
 

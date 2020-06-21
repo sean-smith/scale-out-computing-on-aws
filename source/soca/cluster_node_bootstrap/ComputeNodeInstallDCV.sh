@@ -46,7 +46,9 @@ fi
 
 # Configure
 mv /etc/dcv/dcv.conf /etc/dcv/dcv.conf.orig
-IDLE_TIMEOUT=604800 # in seconds, disconnect DCV session after 1 week of inactivity. This settings is not activated by default, and you must uncomment the idle_timeout line in dcv.conf below
+
+#https://docs.aws.amazon.com/dcv/latest/adminguide/manage-disconnect.html
+IDLE_TIMEOUT=1440 # in minutes. Disconnect DCV (but not terminate the session) after 1 day if not active
 
 echo -e """
 [license]
@@ -65,7 +67,7 @@ gl-displays = [\":0.0\"]
 use-glx-fallback-provider=false
 [connectivity]
 web-url-path=\"/$DCV_HOST_ALTNAME\"
-# idle-timeout = $IDLE_TIMEOUT
+idle-timeout=$IDLE_TIMEOUT
 [security]
 auth-token-verifier=\"http://localhost:8444\"
 """ > /etc/dcv/dcv.conf

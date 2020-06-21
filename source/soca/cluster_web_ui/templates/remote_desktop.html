@@ -88,11 +88,15 @@
                                                 <span class="text">Download Session File</span>
                                               </a>
                                               <hr>
-                                              <div align="center">
-                                                  <div class="alert alert-warning" role="alert">
+                                              <div class="alert alert-warning" role="alert">
                                                       Terminating your session <strong>does not mean</strong> your work will be lost.<br> Data stored on your $HOME directory is persistent and you will be able to access them again if you launch a new session.
-                                                  </div>
-
+                                                      <br>
+                                                      {% if terminate_idle_session > 0 %}
+                                                          <hr>
+                                                          Your session will <strong>automatically be terminated after {{ terminate_idle_session }} hours of inactivity.</strong>
+                                                      {% endif %}
+                                              </div>
+                                              <div align="center">
                                                   <a href="/remote_desktop/delete?session={{ n }}" class="btn btn-danger btn-icon-split">
                                                       <span class="icon text-white-50">
                                                           <i class="fas fa-trash"></i>

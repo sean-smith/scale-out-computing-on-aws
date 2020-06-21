@@ -53,6 +53,7 @@ class Config(object):
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
     DCV_MAX_SESSION_COUNT = 4
+    DCV_TERMINATE_IDLE_SESSION = 0  # In hours. DCV session will be terminated if there is no active connection within the time specified. 0 to disable
 
     # LDAP
     LDAP_HOST = "127.0.0.1"
