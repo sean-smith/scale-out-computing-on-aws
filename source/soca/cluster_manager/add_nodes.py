@@ -362,8 +362,16 @@ def check_config(**kwargs):
     else:
         if kwargs['efa_support'] is True:
             for instance_type in kwargs['instance_type']:
-                if 'n' not in instance_type:
-                    error = return_message('You have requested EFA support but your instance type does not support EFA: ' + instance_type)
+                check_efa_support = ec2.describe_instance_types(
+                    InstanceTypes=[instance_type],
+                    Filters=[
+                        {"Name": "network-info.efa-supported",
+                         "Values": ["true"]}
+                    ]
+                )
+
+                if len(check_efa_support["InstanceTypes"]) == 0:
+                    error = return_message('You have requested EFA support but your instance  (' + instance_type + ') does not support EFA')
 
     # Validate Keep EBS
     if kwargs['keep_ebs'] not in [True, False]:

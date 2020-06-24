@@ -33,10 +33,9 @@ def get_key():
     else:
         generate_ppk = ['/apps/soca/' + read_secretmanager.get_soca_configuration()['ClusterId'] + '/cluster_web_ui/unix/puttygen', user_private_key_path,
                         '-o',
-                        config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk']
-
+                        '/apps/soca/' + read_secretmanager.get_soca_configuration()['ClusterId'] + '/cluster_web_ui/' + config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk']
+        logger.info(str(generate_ppk))
         create_ppk_key = subprocess.call(generate_ppk)
-        logger.info(generate_ppk)
         logger.info(str(create_ppk_key))
         os.chmod(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk', 0o700)
         return send_file(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk',

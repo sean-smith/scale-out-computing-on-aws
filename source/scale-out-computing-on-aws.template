@@ -73,8 +73,8 @@ Parameters:
 
   VpcCidr:
     Type: String
-    Default: 110.0.0.0/16
-    Description: Choose the Cidr (/16) block you want to use for your VPC (eg 110.0.0.0/16)
+    Default: 10.0.0.0/16
+    Description: Choose the Cidr (/16) block you want to use for your VPC (eg 10.0.0.0/16)
     AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/16'
     ConstraintDescription: Your VPC must use x.x.x./16 CIDR range
 

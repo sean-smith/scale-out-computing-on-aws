@@ -31,6 +31,8 @@ queue_type:
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    # Queue mode (can be either fifo or fairshare)
+    # queue_mode: "fifo"
     # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
@@ -54,6 +56,8 @@ queue_type:
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    # Queue mode (can be either fifo or fairshare)
+    # queue_mode: "fifo"
     # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
@@ -74,6 +78,8 @@ queue_type:
     # Queue ACLs:  https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-acls/
     allowed_users: [] # empty list = all users can submit job
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
+    # Queue mode (can be either fifo or fairshare)
+    # queue_mode: "fifo"
     # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
