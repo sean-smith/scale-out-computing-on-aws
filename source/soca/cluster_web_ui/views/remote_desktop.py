@@ -139,6 +139,9 @@ echo "''' + params['session_password_b64'] + '''" | base64 --decode | ''' + conf
 
 # Keep job open
 while true
+    echo "===============================" >> dcv.log 2>&1
+    terminate_idle_session=''' + params["terminate_idle_session"] + '''
+    echo "terminate_idle_session: $terminate_idle_session" >> dcv.log 2>&1
     do
         session_keepalive=$($DCV list-sessions | grep ''' + session_uuid + ''' | wc -l)
         if [[ $session_keepalive -ne 1 ]];
@@ -147,36 +150,36 @@ while true
         else
             if [[ $terminate_idle_session -ne 0 ]];
                 then
-                    now=$(date +%s)
-                    terminate_idle_session=''' + params["terminate_idle_session"] + '''
+                    now=$(date "+%s")
                     terminate_idle_session_in_seconds=$(( terminate_idle_session * 3600 ))
                     dcv_create_time=$(dcv describe-session ''' + session_uuid + ''' -j | grep -oP '"creation-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
                     dcv_create_time_epoch=$(date -d "$dcv_create_time" +"%s")
-                    dcv_last_disconnect_datetime=$($DCV describe-session ''' + session_uuid + ''' -j | grep -oP '"last-disconnection-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
+                    dcv_last_disconnect_datetime=$(dcv describe-session ''' + session_uuid + ''' -j | grep -oP '"last-disconnection-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
                     dcv_last_disconnect_epoch=$(date -d "$dcv_last_disconnect_datetime" +"%s")
-                    if [[ -z "$dcv_last_connect_datetime" ]];
+                    if [[ -z "$dcv_last_disconnect_datetime" ]];
                         then
                         # No previous connection detected, default to create_time
+                        echo "Session has not been used yet ..." >> dcv.log 2>&1
                         disconnect_session_after=$(( dcv_create_time_epoch + terminate_idle_session_in_seconds ))
                     else
                         disconnect_session_after=$(( dcv_last_disconnect_epoch + terminate_idle_session_in_seconds ))
                     fi
                     
+                    echo "dcv_create_time: $dcv_create_time" >> dcv.log 2>&1
+                    echo "dcv_create_time_epoch: $dcv_create_time_epoch" >> dcv.log 2>&1
+                    echo "dcv_last_disconnect_datetime: $dcv_last_disconnect_datetime" >> dcv.log 2>&1
+                    echo "dcv_last_disconnect_epoch: $dcv_last_disconnect_epoch" >> dcv.log 2>&1
+                    echo "terminate_idle_session_in_seconds: $terminate_idle_session_in_seconds" >> dcv.log 2>&1
+                    echo "disconnect_session_after: $disconnect_session_after" >> dcv.log 2>&1
+                    echo "now: $now"  >> dcv.log 2>&1
+                    
                     if [[ $disconnect_session_after < $now ]];
                        then
-                           echo "session was inactive for too long, terminate session ..."
-                           echo "terminate_idle_session: $terminate_idle_session"
-                           echo "dcv_create_time: $dcv_create_time"
-                           echo "dcv_create_time_epoch: $dcv_create_time_epoch"
-                           echo "dcv_last_connect_datetime: $dcv_last_connect_datetime"
-                           echo "dcv_last_connect_epoch: $dcv_last_disconnect_epoch"
-                           echo "terminate_idle_session_in_seconds: $terminate_idle_session_in_seconds"
-                           echo "disconnect_session_after: $disconnect_session_after"
-                           echo "now: $now"
+                           echo "session was inactive for too long, terminate session ..." >> dcv.log 2>&1
                            exit 0
                     fi
             fi
-            sleep 600  
+            sleep 1200  
         fi
 done
     '''
