@@ -2,7 +2,7 @@ import logging
 from decorators import login_required
 import config
 import subprocess
-import os
+import datetime
 from flask import send_file, render_template, Blueprint, session, redirect, request
 import read_secretmanager
 import os
@@ -14,13 +14,18 @@ ssh = Blueprint('ssh', __name__, template_folder='templates')
 @login_required
 def home():
     scheduler_ip = read_secretmanager.get_soca_configuration()['SchedulerPublicIP']
-    return render_template('ssh.html', user=session["user"], scheduler_ip=scheduler_ip)
+    return render_template('ssh.html', user=session["user"], scheduler_ip=scheduler_ip, timestamp=datetime.datetime.utcnow().strftime("%s"))
 
 
 @ssh.route('/ssh/get_key', methods=['GET'])
 @login_required
 def get_key():
     type = request.args.get("type", None)
+    ts = request.args.get("ts", None)
+
+    if ts is None:
+        return redirect("/ssh")
+
     if type is None or type not in ["pem", "ppk"]:
         return redirect("/ssh")
 
@@ -34,9 +39,8 @@ def get_key():
         generate_ppk = ['/apps/soca/' + read_secretmanager.get_soca_configuration()['ClusterId'] + '/cluster_web_ui/unix/puttygen', user_private_key_path,
                         '-o',
                         '/apps/soca/' + read_secretmanager.get_soca_configuration()['ClusterId'] + '/cluster_web_ui/' + config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk']
-        logger.info(str(generate_ppk))
+
         create_ppk_key = subprocess.call(generate_ppk)
-        logger.info(str(create_ppk_key))
         os.chmod(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk', 0o700)
         return send_file(config.Config.SSH_PRIVATE_KEY_LOCATION + '/' + user + '_soca_privatekey.ppk',
                          as_attachment=True,
