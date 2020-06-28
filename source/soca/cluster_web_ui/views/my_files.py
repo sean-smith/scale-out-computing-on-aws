@@ -362,18 +362,16 @@ def download():
             flash("Unable to generate download link. Check the logs for more information", "error")
             return redirect("/my_files")
 
-        #@after_this_request
-        # using apscheduler for now
-        #def remove_file(response):
-        #    try:
-        #        os.remove(archive_name)
-        #    except Exception as error:
-        #        logger.error("Error removing archive")
-        #    return response
-        return send_file(archive_name,
-                         mimetype='zip',
-                         attachment_filename=archive_name.split("/")[-1],
-                         as_attachment=True)
+        if os.path.exists(archive_name):
+            return send_file(archive_name,
+                             mimetype='zip',
+                             attachment_filename=archive_name.split("/")[-1],
+                             as_attachment=True)
+        else:
+            flash("Unable to locate  the download archive, please try again", "error")
+            logger.error("Unable to locate " + str(archive_name))
+            return redirect("/my_files")
+
 
 @my_files.route('/my_files/download_all', methods=['GET'])
 @login_required
@@ -438,18 +436,16 @@ def download_all():
         logger("Unable to create archive due to: " + str(err))
         flash("Unable to generate download link. Check the logs for more information", "error")
         return redirect("/my_files")
-    #@after_this_request
-    # using apscheduler for now
-    #def remove_file(response):
-    #    try:
-    #        os.remove(archive_name)
-    #    except Exception as error:
-    #        logger.error("Error removing archive")
-    #    return response
-    return send_file(archive_name,
-                    mimetype='zip',
-                    attachment_filename=archive_name.split("/")[-1],
-                    as_attachment=True)
+
+    if os.path.exists(archive_name):
+        return send_file(archive_name,
+                         mimetype='zip',
+                         attachment_filename=archive_name.split("/")[-1],
+                         as_attachment=True)
+    else:
+        flash("Unable to locate  the download archive, please try again", "error")
+        logger.error("Unable to locate " + str(archive_name))
+        return redirect("/my_files")
 
 
 
