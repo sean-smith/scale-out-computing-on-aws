@@ -17,6 +17,7 @@ from flask import Flask
 from werkzeug.utils import secure_filename
 from cachetools import TTLCache
 import datetime
+import read_secretmanager
 
 logger = logging.getLogger(__name__)
 my_files = Blueprint('my_files', __name__, template_folder='templates')
@@ -349,7 +350,7 @@ def download():
             return redirect("/my_files")
 
         ts = datetime.datetime.utcnow().strftime("%s")
-        archive_name = "tmp/zip_downloads/SOCA_Download_"+session["user"]+"_" + ts + ".zip"
+        archive_name = "/apps/soca/" + read_secretmanager.get_soca_configuration()["ClusterId"] + "/cluster_web_ui/tmp/zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
         zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
         logger.info("About to create archive: " + str(archive_name) + " with the following files: " +str(valid_file_path))
         try:
@@ -424,7 +425,7 @@ def download_all():
         return redirect("/my_files")
 
     ts = datetime.datetime.utcnow().strftime("%s")
-    archive_name = "tmp/zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
+    archive_name = "/apps/soca/" + read_secretmanager.get_soca_configuration()["ClusterId"] + "/cluster_web_ui/tmp/zip_downloads/SOCA_Download_" + session["user"] + "_" + ts + ".zip"
     zipf = zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED)
     logger.info("About to create archive: " + str(archive_name) + " with the following files: " + str(valid_file_path))
     try:
