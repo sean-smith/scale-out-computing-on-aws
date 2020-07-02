@@ -160,8 +160,8 @@ class User(Resource):
         parser.add_argument('password', type=str, location='form')
         parser.add_argument('sudoers', type=int, location='form')
         parser.add_argument('email', type=str, location='form')
-        parser.add_argument('uid', type=int, location='form')
-        parser.add_argument('gid', type=int, location='form')
+        parser.add_argument('uid', type=int, location='form')  # 0 = no value specified, use default one
+        parser.add_argument('gid', type=int, location='form')  # 0 = no value specified, use default one
         args = parser.parse_args()
         user = ''.join(x for x in args["user"] if x.isalpha() or x.isdigit()).lower()  # Sanitize input
         password = args["password"]
@@ -169,15 +169,14 @@ class User(Resource):
         email = args["email"]
         uid = args["uid"]
         gid = args["gid"]
-        if uid is None or gid is None:
-            get_id = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
-                         headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
-                         verify=False)
-            if get_id.status_code == 200:
-                current_ldap_ids = (json.loads(get_id.text))
-            else:
-                logger.error("/api/ldap/ids returned error : " + str(get_id.__dict__))
-                return {"success": False, "message": "/api/ldap/ids returned error: " +str(get_id.__dict__)}, 500
+        get_id = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
+                     headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
+                     verify=False)
+        if get_id.status_code == 200:
+            current_ldap_ids = (json.loads(get_id.text))
+        else:
+            logger.error("/api/ldap/ids returned error : " + str(get_id.__dict__))
+            return {"success": False, "message": "/api/ldap/ids returned error: " +str(get_id.__dict__)}, 500
 
         if user is None or password is None or sudoers is None or email is None:
             return errors.all_errors("CLIENT_MISSING_PARAMETER", "user (str), password (str), sudoers (bool) and email (str) parameters are required")
@@ -187,13 +186,13 @@ class User(Resource):
         if "@" not in parseaddr(email)[1]:
             return errors.all_errors("INVALID_EMAIL_ADDRESS")
 
-        if uid is None:
+        if uid == 0:
             uid = current_ldap_ids["message"]['proposed_uid']
         else:
             if uid in current_ldap_ids["message"]['uid_in_use']:
                 return errors.all_errors("UID_ALREADY_IN_USE")
 
-        if gid is None:
+        if gid == 0:
             gid = current_ldap_ids["message"]['proposed_gid']
         else:
             if gid in current_ldap_ids["message"]['gid_in_use']:

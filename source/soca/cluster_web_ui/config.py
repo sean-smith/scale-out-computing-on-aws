@@ -30,7 +30,7 @@ class Config(object):
     MAX_UPLOAD_TIMEOUT = 1800000  # 30 minutes
     MAX_SIZE_ONLINE_PREVIEW = 150000000  # in bytes (150mb by default), maximum size of file that can be visualized via the web editor
     MAX_ARCHIVE_SIZE = 150000000  # in bytes (150mb by default), maximum size of archive generated when downloading multiple files at once
-
+    DAILY_BACKUP_COUNT = 15  # Keep 15 latest daily backups
 
     # UWSGI SETTINGS
     FLASK_HOST = "127.0.0.1"

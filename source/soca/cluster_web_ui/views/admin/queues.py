@@ -24,7 +24,7 @@ def index():
         flash("Unable to retrieve queues list due to " + str(get_all_queues.text), "error")
         all_queues = []
 
-    return render_template('admin_queues.html', user=session['user'], all_queues=all_queues)
+    return render_template('admin/queues.html', user=session['user'], all_queues=all_queues)
 
 
 @admin_queues.route('/admin/queues/create', methods=['POST'])

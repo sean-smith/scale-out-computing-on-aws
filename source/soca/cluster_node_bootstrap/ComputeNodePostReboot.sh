@@ -168,7 +168,7 @@ source /etc/environment
 # Disable HyperThreading
 if [[ \"$SOCA_INSTANCE_HYPERTHREADING\" == \"false\" ]];
 then
-  echo \"Disabling Hyperthreading\"  >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostReboot.log
+  echo \"Disabling Hyperthreading\" >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostReboot.log
   for cpunum in $(cat /sys/devices/system/cpu/cpu*/topology/thread_siblings_list | cut -s -d, -f2- | tr ',' '\n' | sort -un);
     do
       echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
@@ -190,8 +190,16 @@ systemctl start pbs" >> /etc/rc.local
 else
     # Mount
     mount -a
-    echo "chmod FSX"
-    chmod 777 $FSX_MOUNTPOINT
+
+    # Make Scratch (and /fsx if applicable) R/W by everyone. ACL still applies at folder level
+    echo "chmod /scratch"
+    chmod 777 /scratch
+
+    if [[ -n "$FSX_MOUNTPOINT" ]]; then
+        echo "chmod FSX"
+        chmod 777 $FSX_MOUNTPOINT
+    fi
+
     # Disable HyperThreading
     if [[ $SOCA_INSTANCE_HYPERTHREADING == "false" ]];
     then
@@ -201,10 +209,6 @@ else
                 echo 0 > /sys/devices/system/cpu/cpu$cpunum/online;
             done
     fi
-
-    # Make Scratch Readable by everyone. ACL still applies at folder level
-    echo "chmod /scratch"
-    chmod 777 /scratch
 
     # Begin USER Customization
     /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeUserCustomization.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeUserCustomization.log 2>&1

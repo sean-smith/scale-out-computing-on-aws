@@ -35,7 +35,7 @@ def index():
         flash("Unable to list all_users: " + str(get_all_users._content), "error")
         all_users = {}
 
-    return render_template('admin_groups.html', user=session['user'],
+    return render_template('admin/groups.html', user=session['user'],
                            sudoers=session['sudoers'],
                            all_groups=sorted(all_groups),
                            all_users=sorted(all_users))

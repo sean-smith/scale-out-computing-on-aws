@@ -143,7 +143,7 @@ dict_config = {
             'filename': "soca_api.log",
             'when': "midnight",
             'interval': 1,
-            'backupCount': 15
+            'backupCount': config.Config.DAILY_BACKUP_COUNT
         },
     },
     'loggers': {

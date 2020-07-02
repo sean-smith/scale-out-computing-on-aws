@@ -16,7 +16,7 @@ def index():
     get_all_application_profiles = ApplicationProfiles.query.all()
     for profile in get_all_application_profiles:
         application_profiles[profile.id] = {"profile_name": profile.profile_name}
-    return render_template('admin_applications.html',
+    return render_template('admin/applications.html',
                            user=session['user'],
                            page="application",
                            profile_interpreter="qsub",
@@ -46,7 +46,7 @@ def edit():
     for profile in get_all_application_profiles:
         application_profiles[profile.id] = {"profile_name": profile.profile_name}
 
-    return render_template('admin_applications.html',
+    return render_template('admin/applications.html',
                            user=session['user'],
                            app_id=app_id,
                            profile_form=profile_form,

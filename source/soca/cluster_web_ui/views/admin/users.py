@@ -20,7 +20,7 @@ def index():
                         verify=False).json()
 
     all_users = get_all_users["message"].keys()
-    return render_template('admin_users.html', user=session['user'], all_users=sorted(all_users))
+    return render_template('admin/users.html', user=session['user'], all_users=sorted(all_users))
 
 
 @admin_users.route('/admin/manage_sudo', methods=['POST'])
@@ -77,8 +77,8 @@ def create_new_account():
         password = str(request.form.get('password'))
         email = str(request.form.get('email'))
         sudoers = request.form.get('sudo', None)
-        uid = request.form.get('uid', None)
-        gid = request.form.get('gid', None)
+        uid = request.form.get('uid', None)  # 0 if not specified. Will automatically generate uid
+        gid = request.form.get('gid', None)  # 0 if not specified. Will automatically generate gid
         create_new_user = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
                                headers={"X-SOCA-TOKEN": session["api_key"],
                                         "X-SOCA-USER": session["user"]},
@@ -86,7 +86,8 @@ def create_new_account():
                                      "password": password,
                                      "email": email,
                                      "sudoers": 0 if sudoers is None else 1,
-                                     "uid": uid},
+                                     "uid": 0 if not uid else uid,
+                                     "gid": 0 if not gid else gid},
                                verify=False
                                )
         if create_new_user.status_code == 200:

@@ -407,7 +407,7 @@ def main(**kwargs):
                                    'spot_allocation_strategy': 'lowest-price',
                                    'spot_price': False,
                                    'subnet_id': False,
-                                   'system_metrics': True,
+                                   'system_metrics': False,
                                    'scratch_iops': 0,
                                    'stack_uuid': str(uuid.uuid4())
                                    }
@@ -602,7 +602,7 @@ def main(**kwargs):
             },
             'SystemMetrics': {
                 'Key': 'system_metrics',
-                'Default': True
+                'Default': False
             },
             'TerminateWhenIdle': {
                 'Key': 'terminate_when_idle',
