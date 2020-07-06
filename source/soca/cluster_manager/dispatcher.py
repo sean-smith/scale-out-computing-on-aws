@@ -295,7 +295,7 @@ if __name__ == "__main__":
     # Variables
     queue_parameter_values = {}
     queues = False
-    queues_only_parameters = ["allowed_users", "excluded_users", "excluded_instance_types", "allowed_instance_types", "restricted_parameters", "queue_mode"]
+    queues_only_parameters = ["allowed_users", "excluded_users", "excluded_instance_types", "allowed_instance_types", "restricted_parameters"]
     backlist_job_resources = ["select", "ncpus", "ngpus", "place", "nodect", "queues", "compute_node", "stack_id", "max_running_jobs", "max_provisioned_instances"] # dispatcher cannot edit these job values
     asg_name = None
     fair_share_running_job_malus = -60
@@ -422,7 +422,7 @@ if __name__ == "__main__":
                 for job in sorted(queued_jobs, key=lambda k: k['get_job_order_in_queue']):
                     job_list.append(job['get_job_id'])
             else:
-                print('queue mode must either be fairshare or fifo')
+                logpush('queue mode must either be fairshare or fifo')
                 exit(1)
 
             try:

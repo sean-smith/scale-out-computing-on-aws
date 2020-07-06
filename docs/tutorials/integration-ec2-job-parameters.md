@@ -57,14 +57,14 @@ Below is a list of parameters you can specify when you request your simulation t
 - Examples:
     - `-l nodes=5`: Provision 5 EC2 instances
 
-#### restrict_ri
+#### force_ri
 
 - Description: Restrict a job to run on [Reserved Instance](https://aws.amazon.com/ec2/pricing/reserved-instances/)
 - Allowed Values: `True` `False`
 - Default: `False`
 - Examples: 
-    - `-l restrict_ri=False`: Job can use RI, On-Demand or Spot
-    - `-l restrict_ri=True`: Job will only use Reserved Instance. Job will stay in the queue if there is not enough reserved instance available
+    - `-l force_ri=False`: Job can use RI, On-Demand or Spot
+    - `-l force_ri=True`: Job will only use Reserved Instance. Job will stay in the queue if there is not enough reserved instance available
     
     
 #### spot_allocation_count

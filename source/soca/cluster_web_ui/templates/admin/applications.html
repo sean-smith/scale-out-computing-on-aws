@@ -192,7 +192,7 @@
 #PBS -l force_ri=%force_ri%
 
 ## [Begin: Commands to be added before the solver. This cannot be changed by the users]
-export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...
+# export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...
 ## [End: Commands to be added before the solver. This cannot be changed by the users]
 
 %user_pre_exec%
@@ -209,7 +209,7 @@ export custom path such as (PATH, LD_LIBRARY_PATH), configure license server var
 %user_post_exec%
 
 ## [Begin: Commands to be added after the solver. This cannot be changed by the users]
-Compress output, send output to S3 etc ...
+# Compress output, send output to S3 etc ...
 ## [End: Commands to be added after the solver. This cannot be changed by the users]
                                           {% endif %}</textarea>
                                       <div class="alert alert-primary">

@@ -30,7 +30,7 @@ systemctl set-default graphical.target
 cd ~
 wget $DCV_URL
 if [[ $(md5sum $DCV_TGZ | awk '{print $1}') != $DCV_HASH ]];  then
-    echo -e "FATAL ERROR: Checksum for PBSPro failed. File may be compromised." > /etc/motd
+    echo -e "FATAL ERROR: Checksum for DCV failed. File may be compromised." > /etc/motd
     exit 1
 fi
 tar zxvf $DCV_TGZ
