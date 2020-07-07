@@ -69,6 +69,9 @@
                                                     <span class="badge badge-success">RUNNING</span>
                                                    {% elif job_data.job_state == 'Q' %}
                                                     <span class="badge badge-warning">QUEUED</span>
+                                                       {% if "compute_node=job" in job_data.Resource_List.select %}
+                                                            <span class="badge badge-info">Capacity being provisioned</span>
+                                                       {% endif %}
                                                    {% elif job_data.job_state == 'E' %}
                                                        <span class="badge badge-danger">EXIT</span>
                                                    {% else %}

@@ -450,6 +450,7 @@ if __name__ == "__main__":
                         for job in queued_jobs_not_being_provisioned:
                             new_host_count = current_host_count + int(job['get_job_nodect'])
                             if queue_parameter_values['max_provisioned_instances'] >= new_host_count:
+                                # break here if you want to enforce FIFO and not optimize the number of job that can run
                                 current_host_count = new_host_count
                                 queued_jobs_to_be_started.append(job["get_job_id"])
 

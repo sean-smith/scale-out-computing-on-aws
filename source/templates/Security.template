@@ -343,6 +343,7 @@ Resources:
                   - elasticloadbalancing:DescribeListeners
                   - elasticloadbalancing:DescribeTargetGroups
                   - savingsplans:DescribeSavingsPlans
+                  - servicequotas:ListServiceQuotas
                 Resource: "*"
 
         - PolicyName: SchedulerWritePermissions

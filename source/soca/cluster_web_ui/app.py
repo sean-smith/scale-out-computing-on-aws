@@ -27,6 +27,7 @@ from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
 from views.admin.applications import admin_applications
 from views.my_jobs import my_jobs
+from views.my_activity import my_activity
 from views.dashboard import dashboard
 from views.remote_desktop import remote_desktop
 from views.my_account import my_account
@@ -91,6 +92,7 @@ app.register_blueprint(sftp)
 app.register_blueprint(my_jobs)
 app.register_blueprint(remote_desktop)
 app.register_blueprint(dashboard)
+app.register_blueprint(my_activity)
 
 
 

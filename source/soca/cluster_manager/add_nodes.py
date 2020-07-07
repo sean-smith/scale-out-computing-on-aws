@@ -14,6 +14,7 @@ import cloudformation_builder
 cloudformation = boto3.client('cloudformation')
 s3 = boto3.client('s3')
 ec2 = boto3.client('ec2')
+servicequotas = boto3.client("service-quotas")
 aligo_configuration = configuration.get_aligo_configuration()
 
 
@@ -57,11 +58,131 @@ def verify_ri_saving_availabilities(instance_type, instance_type_info):
             for reservation in get_ri_count["ReservedInstances"]:
                 instance_type_info[instance_type]["current_ri_purchased"] += reservation["InstanceCount"]
 
-
     print("Detected {} running {} instance ".format(instance_type_info[instance_type]["current_instance_in_use"],instance_type))
     print("Detected {} RI for {} instance ".format(instance_type_info[instance_type]["current_ri_purchased"], instance_type))
-
     return instance_type_info
+
+def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
+    cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
+    instance_family = instance_type[0].upper()
+    if cpus_count_pattern:
+        vcpus_per_instance = int(cpus_count_pattern.group(1)) * 2
+    else:
+        if 'xlarge' in instance_type:
+            vcpus_per_instance = 2
+        else:
+            vcpus_per_instance = 1
+
+    total_vpcus_requested = vcpus_per_instance * int(desired_capacity)
+    running_vcpus = 0
+
+    max_vcpus_allowed = False
+    quota_name = False
+
+    if not quota_info or instance_type not in quota_info.keys():
+        # Get quota
+        token = True
+        next_token = False
+        while token is True:
+            if next_token is False:
+                response = servicequotas.list_service_quotas(
+                    ServiceCode="ec2",
+                    MaxResults=100)
+
+            else:
+                response = servicequotas.list_service_quotas(
+                    ServiceCode="ec2",
+                    MaxResults=100,
+                    NextToken=next_token)
+            try:
+                next_token = response['NextToken']
+            except KeyError:
+                token = False
+
+            for quota in response["Quotas"]:
+                if "running on-demand" in quota["QuotaName"].lower() and instance_family in quota["QuotaName"]:
+                    max_vcpus_allowed = quota["Value"]
+                    quota_name = quota["QuotaName"]
+                    print("Detected service quota for instance type {} with max concurrent cores {}".format(instance_type, max_vcpus_allowed))
+    else:
+        max_vcpus_allowed = quota_info[instance_type]["max_vcpus_allowed"]
+        quota_name = quota_info[instance_type]["quota_name"]
+
+    if max_vcpus_allowed is False:
+        return {"message": "Unable to find ServiceQuota for {}".format(instance_type), "quota_info": quota_info}
+
+    # list all ec2 instances
+    if "standard" in quota_name.lower():
+        instances_family_allowed_in_quota = re.search(r"running on-demand standard \((.*)\) instances", quota_name.lower()).group(1).split(',')
+    else:
+        instances_family_allowed_in_quota = list(re.search(r"running on-demand (.*) instances", quota_name.lower()).group(1))
+
+
+    if not quota_info or instance_type not in quota_info.keys():
+        all_instances_available = ec2._service_model.shape_for('InstanceType').enum
+        all_instances_for_quota = [p for p in all_instances_available if any(substr in p for substr in instances_family_allowed_in_quota)]
+        # get all running instance
+        token = True
+        next_token = ''
+        while token is True:
+            response = ec2.describe_instances(
+                Filters=[
+                    # Describe instance as a limit of 200 filters
+                    {'Name': 'instance-type', 'Values': all_instances_for_quota[0:150]},
+                    {'Name': 'instance-state-name', 'Values': ['running', 'pending']}],
+                MaxResults=1000,
+                NextToken=next_token,
+            )
+            try:
+                next_token = response['NextToken']
+            except KeyError:
+                token = False
+            for reservation in response['Reservations']:
+                for instance in reservation['Instances']:
+                    if "CpuOptions" in instance.keys():
+                        running_vcpus += instance["CpuOptions"]["CoreCount"]
+                    else:
+                        if 'xlarge' in instance["InstanceType"]:
+                            running_vcpus += 2
+                        else:
+                            running_vcpus += 1
+
+        # Describe instance as a limit of 200 filters
+        if len(all_instances_for_quota) > 150:
+            while token is True:
+                response = ec2.describe_instances(
+                    Filters=[
+                        {'Name': 'instance-type', 'Values': all_instances_for_quota[150:]},
+                        {'Name': 'instance-state-name', 'Values': ['running', 'pending']}],
+                    MaxResults=1000,
+                    NextToken=next_token,
+                )
+                try:
+                    next_token = response['NextToken']
+                except KeyError:
+                    token = False
+
+                for reservation in response['Reservations']:
+                    for instance in reservation['Instances']:
+                        if "CpuOptions" in instance.keys():
+                            running_vcpus += instance["CpuOptions"]["CoreCount"]
+                        else:
+                            if 'xlarge' in instance["InstanceType"]:
+                                running_vcpus += 2
+                            else:
+                                running_vcpus += 1
+    else:
+        running_vcpus = quota_info[instance_type]["vcpus_provisioned"]
+
+    #print("Max Vcpus allowed {} \nDetected running Vcpus {} \nRequested Vcpus for this job {} \nQuota Name {}".format(max_vcpus_allowed, running_vcpus, total_vpcus_requested, quota_name))
+    quota_info[instance_type] = {"max_vcpus_allowed": max_vcpus_allowed,
+                                 "vcpus_provisioned": running_vcpus + total_vpcus_requested,
+                                 "quota_name": quota_name}
+    if max_vcpus_allowed >= (running_vcpus + total_vpcus_requested):
+        return {"message": True, "quota_info": quota_info}
+    else:
+        return {"message": "Job cannot start due to AWS Service limit. Max Vcpus allowed {}. Detected running Vcpus {}. Requested Vcpus for this job {}. Quota Name {}".format(max_vcpus_allowed, running_vcpus, total_vpcus_requested, quota_name), "quota_info": quota_info}
+
 
 
 def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id):
@@ -78,7 +199,17 @@ def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id):
         except Exception as e:
             if e.response['Error'].get('Code') == 'DryRunOperation':
                 # Dry Run Succeed.
-                return True
+                try:
+                    quota_info
+                except NameError:
+                    quota_info = {}
+
+                vcpus_check = verify_vcpus_limit(instance, desired_capacity, quota_info)
+                quota_info = vcpus_check["quota_info"]
+                if vcpus_check["message"] is True:
+                    return True
+                else:
+                    return vcpus_check["message"]
             else:
                 print('Dry Run Failed, capacity ' + instance + ' can not be added: ' + str(e), 'error')
                 return str(instance + ' can not be added: ' + str(e))
