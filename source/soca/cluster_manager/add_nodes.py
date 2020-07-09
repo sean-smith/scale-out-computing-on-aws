@@ -414,7 +414,7 @@ def check_config(**kwargs):
     if cpus_count_pattern:
         kwargs['core_count'] = int(cpus_count_pattern.group(1)) * 2
     else:
-        if 'xlarge' in kwargs['instance_type']:
+        if 'xlarge' in kwargs['instance_type'][0]:
             kwargs['core_count'] = 2
         else:
             kwargs['core_count'] = 1

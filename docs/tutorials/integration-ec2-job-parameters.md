@@ -261,7 +261,7 @@ Below is a list of parameters you can specify when you request your simulation t
 
 - Description: Disable placement group
 - Allowed Values: `yes` `true` (case insensitive) 
-- Example: `-l placement_group=True`: Instances will not use placement groups
+- Example: `-l placement_group=True`: Instances will use placement groups
 
 !!!info
     - Placement group is enabled by default as long as the number of nodes provisioned is greated than 1

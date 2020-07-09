@@ -6,12 +6,15 @@ title: My Job Queue
 
 ![](../imgs/my-jobs-queue-1.png)
 
+SOCA automatically add a tag if capacity is being provisioned for a job in "queued" state.
+
+![](../imgs/my-jobs-queue-9.png)
+
 ## Retrieve job information
 
 Simply click "Job Info" button to get information about your job.
 
 ![](../imgs/my-jobs-queue-2.png)
-
 
 ## Access your job output
 

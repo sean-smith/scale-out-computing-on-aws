@@ -176,9 +176,9 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         for instance in instances_list:
             if "t2." in instance:
                 ltd.EbsOptimized = False
-            else:
                 # metal + t2 does not support CpuOptions
-                if "metal" not in instance and (SpotFleet is False or len(instances_list) == 1):
+                unsupported = ["t2.", "metal"]
+                if all(itype not in instance for itype in unsupported) and (SpotFleet is False or len(instances_list) == 1):
                     # Spotfleet with multiple instance types doesn't support CpuOptions
                     # So we can't add CpuOptions if SpotPrice is specified and when multiple instances are specified
                     ltd.CpuOptions = CpuOptions(

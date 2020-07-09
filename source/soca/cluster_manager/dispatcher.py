@@ -237,11 +237,11 @@ def capacity_being_provisioned(stack_id, job_id, job_select_resource):
             logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is not completed yet so we exit the script.')
             return True
 
-        elif check_stack_status['Stacks'][0]['StackStatus'] in ['CREATE_FAILED', 'ROLLBACK_COMPLETE']:
+        elif check_stack_status['Stacks'][0]['StackStatus'] in ['CREATE_FAILED', 'ROLLBACK_COMPLETE', 'ROLLBACK_FAILED']:
             logpush(job_id + ' is queued but have a valid CI assigned. However CloudFormation stack is ' + str(check_stack_status['Stacks'][0]['StackStatus']) +'.  Because job has not started by then, rollback compute_node value and delete stack')
             new_job_select = job_select_resource.split(':compute_node')[0] + ':compute_node=tbd'
-            qalter_cmd = [system_cmds['qalter'], "-l", "stack_id=", "-l", "select=" + new_job_select, str(job_id)]
-            run_command(qalter_cmd, "call")
+            run_command([system_cmds['qalter'], "-l", "stack_id=", "-l", "select=" + new_job_select, str(job_id)], "call")
+            run_command([system_cmds['qalter'], "-l", "error_message=Associated_CloudFormation_Stack_has_failed_to_create_with_status_"+check_stack_status['Stacks'][0]['StackStatus'], str(job_id)], "call")
             cloudformation.delete_stack(StackName=stack_id)
         else:
             pass
