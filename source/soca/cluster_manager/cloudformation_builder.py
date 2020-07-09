@@ -176,14 +176,15 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
         for instance in instances_list:
             if "t2." in instance:
                 ltd.EbsOptimized = False
-                # metal + t2 does not support CpuOptions
-                unsupported = ["t2.", "metal"]
-                if all(itype not in instance for itype in unsupported) and (SpotFleet is False or len(instances_list) == 1):
-                    # Spotfleet with multiple instance types doesn't support CpuOptions
-                    # So we can't add CpuOptions if SpotPrice is specified and when multiple instances are specified
-                    ltd.CpuOptions = CpuOptions(
-                        CoreCount=int(params["CoreCount"]),
-                        ThreadsPerCore=1 if params["ThreadsPerCore"] is False else 2)
+
+            # metal + t2 does not support CpuOptions
+            unsupported = ["t2.", "metal"]
+            if all(itype not in instance for itype in unsupported) and (SpotFleet is False or len(instances_list) == 1):
+                # Spotfleet with multiple instance types doesn't support CpuOptions
+                # So we can't add CpuOptions if SpotPrice is specified and when multiple instances are specified
+                ltd.CpuOptions = CpuOptions(
+                    CoreCount=int(params["CoreCount"]),
+                    ThreadsPerCore=1 if params["ThreadsPerCore"] is False else 2)
 
         ltd.IamInstanceProfile = IamInstanceProfile(Arn=params["ComputeNodeInstanceProfileArn"])
         ltd.KeyName = params["SSHKeyPair"]
