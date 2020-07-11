@@ -33,7 +33,7 @@ queue_type:
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
     # Queue mode (can be either fifo or fairshare)
     # queue_mode: "fifo"
-    # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
+    # Instance types restrictions: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     # List of parameters user can not override: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-restricted-parameters/
@@ -58,7 +58,7 @@ queue_type:
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
     # Queue mode (can be either fifo or fairshare)
     # queue_mode: "fifo"
-    # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
+    # Instance types restrictions: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     # List of parameters user can not override: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-restricted-parameters/
@@ -80,7 +80,7 @@ queue_type:
     excluded_users: [] # empty list = no restriction, ["*"] = only allowed_users can submit job
     # Queue mode (can be either fifo or fairshare)
     # queue_mode: "fifo"
-    # Instance types restrictions: https://wslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
+    # Instance types restrictions: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-instance-types/
     allowed_instance_types: [] # Empty list, all EC2 instances allowed. You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     excluded_instance_types: [] # Empty list, no EC2 instance types prohibited.  You can restrict by instance type (Eg: ["c5.4xlarge"]) or instance family (eg: ["c5"])
     # List of parameters user can not override: https://awslabs.github.io/scale-out-computing-on-aws/security/manage-queue-restricted-parameters/
@@ -163,9 +163,6 @@ CURRENT_ATTEMPT=0
 
 sanitized_username="$3"
 sanitized_password="$4"
-
-echo $sanitized_username
-echo $sanitized_password
 
 until `/apps/soca/$SOCA_CONFIGURATION/python/latest/bin/python3 /apps/soca/$SOCA_CONFIGURATION/cluster_manager/ldap_manager.py add-user -u $sanitized_username -p $sanitized_password --admin >> /dev/null 2>&1`
 do

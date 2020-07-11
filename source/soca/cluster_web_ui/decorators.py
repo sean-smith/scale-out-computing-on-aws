@@ -43,8 +43,7 @@ def admin_api(f):
     return admin_resource
 
 
-
-# Private API can only be accessed with a valid pair of user/token
+# Private API can only be accessed with a valid pair of user/token or web app
 def private_api(f):
     @wraps(f)
     def private_resource(*args, **kwargs):
