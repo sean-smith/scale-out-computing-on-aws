@@ -160,6 +160,7 @@ class User(Resource):
         parser.add_argument('password', type=str, location='form')
         parser.add_argument('sudoers', type=int, location='form')
         parser.add_argument('email', type=str, location='form')
+        parser.add_argument('shell', type=str, location='form')
         parser.add_argument('uid', type=int, location='form')  # 0 = no value specified, use default one
         parser.add_argument('gid', type=int, location='form')  # 0 = no value specified, use default one
         args = parser.parse_args()
@@ -169,6 +170,10 @@ class User(Resource):
         email = args["email"]
         uid = args["uid"]
         gid = args["gid"]
+        shell = args["shell"]
+        if shell is None:
+            shell = "/bin/bash"
+
         get_id = get(config.Config.FLASK_ENDPOINT + '/api/ldap/ids',
                      headers={"X-SOCA-TOKEN": config.Config.API_ROOT_KEY},
                      verify=False)
@@ -220,7 +225,7 @@ class User(Resource):
                     ('mail', [email.encode('utf-8')]),
                     ('cn', [str(user).encode('utf-8')]),
                     ('sn', [str(user).encode('utf-8')]),
-                    ('loginShell', ['/bin/bash'.encode('utf-8')]),
+                    ('loginShell', [str(shell).encode('utf-8')]),
                     ('homeDirectory', (config.Config.USER_HOME + '/' + str(user)).encode('utf-8')),
                     ('userPassword', [passwd.encode('utf-8')])
                 ]

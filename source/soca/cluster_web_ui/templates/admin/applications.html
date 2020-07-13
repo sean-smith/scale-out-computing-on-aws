@@ -195,6 +195,9 @@
 # export custom path such as (PATH, LD_LIBRARY_PATH), configure license server variables etc ...
 ## [End: Commands to be added before the solver. This cannot be changed by the users]
 
+# Change path to current working directory
+cd $PBS_O_WORKDIR
+
 %user_pre_exec%
 
 ## [Begin: Actual solver command]

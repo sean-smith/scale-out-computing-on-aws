@@ -9,6 +9,14 @@ title: Create your own queue
 
 #### Create the queue
 
+##### Via the web UI
+
+As an admin, click "Queue Management" section on the left sidebar. Select a queue name then choose "Automatic Provisioning"
+
+![](../imgs/queue-1.png)
+
+##### Via command-line
+
 On your scheduler host, run `qmgr` as root and enter the following commands:
 ~~~~bash                                
 # Create queue name. Note: can't start with numerical character and it's recommended to use lowercase only
@@ -86,6 +94,12 @@ All logs queues are stored under `/apps/soca/<CLUSTER_ID>/cluster_manager/logs/<
 
 #### Create the queue
 
+##### Via the web UI
+
+As an admin, click "Queue Management" section on the left sidebar. Select a queue name then choose "Always On"
+
+##### Via command-line
+
 On your scheduler host, run `qmgr` as root and enter the following commands:
 
 ~~~bash
@@ -126,4 +140,12 @@ If you need help with this script, run `python3 add_nodes.py -h`
 
 Simply go to your CloudFormation console, locate the stack following the naming convention: soca-**cluster-name**-keepforever-**queue_name**-uniqueid and terminate it.  
 ![](../imgs/howtoqueue-1.png)
+
+#### Delete a queue
+
+Via the web ui, go to "Queue Management" then navigate to the "Delete Queue" tab
+
+![](../imgs/queue-2.png)
+
+
 

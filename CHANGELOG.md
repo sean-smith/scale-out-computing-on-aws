@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admins can now limit the number of running instances per queue
 - Admins can now specify the idle timeout value for any DCV sessions. Inactive DCV sessions will be automatically terminated after this period
 - Job selection can now configured at queue level (FIFO or fair share)
+- Dry run now supports vCpus limit
+- Support for custom shells
 
 
 ### Changed

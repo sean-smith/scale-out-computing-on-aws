@@ -71,6 +71,19 @@
                                        <div class="form-group">
                                           <input id="gid" placeholder="(Optional) User GID" class="form-control" type="number" min=5000 max=65534 name="gid">
                                       </div>
+                                      <div class="form-group">
+                                           <select class="form-control" id="shell" name="shell">
+                                               <option selected value="/bin/bash">(Default Shell) /bin/bash</option>
+                                               <option value="" disabled="disabled">--Other Shells --</option>
+                                            {% for shell in all_shells %}
+                                                <option value="{{shell}}">{{shell}}</option>
+                                            {% endfor %}
+                                           </select>
+                                          <br>
+                                          <div class="alert alert-warning">
+                                              <strong>/bin/bash is the preferred shell</strong>. If using a new/custom shell, make sure your shell is installed on all compute nodes
+                                          </div>
+                                      </div>
                                       <div class="form-group form-check">
                                           <input type="checkbox" class="form-check-input" name="sudo" id="sudo">
                                           <label class="form-check-label" for="sudo">Enable Sudo Access</label>

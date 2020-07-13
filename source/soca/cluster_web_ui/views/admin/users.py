@@ -4,6 +4,7 @@ from flask import render_template, Blueprint, request, redirect, session, flash
 from requests import get, post, delete
 from models import ApiKeys
 from decorators import login_required, admin_only
+import subprocess
 
 logger = logging.getLogger("api_log")
 admin_users = Blueprint('admin_users', __name__, template_folder='templates')
@@ -20,7 +21,13 @@ def index():
                         verify=False).json()
 
     all_users = get_all_users["message"].keys()
-    return render_template('admin/users.html', user=session['user'], all_users=sorted(all_users))
+    try:
+        get_all_shells = subprocess.check_output(["cat", "/etc/shells"])
+        all_shells = get_all_shells.decode("utf-8").split("\n")[:-1] # remove last empty
+    except Exception as err:
+        logger.error("Unable to retrieve shells installed on the system")
+        all_shells = ["/bin/bash"]
+    return render_template('admin/users.html', user=session['user'], all_users=sorted(all_users), all_shells=all_shells)
 
 
 @admin_users.route('/admin/manage_sudo', methods=['POST'])
@@ -77,6 +84,7 @@ def create_new_account():
         password = str(request.form.get('password'))
         email = str(request.form.get('email'))
         sudoers = request.form.get('sudo', None)
+        shell = request.form.get('shell', '/bin/bash')
         uid = request.form.get('uid', None)  # 0 if not specified. Will automatically generate uid
         gid = request.form.get('gid', None)  # 0 if not specified. Will automatically generate gid
         create_new_user = post(config.Config.FLASK_ENDPOINT + "/api/ldap/user",
@@ -86,6 +94,7 @@ def create_new_account():
                                      "password": password,
                                      "email": email,
                                      "sudoers": 0 if sudoers is None else 1,
+                                     "shell": shell,
                                      "uid": 0 if not uid else uid,
                                      "gid": 0 if not gid else gid},
                                verify=False

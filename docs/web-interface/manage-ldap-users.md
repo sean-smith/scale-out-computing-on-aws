@@ -1,14 +1,19 @@
 ---
-title: Centralized user management
+title: Centralized user/group management
 ---
 
 ## Using Web UI
 
-Log in to the Web UI with an admin account and locate =="Users"== section on the left sidebar
+Log in to the Web UI with an admin account and locate "Users Management" or "Group Management" sections on the left sidebar.
+
 ![](../imgs/user-1.png)
 
-### Add users
-To create a new user, simply fill out the "Create New User" form. Select whether or not the user will be an admin by checking  =="Enable Sudo Access"== checkbox
+!!!info
+    Users and Group management are limited to admins users
+
+### Users
+#### Add users
+To create a new user, simply fill out the "Create New User" form. Select whether or not the user will be an admin by checking  =="Enable Sudo Access"== checkbox. If needed, you can also manually force UID and GID.
 
 ![](../imgs/user-2.png)
 
@@ -18,13 +23,15 @@ You will see a success message if the user is created correctly
 !!!info "What is a SUDO user?"
     Users will SUDO permissions will be admin on the cluster and authorized to run any sudo command. Make sure to limit this ability to HPC/AWS/Linux admins and other power users.
 
+!!!info "Custom shell"
+    SOCA uses `/bin/bash` by default but admins can specify any available shells installed on the system ( list available on `/etc/shells`)
 
-### Delete users
-To delete a user, select the user you want to delete and check the checkbox
+#### Delete users
+To delete a user, select the user you want to delete and check the checkbox.
 
 ![](../imgs/user-5.png)
 
-You will see a success message if the user is deleted correctly
+You will see a success message if the user is deleted correctly.
 
 ![](../imgs/user-6.png)
 
@@ -32,31 +39,49 @@ You will see a success message if the user is deleted correctly
     Users without "Sudo" are not authorized to manage LDAP accounts.
     ![](../imgs/user-4.png)
 
-### Reset password for a given user
+#### Reset password for a given user
 
-Users can change their own password via the web ui. However, in case an admin need to reset 
+Users can change their own password via the web ui. If needed, admins can also temporarily unlock a user by resetting the password on his/her behalf.
 
 ![](../imgs/user-9.png)
 
-### Manage SUDO (admin permission)
+#### Manage SUDO (admin permission)
 
+Admins can grant/revoke SUDO permissions for any user:
+ 
 ![](../imgs/user-8.png)
 
-## Using command-line interface
+## Groups
 
-If you need to manage the permission programatically, access the scheduler host and execute `/apps/soca/<CLUSTER_ID>/cluster_manager/ldap_manager.py`
+#### Create a new group
 
-~~~bash
-python3 /apps/soca/<CLUSTER_ID>/cluster_manager/ldap_manager.py add-user -u newuser -p mynottoosecurepassword
-Created User: newuser id: 5002
-Created group successfully
-Home directory created correctly
-~~~
+To create a new group, simply select "Create a Group" and select the user(s) you want to add to this group.
 
-Users created via CLI are visible to the web-ui and vice versa
+![](../imgs/user-11.png)
+
+#### Check group membership
+
+You can check group membership by going to "Check group membership" tab.
+
+![](../imgs/user-12.png)
+
+#### Change group membership
+
+If needed, you can add/remove users from a given groups.
+
+![](../imgs/user-13.png)
+
+#### Delete group
+
+Lastly, to delete a group, simply navigate to "Delete Group" tab.
+
+![](../imgs/user-14.png)
 
 ## Other LDAP operations
 
+!!!warning "Attention"
+    It's recommended to interact with OpenLDAP via the web ui interface.
+    
 Scale-Out Computing on AWS uses OpenLDAP and you can interact with your directory using LDIF directly.
 
 !!!info "Scale-Out Computing on AWS LDAP Schema"
