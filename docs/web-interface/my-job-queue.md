@@ -12,7 +12,7 @@ SOCA automatically add a tag if capacity is being provisioned for a job in "queu
 
 ## Retrieve job information
 
-Simply click "Job Info" button to get information about your job.
+Click "Job Info" button to get information about your job.
 
 ![](../imgs/my-jobs-queue-2.png)
 
@@ -54,7 +54,7 @@ Users can understand why their jobs are blocked by clicking the "Job cannot star
 - Limit of running jobs exceeded
 - Limit of provisioning instance exceeded
 - AWS Service limit errors (eg: cannot provision more EBS volume)
-- Can't start job when "restrict_ri=True" if you do not have enough Reserved Instance availables
+- Can't start job when "force_ri=True" if you do not have enough Reserved Instance availables
 - ...
 
 

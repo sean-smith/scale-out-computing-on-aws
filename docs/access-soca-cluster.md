@@ -55,6 +55,10 @@ You can choose the type of session you want to deploy, depending your needs. Thi
 
 ![](imgs/access-4.png)
 
+### Advanced Options
+
+Starting 2.5.0, users can choose to install DCV on their custom AMI as well as provision additional EBS volumes
+
 ### Access your session
 
 After you click "Launch my session", a new "desktop" job is sent to the queue. Scale-Out Computing on AWS will then provision the capacity and install all required packages including Gnome.

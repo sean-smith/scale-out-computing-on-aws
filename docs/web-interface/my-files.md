@@ -20,6 +20,9 @@ Click "Upload Files" button then drag and drop (or select) the files you want to
 
 ![](../imgs/my-files-3.gif)
 
+!!!info
+    Maximum upload size (default 5GB) and upload timeout (default 30 minutes) can be configure via `config.py`
+
 ## Download files
 
 ### All files in directory

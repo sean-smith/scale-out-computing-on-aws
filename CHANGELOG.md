@@ -18,14 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Users can kill their job via the web
   - Admins can manage SOCA LDAP via web (create group, user, manage ownership and permissions)
   - Admins can creates application profiles and let user submit job via web interface
-  - Ability to trigger Linux command via HTML form
+  - Ability to trigger Linux commands via HTML form
 - Admins can now limit the number of running jobs per queue
 - Admins can now limit the number of running instances per queue
 - Admins can now specify the idle timeout value for any DCV sessions. Inactive DCV sessions will be automatically terminated after this period
 - Job selection can now configured at queue level (FIFO or fair share)
 - Dry run now supports vCpus limit
 - Support for custom shells
-
 
 ### Changed
 - Updated Troposphere to 2.6.1
