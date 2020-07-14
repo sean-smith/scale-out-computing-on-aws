@@ -10,6 +10,7 @@ Log in to the Web UI with an admin account and locate "Users Management" or "Gro
 
 !!!info
     Users and Group management are limited to admins users
+    ![](../imgs/user-4.png)
 
 ### Users
 #### Add users
@@ -34,10 +35,6 @@ To delete a user, select the user you want to delete and check the checkbox.
 You will see a success message if the user is deleted correctly.
 
 ![](../imgs/user-6.png)
-
-!!!danger "Non-Admins users"
-    Users without "Sudo" are not authorized to manage LDAP accounts.
-    ![](../imgs/user-4.png)
 
 #### Reset password for a given user
 

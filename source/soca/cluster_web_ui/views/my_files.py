@@ -226,7 +226,7 @@ def index():
                 flash("We cannot access to your own home directory. Please ask a admin to rollback your folder ACLs to 750")
                 return redirect("/")
             else:
-                flash("You are not authorized to access this location. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
+                flash("You are not authorized to access this location and/or this path is restricted by the HPC admin. If you recently changed the permissions, please allow up to 10 minutes for sync.", "error")
                 return redirect("/my_files")
 
         # Build breadcrumb

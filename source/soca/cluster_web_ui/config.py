@@ -24,7 +24,7 @@ class Config(object):
     APPS_LOCATION = "/apps/"
     USER_HOME = "/data/home"
     CHROOT_USER = False  # if True, user can only access their $HOME directory (aka: USER_HOME/<user>)
-    PATH_TO_RESTRICT = ['/apps/soca/', '/bin', '/boot', '/data', '/dev', '/etc', '/home', '/lib', '/lib64', '/local',
+    PATH_TO_RESTRICT = ['/bin', '/boot', '/dev', '/etc', '/home', '/lib', '/lib64', '/local',
                         '/media', '/opt', '/proc', '/root', '/run', '/sbin', '/srv', '/sys', '/tmp', '/usr',
                         '/var']  # List of folders not accessible via the web ui
     DEFAULT_CACHE_TIME = 120  # 2 minutes. Change this value to optimize performance in case you have a large number of concurrent user
