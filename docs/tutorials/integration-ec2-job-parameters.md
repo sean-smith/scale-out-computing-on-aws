@@ -285,7 +285,7 @@ Below is a list of parameters you can specify when you request your simulation t
 *Default to the value specified during SOCA installation*
 
 - Description: [Send anonymous operational metrics to AWS](https://docs.aws.amazon.com/solutions/latest/scale-out-computing-on-aws/appendix-d.html)
-- Allowed Values: `yes` `true` (case insensitive) 
+- Allowed Values: `yes` `true` `no` `false` (case insensitive) 
 - Example: `-l anonymous_metrics=True`
 
 

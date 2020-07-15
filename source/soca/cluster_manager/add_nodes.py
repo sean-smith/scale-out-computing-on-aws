@@ -329,7 +329,7 @@ def check_config(**kwargs):
                 try:
                     s3.get_bucket_acl(Bucket=kwargs['fsx_lustre'].split('s3://')[-1])
                 except exceptions.ClientError:
-                    error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre_bucket'] + '). Refer to the documentation to update IAM policy.')
+                    error = return_message('SOCA does not have access to this bucket (' + kwargs['fsx_lustre'] + '). Refer to the documentation to update IAM policy.')
 
                 # Verify if user specified custom Import/Export path.
                 # Syntax is fsx_lustre=<bucket>+<export_path>+<import_path>
