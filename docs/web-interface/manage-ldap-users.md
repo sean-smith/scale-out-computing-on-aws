@@ -14,7 +14,7 @@ Log in to the Web UI with an admin account and locate "Users Management" or "Gro
 
 ### Users
 #### Add users
-To create a new user, simply fill out the "Create New User" form. Select whether or not the user will be an admin by checking  =="Enable Sudo Access"== checkbox. If needed, you can also manually force UID and GID.
+To create a new user, simply fill out the "Create New User" form. Select whether or not the user will be an admin by checking  =="Enable Sudo Access"== checkbox. If needed, you can also manually force UID/GID or choose a shell different than `/bin/bash`.
 
 ![](../imgs/user-2.png)
 
@@ -28,13 +28,16 @@ You will see a success message if the user is created correctly
     SOCA uses `/bin/bash` by default but admins can specify any available shells installed on the system ( list available on `/etc/shells`)
 
 #### Delete users
-To delete a user, select the user you want to delete and check the checkbox.
+To delete a user, navigate to 'Delete Users' section then select the user you want to delete and check the checkbox.
 
 ![](../imgs/user-5.png)
 
 You will see a success message if the user is deleted correctly.
 
 ![](../imgs/user-6.png)
+
+!!!info
+    Deleting a user will only delete the LDAP user. Associated $HOME directory is still preserved on /data/home
 
 #### Reset password for a given user
 
