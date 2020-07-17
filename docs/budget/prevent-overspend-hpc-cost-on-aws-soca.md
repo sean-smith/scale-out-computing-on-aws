@@ -16,6 +16,14 @@ Control what type of EC2 instances can be provisioned for any given queue. [Refe
 !!!info "Accelerated Computing Instances"
     Unless required for your workloads, it's recommended to exclude "p2", "p3", "g2", "g3", "p3dn" or other GPU instances type. 
 
+## Force jobs to run only on Reserved Instances
+
+You can limit a job to run only on Reserved Instances if you specify `-l force_ri=True` flag at job submission or for the entire queue.
+If you do not have any Reserved Instance available, your job will stay in the queue until RI become available
+
+![](../imgs/force-ri-1.png)
+
+
 ## Create a budget
 
 Creating an AWS Budget will ensure jobs can't be submitted if the budget allocated to the team/queue/project has exceeded the authorized amount.
