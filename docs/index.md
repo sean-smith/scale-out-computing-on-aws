@@ -69,6 +69,7 @@ Scale-Out Computing on AWS includes a simple web ui designed to simplify user in
 - [Add/Remove LDAP users ](web-interface/manage-ldap-users/)
 - [Access the analytic dashboard](web-interface/my-activity/)
 - [Access your filesystem](web-interface/my-files/)
+- [Understand why your jobs are stuck in the queue](web-interface/my-job-queue/#understand-why-your-job-cannot-start)
 - [Create Application profiles and let your users submit job directly via the web interface](web-interface/submit-hpc-jobs-web-based-interface/)
 
 ## HTTP Rest API

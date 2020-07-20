@@ -23,9 +23,9 @@ Your job will stay in the queue if you do not have any Reserved Instance availab
 
 ![](../imgs/force-ri-1.png)
 
-## Limit the number of concurrent job or provisioned instance
+## Limit the number of concurrent jobs or provisioned instances
 
-You can limit the number of concurrent running job or provisioned instances at the queue level. Edit `queue_mapping.yml`, specify either `max_running_jobs` or `max_provisioned_instances` to the limit you do not want to exceed.
+You can limit the number of concurrent running jobs or provisioned instances at the queue level. Edit `queue_mapping.yml`, specify either `max_running_jobs` or `max_provisioned_instances` to the limit you do not want to exceed.
 ~~~bash hl_lines="4 5"
 queue_type:
   compute:
@@ -78,4 +78,4 @@ Assuming you are on-boarding a new team, here are our recommend best practices:
 
 7 - [Create a Budget to make sure the new team won't spend more than what's authorized](../../analytics/set-up-budget-project/)
 
-8 - [Limit your job to only run on your Reserved Instances](/prevent-overspend-hpc-cost-on-aws-soca/#force-jobs-to-run-only-on-reserved-instances) or [limit the number of provisioned instances for your queue](/prevent-overspend-hpc-cost-on-aws-soca/#limit-the-number-of-concurrent-job-or-provisioned-instance)
+8 - [Limit your job to only run on your Reserved Instances](../../budget/prevent-overspend-hpc-cost-on-aws-soca/#force-jobs-to-run-only-on-reserved-instances) or [limit the number of provisioned instances for your queue](../../budget/prevent-overspend-hpc-cost-on-aws-soca/#limit-the-number-of-concurrent-jobs-or-provisioned-instances)

@@ -108,6 +108,8 @@ Below is a list of parameters you can specify when you request your simulation t
 - Examples:
     - `-l subnet_id=sub-123`: Will provision capacity on sub-123 subnet
     - `-l subnet_id=sub-123+sub-456+sub-789`: + separated list of private subnets. Specifying more than 1 subnet is useful when requesting large number of instances
+    - `-l subnet_id=2`: SOCA will provision capacity in 2 private subnets chosen randomly
+
 
 !!!note 
     If you specify more than 1 subnet and have `placement_group` set to True, SOCA will automatically provision capacity and placement group on the first subnet from the list
