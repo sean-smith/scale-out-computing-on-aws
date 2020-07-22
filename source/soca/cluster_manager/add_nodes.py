@@ -100,10 +100,9 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
                 token = False
 
             for quota in response["Quotas"]:
-                if "running on-demand" in quota["QuotaName"].lower() and instance_family in quota["QuotaName"]:
+                if "running on-demand" in quota["QuotaName"].lower() and instance_family in quota["QuotaName"].replace("Running",""):
                     max_vcpus_allowed = quota["Value"]
                     quota_name = quota["QuotaName"]
-                    print("Detected service quota for instance type {} with max concurrent cores {}".format(instance_type, max_vcpus_allowed))
     else:
         max_vcpus_allowed = quota_info[instance_type]["max_vcpus_allowed"]
         quota_name = quota_info[instance_type]["quota_name"]
