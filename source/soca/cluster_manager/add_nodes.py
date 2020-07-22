@@ -100,6 +100,7 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
                 token = False
 
             for quota in response["Quotas"]:
+                # Remove 'Running' to prevent error when using R instance family
                 if "running on-demand" in quota["QuotaName"].lower() and instance_family in quota["QuotaName"].replace("Running",""):
                     max_vcpus_allowed = quota["Value"]
                     quota_name = quota["QuotaName"]
