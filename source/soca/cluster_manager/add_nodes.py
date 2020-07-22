@@ -66,12 +66,12 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
     cpus_count_pattern = re.search(r'[.](\d+)', instance_type)
     instance_family = instance_type[0].upper()
     if cpus_count_pattern:
-        vcpus_per_instance = int(cpus_count_pattern.group(1)) * 2
+        vcpus_per_instance = int(cpus_count_pattern.group(1)) * 4
     else:
         if 'xlarge' in instance_type:
-            vcpus_per_instance = 2
+            vcpus_per_instance = 4
         else:
-            vcpus_per_instance = 1
+            vcpus_per_instance = 2
 
     total_vpcus_requested = vcpus_per_instance * int(desired_capacity)
     running_vcpus = 0
@@ -117,10 +117,9 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
     else:
         instances_family_allowed_in_quota = list(re.search(r"running on-demand (.*) instances", quota_name.lower()).group(1))
 
-
     if not quota_info or instance_type not in quota_info.keys():
         all_instances_available = ec2._service_model.shape_for('InstanceType').enum
-        all_instances_for_quota = [p for p in all_instances_available if any(substr in p for substr in instances_family_allowed_in_quota)]
+        all_instances_for_quota = [instance_family for x in instances_family_allowed_in_quota for instance_family in all_instances_available if instance_family.startswith(x.rstrip().lstrip())]
         # get all running instance
         token = True
         next_token = ''
@@ -143,9 +142,9 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
                         running_vcpus += instance["CpuOptions"]["CoreCount"]
                     else:
                         if 'xlarge' in instance["InstanceType"]:
-                            running_vcpus += 2
+                            running_vcpus += 4
                         else:
-                            running_vcpus += 1
+                            running_vcpus += 2
 
         # Describe instance as a limit of 200 filters
         if len(all_instances_for_quota) > 150:
@@ -168,21 +167,20 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
                             running_vcpus += instance["CpuOptions"]["CoreCount"]
                         else:
                             if 'xlarge' in instance["InstanceType"]:
-                                running_vcpus += 2
+                                running_vcpus += 4
                             else:
-                                running_vcpus += 1
+                                running_vcpus += 2
     else:
         running_vcpus = quota_info[instance_type]["vcpus_provisioned"]
 
-    #print("Max Vcpus allowed {} \nDetected running Vcpus {} \nRequested Vcpus for this job {} \nQuota Name {}".format(max_vcpus_allowed, running_vcpus, total_vpcus_requested, quota_name))
     quota_info[instance_type] = {"max_vcpus_allowed": max_vcpus_allowed,
                                  "vcpus_provisioned": running_vcpus + total_vpcus_requested,
                                  "quota_name": quota_name}
+
     if max_vcpus_allowed >= (running_vcpus + total_vpcus_requested):
         return {"message": True, "quota_info": quota_info}
     else:
         return {"message": "Job cannot start due to AWS Service limit. Max Vcpus allowed {}. Detected running Vcpus {}. Requested Vcpus for this job {}. Quota Name {}".format(max_vcpus_allowed, running_vcpus, total_vpcus_requested, quota_name), "quota_info": quota_info}
-
 
 
 def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id):
