@@ -139,7 +139,7 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
             for reservation in response['Reservations']:
                 for instance in reservation['Instances']:
                     if "CpuOptions" in instance.keys():
-                        running_vcpus += instance["CpuOptions"]["CoreCount"]
+                        running_vcpus += instance["CpuOptions"]["CoreCount"] * 2
                     else:
                         if 'xlarge' in instance["InstanceType"]:
                             running_vcpus += 4
