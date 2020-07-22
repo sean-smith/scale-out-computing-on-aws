@@ -104,6 +104,7 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
                 if "running on-demand" in quota["QuotaName"].lower() and instance_family in quota["QuotaName"].replace("Running",""):
                     max_vcpus_allowed = quota["Value"]
                     quota_name = quota["QuotaName"]
+                    #print("Instance Type {}. Quota {}, Max CPUs {}".format(instance_type, quota_name, max_vcpus_allowed))
     else:
         max_vcpus_allowed = quota_info[instance_type]["max_vcpus_allowed"]
         quota_name = quota_info[instance_type]["quota_name"]
@@ -148,6 +149,8 @@ def verify_vcpus_limit(instance_type, desired_capacity, quota_info):
 
         # Describe instance as a limit of 200 filters
         if len(all_instances_for_quota) > 150:
+            token = True
+            next_token = ''
             while token is True:
                 response = ec2.describe_instances(
                     Filters=[
