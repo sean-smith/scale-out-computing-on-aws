@@ -7,6 +7,12 @@ Parameters:
   ClientIp:
     Type: String
 
+  SchedulerPublicIP:
+    Type: String
+
+  EIPNat:
+    Type: String
+
   ClusterId:
     Type: String
 
@@ -91,6 +97,26 @@ Resources:
       CidrIp: !Ref ClientIp
       GroupId: !GetAtt SchedulerSecurityGroup.GroupId
       Description: "Allow HTTPS traffic from client IP to ELB"
+
+  SchedulerInboundRuleAllowSchedulerIPHTTPS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Join [ "", [ !Ref SchedulerPublicIP, "/32" ] ]
+      GroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      Description: "Allow HTTPS traffic from Scheduler IP to ELB to validate DCV sessions"
+
+  SchedulerInboundRuleAllowNATIPHTTPS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Join [ "", [ !Ref EIPNat, "/32" ] ]
+      GroupId: !GetAtt SchedulerSecurityGroup.GroupId
+      Description: "Allow HTTPS traffic from Compute Nodes NAT IP to ELB"
 
   SchedulerInboundRuleAllowClientIPHTTP:
     Type: AWS::EC2::SecurityGroupIngress
@@ -385,6 +411,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - ec2:RunInstances
+                  - ec2:StopInstances
+                  - ec2:StartInstances
                   - ec2:TerminateInstances
                   - ec2:CreatePlacementGroup
                   - ec2:DeletePlacementGroup

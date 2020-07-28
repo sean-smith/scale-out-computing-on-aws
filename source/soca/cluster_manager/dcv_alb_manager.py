@@ -27,7 +27,7 @@ def get_ec2_graphical_instances(cluster_id, dcv_queues):
                 },
                 {
                     'Name': 'tag:soca:NodeType',
-                    'Values': ['soca-compute-node']
+                    'Values': ['soca-compute-node', 'soca-compute-node-windows']
                 },
                 {
                     'Name': 'tag:soca:KeepForever',

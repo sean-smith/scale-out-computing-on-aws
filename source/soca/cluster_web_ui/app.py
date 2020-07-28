@@ -30,9 +30,11 @@ from views.my_jobs import my_jobs
 from views.my_activity import my_activity
 from views.dashboard import dashboard
 from views.remote_desktop import remote_desktop
+from views.remote_desktop_windows import remote_desktop_windows
 from views.my_account import my_account
 from views.my_files import my_files
 from views.submit_job import submit_job
+from scheduled_tasks.clean_tmp_folders import clean_tmp_folders
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
 from models import db
@@ -91,8 +93,10 @@ app.register_blueprint(ssh)
 app.register_blueprint(sftp)
 app.register_blueprint(my_jobs)
 app.register_blueprint(remote_desktop)
+app.register_blueprint(remote_desktop_windows)
 app.register_blueprint(dashboard)
 app.register_blueprint(my_activity)
+
 
 
 
@@ -161,15 +165,6 @@ logging.config.dictConfig(dict_config)
 app.logger.addHandler(logger)
 
 # Scheduled tasks
-def clean_tmp_folders():
-    directories = ["tmp/zip_downloads/*", "tmp/ssh/*"]
-    for directory in directories:
-        logger.info("Remove files inside " + directory)
-        files = glob.glob(directory)
-        for f in files:
-            os.remove(f)
-
-
 sched = BackgroundScheduler(daemon=False)
 sched.add_job(clean_tmp_folders, 'interval', hours=1)
 sched.start()

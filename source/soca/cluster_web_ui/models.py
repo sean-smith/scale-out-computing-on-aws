@@ -52,6 +52,25 @@ class DCVSessions(db.Model):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
+class WindowsDCVSessions(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user = db.Column(db.String(255), nullable=False)
+    session_name = db.Column(db.String(255))
+    session_number = db.Column(db.Integer, nullable=False)
+    session_state = db.Column(db.String(255), nullable=False)
+    session_host = db.Column(db.String(255))
+    session_instance_id = db.Column(db.String(255))
+    session_password = db.Column(db.String(255), nullable=False)
+    session_uuid = db.Column(db.String(255), nullable=False)
+    session_thumbnail = db.Column(db.Text)
+    support_hibernation = db.Column(db.Boolean, nullable=False)
+    is_active = db.Column(db.Boolean)
+    created_on = db.Column(db.DateTime)
+    deactivated_on = db.Column(db.DateTime)
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 class ProjectList(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     creator = db.Column(db.String(255), nullable=False)

@@ -71,7 +71,7 @@ def index():
     return render_template('remote_desktop.html',
                            user=session["user"],
                            user_sessions=user_sessions,
-                           terminate_idle_session=config.Config.DCV_TERMINATE_IDLE_SESSION,
+                           terminate_idle_session=config.Config.DCV_LINUX_TERMINATE_IDLE_SESSION,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)

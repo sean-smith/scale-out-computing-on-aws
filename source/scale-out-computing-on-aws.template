@@ -312,6 +312,9 @@ Resources:
         ClusterId: !Join [ "-", [ !FindInMap [ Info, Data, ClusterIdPrefix ], !Ref "AWS::StackName"] ]
         S3InstallBucket: !Ref S3InstallBucket
         S3InstallFolder: !Ref S3InstallFolder
+        SchedulerPublicIP: !GetAtt Network.Outputs.SchedulerPublicIP
+        EIPNat: !GetAtt Network.Outputs.EIPNat
+
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Security.template"] ]
       TimeoutInMinutes: 30
 
@@ -350,6 +353,8 @@ Resources:
         BaseOS: !Ref BaseOS
         UserName: !Ref UserName
         UserPassword: !Ref UserPassword
+        SchedulerPublicIP: !GetAtt Network.Outputs.SchedulerPublicIP
+        SchedulerPublicIPAllocation: !GetAtt Network.Outputs.SchedulerPublicIPAllocation
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Scheduler.template"] ]
       TimeoutInMinutes: 60
 
@@ -362,7 +367,7 @@ Resources:
         PublicSubnet1: !GetAtt Network.Outputs.PublicSubnet1
         ClusterId: !Join [ "-", [ !FindInMap [ Info, Data, ClusterIdPrefix ], !Ref "AWS::StackName"] ]
         ClientIp: !Ref ClientIp
-        SchedulerPublicIP: !GetAtt Scheduler.Outputs.SchedulerPublicIP
+        SchedulerPublicIP: !GetAtt Network.Outputs.SchedulerPublicIP
         EIPNat: !GetAtt Network.Outputs.EIPNat
 
       TemplateURL: !Join [ "/", [!Sub "https://s3.${AWS::URLSuffix}", !Ref S3InstallBucket, !Ref S3InstallFolder, "templates/Analytics.template"] ]
@@ -394,7 +399,7 @@ Resources:
         SchedulerInstanceId: !GetAtt Scheduler.Outputs.SchedulerInstanceId
         SchedulerPrivateDnsName: !GetAtt Scheduler.Outputs.SchedulerPrivateDnsName
         SchedulerPrivateIP: !GetAtt Scheduler.Outputs.SchedulerPrivateIP
-        SchedulerPublicIP: !GetAtt Scheduler.Outputs.SchedulerPublicIP
+        SchedulerPublicIP: !GetAtt Network.Outputs.SchedulerPublicIP
         SchedulerSecurityGroup: !GetAtt Security.Outputs.SchedulerSecurityGroup
         ComputeNodeIAMRoleArn: !GetAtt Security.Outputs.ComputeNodeIAMRoleArn
         ComputeNodeIAMRole: !GetAtt Security.Outputs.ComputeNodeIAMRole
@@ -429,7 +434,7 @@ Resources:
 
 Outputs:
   SchedulerPublicIP:
-    Value: !GetAtt Scheduler.Outputs.SchedulerPublicIP
+    Value: !GetAtt Network.Outputs.SchedulerPublicIP
   LDAPMasterUsername:
     Value: admin
   LDAPMasterPassword:
@@ -437,7 +442,7 @@ Outputs:
   AnalyticsDashboard:
     Value: !Join [ "", [ "https://", !GetAtt Analytics.Outputs.ESDomainEndpoint, "/_plugin/kibana/"]]
   ConnectionString:
-    Value: !Join [ "", [ "ssh -i ", !Ref SSHKeyPair, ".pem ", !FindInMap [ Info, User, !Ref BaseOS ], "@", !GetAtt Scheduler.Outputs.SchedulerPublicIP]]
+    Value: !Join [ "", [ "ssh -i ", !Ref SSHKeyPair, ".pem ", !FindInMap [ Info, User, !Ref BaseOS ], "@", !GetAtt Network.Outputs.SchedulerPublicIP]]
   WebUserInterface:
     Value: !Join [ "", [ "https://", !GetAtt Viewer.Outputs.LoadBalancerDNSName]]
   BaseOS:

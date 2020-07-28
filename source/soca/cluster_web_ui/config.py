@@ -56,8 +56,35 @@ class Config(object):
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
     DCV_MAX_SESSION_COUNT = 4
-    DCV_TERMINATE_IDLE_SESSION = 0  # In hours. DCV session will be terminated if there is no active connection within the time specified. 0 to disable
-
+    DCV_LINUX_TERMINATE_IDLE_SESSION = 0  # In hours. DCV session will be terminated if there is no active connection within the time specified. 0 to disable
+    DCV_WINDOWS_HIBERNATE_IDLE_SESSION = 0  # In hours. Windows DCV session will be stopped if there is no active connection within the time specified. 0 to disable
+    DCV_WINDOWS_TERMINATE_STOPPED_SESSION = 0 # In hours. Stopped Windows DCV will be permanently removed if not started within the time specified. 0 to disable
+    DCV_WINDOWS_AMI = {"graphics": {"us-east-1": "ami-035a352d4d53371dc",
+                                    "us-east-2": "ami-0e513ab3dde457471",
+                                    "us-west-1": "ami-0a7cc05863d8c367c",
+                                    "us-west-2": "ami-08ec961045e722c40",
+                                    "eu-central-1": "ami-0da51c48c5e5f8e0e",
+                                    "eu-west-1": "ami-0edc64da5375c6c34",
+                                    "eu-west-2": "ami-027221529e78599f9",
+                                    "eu-west-3": "ami-03453f73099c2010b",
+                                    "ap-southeast-1": "ami-0e14ff207c0bd2e5d",
+                                    "ap-southeast-2": "ami-0717865967421051e",
+                                    "ap-northeast-2": "ami-05876cd44f021253d",
+                                    "ap-northeast-1": "ami-0a9fb743d72e209ca",
+                                    "ap-south-1": "ami-09c1d03de366041a4"},
+                       "non-graphics": {"us-east-1": "ami-021660b17250fbc9b",
+                                        "us-east-2": "ami-03d379fd8144e0be7",
+                                        "us-west-1": "ami-0b1004c6b09ece7e7",
+                                        "us-west-2": "ami-0e7e8e1d3f5f5d731",
+                                        "eu-central-1": "ami-0cc92c26fe29f163a",
+                                        "eu-west-1": "ami-039ab4fa2e97f7bf2",
+                                        "eu-west-2": "ami-0d29c4ac068195b68",
+                                        "eu-west-3": "ami-079ec05d5cb6e88cf",
+                                        "ap-southeast-1": "ami-039280ee1e354d8dd",
+                                        "ap-southeast-2": "ami-0eb1dd92d2dd137e9",
+                                        "ap-northeast-2": "ami-09a9fe0bfb14bebb5",
+                                        "ap-northeast-1": "ami-0101345c4c334941c",
+                                        "ap-south-1": "ami-08e852f6df553818a"}}
     # LDAP
     LDAP_HOST = "127.0.0.1"
     LDAP_BASE_DN = "dc=soca,dc=local"
