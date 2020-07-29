@@ -11,6 +11,7 @@ import string
 import base64
 import datetime
 import read_secretmanager
+from botocore.exceptions import ClientError
 import re
 import os
 
@@ -73,7 +74,7 @@ def launch_instance(launch_parameters, dry_run):
                      },
                      {
                          "Key": "soca:DCVSupportHibernate",
-                         "Value": launch_parameters["hibernate"]
+                         "Value": str(launch_parameters["hibernate"])
                      },
                      {
                          "Key": "soca:ClusterId",
@@ -90,7 +91,7 @@ def launch_instance(launch_parameters, dry_run):
                  ]}]
         )
 
-    except Exception as err:
+    except ClientError as err:
         if dry_run is True:
             if err.response['Error'].get('Code') == 'DryRunOperation':
                 return True
@@ -184,7 +185,8 @@ def index():
     return render_template('remote_desktop_windows.html',
                            user=session["user"],
                            user_sessions=user_sessions,
-                           terminate_idle_session=config.Config.DCV_TERMINATE_IDLE_SESSION,
+                           hibernate_idle_session=config.Config.DCV_WINDOWS_HIBERNATE_IDLE_SESSION,
+                           terminate_stopped_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -194,7 +196,7 @@ def index():
 @login_required
 def create():
     parameters = {}
-    for parameter in ["instance_type", "disk_size", "session_number", "session_name"]:
+    for parameter in ["instance_type", "disk_size", "session_number", "session_name", "instance_ami"]:
         if not request.form[parameter]:
             parameters[parameter] = False
         else:
@@ -222,20 +224,26 @@ def create():
     # Official DCV AMI
     # https://aws.amazon.com/marketplace/pp/B07TVL513S + https://aws.amazon.com/marketplace/pp/B082HYM34K
     # Non graphics is everything but g3/g4
-    dcv_windows_ami = config.Config.DCV_WINDOWS_AMI
-    if instance_type.startswith("g"):
-        if region not in dcv_windows_ami["graphics"].keys() and parameters["instance_ami"] is False:
-            flash("Sorry, Windows Desktop is not available on your AWS region. Base AMI are only available on {}".format(dcv_windows_ami["graphics"].keys()),"error")
-            return redirect("/remote_desktop_windows")
+    if parameters["instance_ami"] == "base":
+        dcv_windows_ami = config.Config.DCV_WINDOWS_AMI
+        if instance_type.startswith("g"):
+            if region not in dcv_windows_ami["graphics"].keys() and parameters["instance_ami"] is False:
+                flash("Sorry, Windows Desktop is not available on your AWS region. Base AMI are only available on {}".format(dcv_windows_ami["graphics"].keys()),"error")
+                return redirect("/remote_desktop_windows")
+            else:
+                image_id = dcv_windows_ami["graphics"][region]
         else:
-            image_id = dcv_windows_ami["graphics"][region]
-    else:
-        if region not in dcv_windows_ami["non-graphics"].keys() and parameters["instance_ami"] is False:
-            flash("Sorry, Windows Desktop is not available on your AWS region. Base AMI are only available on {}".format(dcv_windows_ami["non-graphics"].keys()), "error")
+            if region not in dcv_windows_ami["non-graphics"].keys() and parameters["instance_ami"] is False:
+                flash("Sorry, Windows Desktop is not available on your AWS region. Base AMI are only available on {}".format(dcv_windows_ami["non-graphics"].keys()), "error")
 
+                return redirect("/remote_desktop_windows")
+            else:
+                image_id = dcv_windows_ami["non-graphics"][region]
+    else:
+        image_id = parameters["instance_ami"]
+        if not image_id.startswith("ami-"):
+            flash("AMI selectioned {} does not seems to be valid. Must start with ami-<id>".format(image_id), "error")
             return redirect("/remote_desktop_windows")
-        else:
-            image_id = dcv_windows_ami["non-graphics"][region]
 
     digits = ([random.choice(''.join(random.choice(string.digits) for _ in range(10))) for _ in range(3)])
     uppercase = ([random.choice(''.join(random.choice(string.ascii_uppercase) for _ in range(10))) for _ in range(3)])

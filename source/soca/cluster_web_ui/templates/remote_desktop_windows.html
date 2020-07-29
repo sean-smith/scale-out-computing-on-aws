@@ -76,7 +76,12 @@
                                                           <span class="text">Restart your session</span>
                                                       </a>
                                                   </div>
+                                              {% if terminate_stopped_session > 0 %}
+                                                   <hr>
+                                                  Your session will be automatically terminated <strong>after {{ terminate_stopped_session }} hours</strong> if you do not restart it.
+                                              {% endif %}
                                               </div>
+
 
                                           {% elif session_data.session_state == 'running' %}
                                               <h5>{{ session_data.session_name }}</h5>
@@ -115,7 +120,7 @@
                                               {% if session_data.support_hibernation %}
                                               <div align="center">
                                                   <div class="alert alert-warning">
-                                                      Hibernate your session will not cause any data loss. You also won't be charged for the compute time while your session is stopped.<br>
+                                                      Hibernate your session will not cause any data loss. You also won't be charged for the compute time while your session is stopped. You can relaunch an hibernated session at any time.<br>
                                                       <form method="get" action="/remote_desktop_windows/delete">
                                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                           <input type="hidden" name="hibernate" value="yes">
@@ -125,9 +130,19 @@
                                                               <span style="margin-top:5px;margin-right:10px; margin-left:10px">Hibernate my Session</span>
                                                           </button>
                                                       </form>
+                                                      <br>
+                                                      {% if hibernate_idle_session > 0 %}
+                                                          Your session will be automatically hibernated <strong>after {{ hibernate_idle_session }} hours</strong> if you do not use it.
+                                                      {% endif %}
                                                   </div>
                                               </div>
-                                              {% endif %}
+                                                  {% else %}
+                                                    <div align="center">
+                                                        <div class="alert alert-warning">
+                                                            Hibernation is not supported for this instance type.
+                                                        </div>
+                                                    </div>
+                                                  {% endif %}
 
                                               <div align="center">
                                                <div class="alert alert-danger">
@@ -161,6 +176,18 @@
                                           <label for="disk_size" class="col-sm-4 col-form-label">Storage Size (in GB)</label>
                                           <div class="col-sm-8">
                                             <input id="disk_size" placeholder="30" min="30" class="form-control" type="number"  name="disk_size">
+                                          </div>
+                                      </div>
+                                      <div class="form-group row">
+                                          <label for="instance_ami" class="col-sm-4 col-form-label">Software Stack</label>
+                                          <div class="col-sm-8">
+                                              <select class="form-control" name='instance_ami' id="instance_ami">
+                                                  <option selected="true" value="base">Base (No Software)</option>
+                                                  <option value="base">FEA #1 (Abaqus 2019 + LSDyna)</option>
+                                                  <option value="base">FEA #2 (Abaqus 2019 + LSDyna + Ansys Mechanical)</option>
+                                                  <option >StarCCM+</option>
+
+                                              </select>
                                           </div>
                                       </div>
                                       <div class="form-group row">

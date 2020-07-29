@@ -7,6 +7,8 @@ import re
 import json
 import time
 from dateutil.parser import parse
+from models import db, WindowsDCVSessions
+
 
 logger = logging.getLogger("api_log")
 
@@ -14,7 +16,7 @@ client_ec2 = boto3.client("ec2")
 client_ssm = boto3.client("ssm")
 
 
-def retrieve_host(instance_state):
+def retrieve_host(instance_state, hibernate):
     host_info = {}
     token = True
     next_token = ''
@@ -32,6 +34,10 @@ def retrieve_host(instance_state):
                 {
                     "Key": "tag:soca:ClusterId",
                     "Value": [os.environ["SOCA_CONFIGURATION"]]
+                },
+                {
+                    "Key": "tag:soca:DCVSupportHibernate",
+                    "Value": ["true"] if hibernate is True else ["true", "false"]  # limit to instance that support hibernate when running auto_hibernate_instance and to both when running auto_terminate_stopped_instance
                 },
                 {
                     "Name": "tag:soca:NodeType",
@@ -58,9 +64,11 @@ def retrieve_host(instance_state):
 
 
 def auto_hibernate_instance():
+    logger.info("Scheduled Task: auto_hibernate_instance")
     hibernate_idle_instance_after = config.Config.DCV_WINDOWS_HIBERNATE_IDLE_SESSION
     if hibernate_idle_instance_after > 0:
-        for instance_id in ["i-0efb2e79c9f4aca89"]:
+        get_host_to_hibernate = retrieve_host(instance_state="running", hibernate=True)
+        for instance_id in get_host_to_hibernate.keys():
             powershell_command = ["Invoke-Expression \"& 'C:\\Program Files\\NICE\\DCV\\Server\\bin\\dcv' describe-session console -j\""]
             check_dcv_session = client_ssm.send_command(InstanceIds=[instance_id],
                                                         DocumentName='AWS-RunPowerShellScript',
@@ -85,12 +93,21 @@ def auto_hibernate_instance():
             current_time = parse(datetime.datetime.now().replace(microsecond=0).replace(tzinfo=datetime.timezone.utc).isoformat())
             if (last_dcv_disconnect + datetime.timedelta(hours=hibernate_idle_instance_after)) < current_time:
                 print("{} is ready for hibernation. Last access time {}".format(instance_id, last_dcv_disconnect))
-
                 try:
                     client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
                 except Exception as e:
                     if e.response['Error'].get('Code') == 'DryRunOperation':
                         client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True)
+                        check_session = WindowsDCVSessions.query.filter_by(session_instance_id=instance_id,
+                                                                           session_state="running",
+                                                                           is_active=True).first()
+                        if check_session:
+                            check_session.session_state = "stopped"
+                            db.session.commit()
+                        else:
+                            logger.error("Instance ({}) has been stopped but could not find associated database entry".format(instance_id), "error")
+
+
                     else:
                         logger.error("Unable to hibernate instance ({}) due to {}".format(instance_id, e), "error")
             else:
@@ -98,9 +115,10 @@ def auto_hibernate_instance():
 
 
 def auto_terminate_stopped_instance():
+    logger.info("Scheduled Task: auto_terminate_stopped_instance")
     terminate_stopped_instance_after = config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION  # in hours
     if terminate_stopped_instance_after > 0:
-        get_host_to_terminate = retrieve_host(instance_state="stopped")
+        get_host_to_terminate = retrieve_host(instance_state="stopped", hibernate=False)
         for instance_id, time_info in get_host_to_terminate.items():
             if (time_info["stopped_time"] + datetime.timedelta(hours=terminate_stopped_instance_after)) < time_info["current_time"]:
                 try:

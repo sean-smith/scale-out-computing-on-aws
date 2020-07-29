@@ -35,6 +35,8 @@ from views.my_account import my_account
 from views.my_files import my_files
 from views.submit_job import submit_job
 from scheduled_tasks.clean_tmp_folders import clean_tmp_folders
+from scheduled_tasks.auto_hibernate_stop_windows_dcv import auto_hibernate_instance, auto_terminate_stopped_instance
+
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
 from models import db
@@ -167,6 +169,8 @@ app.logger.addHandler(logger)
 # Scheduled tasks
 sched = BackgroundScheduler(daemon=False)
 sched.add_job(clean_tmp_folders, 'interval', hours=1)
+sched.add_job(auto_hibernate_instance, 'interval', hours=1)
+sched.add_job(auto_terminate_stopped_instance, 'interval', hours=1)
 sched.start()
 
 with app.app_context():

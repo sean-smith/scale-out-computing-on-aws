@@ -6,6 +6,8 @@ import re
 import sys
 import uuid
 import boto3
+from botocore.exceptions import ClientError
+
 sys.path.append(os.path.dirname(__file__))
 import configuration
 from botocore import exceptions
@@ -197,7 +199,7 @@ def can_launch_capacity(instance_type, desired_capacity, image_id, subnet_id):
                 MinCount=int(desired_capacity),
                 DryRun=True)
 
-        except Exception as e:
+        except ClientError as e:
             if e.response['Error'].get('Code') == 'DryRunOperation':
                 # Dry Run Succeed.
                 try:

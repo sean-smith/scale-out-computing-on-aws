@@ -1,5 +1,6 @@
 <powershell>
 # Script triggered by cluster_web_ui/views/remote_desktop_windows.py
+
 # Edit dcv.conf
 $Hostname = Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/hostname
 $InstanceId = Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id
@@ -7,12 +8,19 @@ $DCVHostAltname = $Hostname.split(".")[0]
 New-Item -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\" -Name connectivity -Force
 New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\connectivity" -Name "web-url-path" -PropertyType "String" -Value "/$DCVHostAltname" -Force
 
+# Restart DCV service
+Restart-Service -Name dcvserver
+
 # Change password for Admin user
 $Password = ConvertTo-SecureString -String "%SOCA_USER_PASSWORD%" -AsPlainText –Force
 $UserAccount = Get-LocalUser -Name "Administrator"
 $UserAccount | Set-LocalUser -Password $Password
 
-# Restart DCV service
-Restart-Service -Name dcvserver
+# Disable Internet Explorer Enhanced Security Configuration
+$AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
+Set-ItemProperty -Path $AdminKey -Name "IsInstalled" -Value 0
+$UserKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}"
+Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0
+
 </powershell>
 
