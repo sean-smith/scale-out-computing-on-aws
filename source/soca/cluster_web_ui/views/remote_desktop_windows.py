@@ -72,6 +72,10 @@ def launch_instance(launch_parameters, dry_run):
                          "Value": "false"
                      },
                      {
+                         "Key": "soca:DCVSupportHibernate",
+                         "Value": launch_parameters["hibernate"]
+                     },
+                     {
                          "Key": "soca:ClusterId",
                          "Value": launch_parameters["cluster_id"]
                      },

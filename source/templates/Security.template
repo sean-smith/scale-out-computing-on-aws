@@ -416,6 +416,7 @@ Resources:
                   - ec2:TerminateInstances
                   - ec2:CreatePlacementGroup
                   - ec2:DeletePlacementGroup
+                  - ssm:SendCommand
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:subnet/*"
                   - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:key-pair/*"

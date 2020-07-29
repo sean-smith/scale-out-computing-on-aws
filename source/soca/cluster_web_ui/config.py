@@ -57,8 +57,8 @@ class Config(object):
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
     DCV_MAX_SESSION_COUNT = 4
     DCV_LINUX_TERMINATE_IDLE_SESSION = 0  # In hours. DCV session will be terminated if there is no active connection within the time specified. 0 to disable
-    DCV_WINDOWS_HIBERNATE_IDLE_SESSION = 0  # In hours. Windows DCV session will be stopped if there is no active connection within the time specified. 0 to disable
-    DCV_WINDOWS_TERMINATE_STOPPED_SESSION = 0 # In hours. Stopped Windows DCV will be permanently removed if not started within the time specified. 0 to disable
+    DCV_WINDOWS_HIBERNATE_IDLE_SESSION = 24  # In hours. Windows DCV session will be stopped if there is no active connection within the time specified. 0 to disable
+    DCV_WINDOWS_TERMINATE_STOPPED_SESSION = 0  # In hours. Stopped Windows DCV will be permanently removed if not started within the time specified. 0 to disable
     DCV_WINDOWS_AMI = {"graphics": {"us-east-1": "ami-035a352d4d53371dc",
                                     "us-east-2": "ami-0e513ab3dde457471",
                                     "us-west-1": "ami-0a7cc05863d8c367c",
