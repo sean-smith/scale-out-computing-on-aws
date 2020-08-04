@@ -51,14 +51,21 @@ class Config(object):
     COGNITO_ROOT_URL = "<YOUR_WEB_URL>"
     COGNITO_CALLBACK_URL= "<YOUR_CALLBACK_URL>"
 
-    # DCV
+    # DCV General
     DCV_AUTH_DIR = "/var/run/dcvsimpleextauth"
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
     DCV_MAX_SESSION_COUNT = 4
+    DCV_FORCE_INSTANCE_HIBERNATE_SUPPORT = False  # If True, users can only provision instances that support hibernation
+
+    # DCV Linux
     DCV_LINUX_TERMINATE_IDLE_SESSION = 0  # In hours. DCV session will be terminated if there is no active connection within the time specified. 0 to disable
-    DCV_WINDOWS_HIBERNATE_IDLE_SESSION = 24  # In hours. Windows DCV session will be stopped if there is no active connection within the time specified. 0 to disable
-    DCV_WINDOWS_TERMINATE_STOPPED_SESSION = 0  # In hours. Stopped Windows DCV will be permanently removed if not started within the time specified. 0 to disable
+
+    # DCV Windows
+    DCV_WINDOWS_HIBERNATE_IDLE_SESSION = 48  # In hours. Windows DCV sessions will be stopped if there is no active connection within the time specified. 0 to disable
+    DCV_WINDOWS_TERMINATE_STOPPED_SESSION = 0  # In hours. Stopped Windows DCV will be permanently terminated if user won't restart it within the time specified. 0 to disable
+    DCV_WINDOWS_TERMINATE_SESSION = 0  # In hours. Force termination of running or stopped sessions. 0 to disable.
+    DCV_WINDOWS_TERMINATE_RUNNING_SESSION_THAT_CAN_BE_STOPPED = False  # If True and DCV_WINDOWS_TERMINATE_SESSION is set, all DCV sessions will be terminated independently of their state. If set to False, only sessions that cannot be Hibernated (stopped) will be terminated
     DCV_WINDOWS_AMI = {"graphics": {"us-east-1": "ami-035a352d4d53371dc",
                                     "us-east-2": "ami-0e513ab3dde457471",
                                     "us-west-1": "ami-0a7cc05863d8c367c",

@@ -36,16 +36,15 @@ from views.my_files import my_files
 from views.submit_job import submit_job
 from scheduled_tasks.clean_tmp_folders import clean_tmp_folders
 from scheduled_tasks.auto_hibernate_stop_windows_dcv import auto_hibernate_instance, auto_terminate_stopped_instance
-
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
-from models import db
 from flask_swagger import swagger
 from swagger_ui import api_doc
 import config
-from apscheduler.schedulers.background import BackgroundScheduler
-import glob
-import os
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from flask_apscheduler import APScheduler
+#from apscheduler.schedulers.background import BackgroundScheduler
+from models import db
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
@@ -167,19 +166,48 @@ logging.config.dictConfig(dict_config)
 app.logger.addHandler(logger)
 
 # Scheduled tasks
-sched = BackgroundScheduler(daemon=False)
-sched.add_job(clean_tmp_folders, 'interval', hours=1)
-sched.add_job(auto_hibernate_instance, 'interval', hours=1)
-sched.add_job(auto_terminate_stopped_instance, 'interval', hours=1)
-sched.start()
+#sched.add_job(clean_tmp_folders, 'interval', hours=1)
+#sched.add_job(auto_hibernate_instance, 'interval', minutes=3)
+#sched.add_job(auto_terminate_stopped_instance, 'interval', hours=1)
+#sched.start()
+
+class Config(object):
+    JOBS = [
+        {
+            'id': 'auto_hibernate_instance',
+            'func': auto_hibernate_instance,
+            'trigger': 'interval',
+            'minutes': 2
+        },
+        {
+            'id': 'auto_terminate_stopped_instance',
+            'func': auto_terminate_stopped_instance,
+            'trigger': 'interval',
+            'hours': 1
+        },
+        {
+            'id': 'clean_tmp_folders',
+            'func': clean_tmp_folders,
+            'trigger': 'interval',
+            'hours': 1
+        }
+    ]
+
+    SCHEDULER_API_ENABLED = True
+    SESSION_SQLALCHEMY = SQLAlchemy(app)
+
 
 with app.app_context():
+    db.app = app
     db.init_app(app)
     db.create_all()
     app_session = Session(app)
     app_session.app.session_interface.db.create_all()
-    app.config["SESSION_SQLALCHEMY"] = SQLAlchemy(app)
-    api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/swagger.json", url_prefix="/api/doc", title="SOCA API Documentation",)
+    app.config.from_object(Config())
+    api_doc(app, config_url=config.Config.FLASK_ENDPOINT + "/api/swagger.json", url_prefix="/api/doc", title="SOCA API Documentation")
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+    scheduler.start()
 
 if __name__ == '__main__':
     app.run()

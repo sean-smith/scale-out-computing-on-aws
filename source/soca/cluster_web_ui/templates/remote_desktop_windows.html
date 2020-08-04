@@ -17,27 +17,7 @@
           <br>
           <div class="container-fluid">
               {% include 'common/horizontal_menu_bar.html' %}
-
-          {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <br>
-                                {% if category == "success" %}
-                                <div class="alert alert-success">
-                                    <strong>{{ message | safe }} </strong>
-                                </div>
-                                {% elif category == "info" %}
-                                 <div class="alert alert-info">
-                                    <strong>{{ message | safe }} </strong>
-                                </div>
-                                {% else %}
-                                 <div class="alert alert-danger">
-                                    <strong>{{ message | safe }} </strong>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-               {% endwith %}
+              {% include 'common/flashed_messages.html' %}
 
                 <div class="alert alert-primary" role="alert">
                      <strong>2D Session: </strong>
@@ -57,7 +37,8 @@
                               {% if n in user_sessions.keys() %}
                                   {% for session_number, session_data in user_sessions.items() %}
                                       {% if session_number == n %}
-
+                                          <h5>{{ session_data.session_name }}</h5>
+                                          <hr>
                                           {% if session_data.session_state == 'pending' %}
                                               <div class="alert alert-warning" role="alert">
                                                   Please wait, your session is starting and will be ready within 10 minutes
@@ -84,8 +65,6 @@
 
 
                                           {% elif session_data.session_state == 'running' %}
-                                              <h5>{{ session_data.session_name }}</h5>
-                                              <hr>
                                               <a class="btn btn-primary btn-sm" data-toggle="collapse" href="#sessionpass{{ n }}" role="button" aria-expanded="false" aria-controls="sessionpass{{ n }}">
                                                  Click here to retrieve your session credentials
                                               </a>
@@ -146,7 +125,7 @@
 
                                               <div align="center">
                                                <div class="alert alert-danger">
-                                                  Terminating a session will delete all content from C: drive. Make sure to have uploaded your data to SOCA first. to prevent data loss.<br>
+                                                  Terminating a session will delete all content from C: drive. Make sure to have uploaded your data to SOCA first to prevent data loss.<br>
                                                    <form method="get" action="/remote_desktop_windows/delete">
                                                        <div class="form-group form-check">
                                                            <input type="checkbox" class="form-check-input" name="verif" id="verif" required>
@@ -159,6 +138,10 @@
                                                            <span style="margin-top:5px;margin-right:10px; margin-left:10px">Terminate my Session</span>
                                                        </button>
                                                    </form>
+                                                   {% if terminate_session > 0 %}
+                                                   <hr>
+                                                  Your session will be automatically terminated <strong>after {{ terminate_session }} hours</strong> if you do not restart it.
+                                              {% endif %}
                                                </div>
                                               </div>
                                           {% endif %}

@@ -350,6 +350,7 @@ Resources:
                   - ec2:DescribeImages
                   - ec2:DescribeInstanceAttribute
                   - ec2:DescribeInstanceTypes
+                  - ec2:DescribeInstanceStatus
                   - ec2:DescribeReservedInstances
                   - ec2:DescribeSpotInstanceRequests
                   - ec2:DescribeVpcClassicLink
@@ -370,6 +371,16 @@ Resources:
                   - elasticloadbalancing:DescribeTargetGroups
                   - savingsplans:DescribeSavingsPlans
                   - servicequotas:ListServiceQuotas
+                  - ssm:ListDocuments
+                  - ssm:ListDocumentVersions
+                  - ssm:DescribeDocument
+                  - ssm:GetDocument
+                  - ssm:DescribeInstanceInformation
+                  - ssm:DescribeDocumentParameters
+                  - ssm:DescribeInstanceProperties
+                  - ssm:ListCommands
+                  - ssm:GetCommandInvocation
+                  - ssm:DescribeAutomationExecutions
                 Resource: "*"
 
         - PolicyName: SchedulerWritePermissions
@@ -416,7 +427,6 @@ Resources:
                   - ec2:TerminateInstances
                   - ec2:CreatePlacementGroup
                   - ec2:DeletePlacementGroup
-                  - ssm:SendCommand
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:subnet/*"
                   - !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:key-pair/*"
@@ -431,6 +441,26 @@ Resources:
                 Condition:
                   "ForAllValues:ArnEqualsIfExists":
                       "ec2:Vpc": !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VpcId}"
+
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/AWS-RunPowerShellScript"
+
+              - Effect: Allow
+                Action:
+                  - ssm:StartAutomationExecution
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":ssm:", ":::automation-definition/"] ]
+
+              - Effect: Allow
+                Action:
+                  - ssm:StopAutomationExecution
+                  - ssm:GetAutomationExecution
+                Resource:
+                  - !Join [ "", [ "arn:", !Ref "AWS::Partition", ":ssm:", ":::automation-execution/"] ]
 
               - Effect: Allow
                 Action:

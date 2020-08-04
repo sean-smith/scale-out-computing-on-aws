@@ -15,9 +15,9 @@ from botocore.exceptions import ClientError
 import re
 import os
 
-logger = logging.getLogger("api_log")
 remote_desktop_windows = Blueprint('remote_desktop_windows', __name__, template_folder='templates')
 client_ec2 = boto3.client('ec2')
+logger = logging.getLogger("api_log")
 
 
 def launch_instance(launch_parameters, dry_run):
@@ -74,7 +74,7 @@ def launch_instance(launch_parameters, dry_run):
                      },
                      {
                          "Key": "soca:DCVSupportHibernate",
-                         "Value": str(launch_parameters["hibernate"])
+                         "Value": str(launch_parameters["hibernate"]).lower()
                      },
                      {
                          "Key": "soca:ClusterId",
@@ -86,7 +86,7 @@ def launch_instance(launch_parameters, dry_run):
                      },
                      {
                          "Key": "soca:NodeType",
-                         "Value": "soca-compute-node-windows"
+                         "Value": "soca-dcv-windows"
                      }
                  ]}]
         )
@@ -179,7 +179,7 @@ def index():
 
     max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
-    blacklist = ['metal', 'nano', 'micro']
+    blacklist = ['metal', 'nano', 'micro', 'p3', 'p2']
     all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
     return render_template('remote_desktop_windows.html',
@@ -187,6 +187,7 @@ def index():
                            user_sessions=user_sessions,
                            hibernate_idle_session=config.Config.DCV_WINDOWS_HIBERNATE_IDLE_SESSION,
                            terminate_stopped_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
+                           terminate_session=config.Config.DCV_WINDOWS_TERMINATE_SESSION,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -263,7 +264,11 @@ def create():
         ]
     )
     if len(check_hibernation_support["InstanceTypes"]) == 0:
-        hibernate = False
+        if config.Config.DCV_FORCE_INSTANCE_HIBERNATE_SUPPORT is True:
+            flash("Sorry your administrator limited <a href='https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/Hibernate.html#hibernating-prerequisites' target='_blank'>DCV to instances that support hibernation mode</a> <br> Please choose a different type of instance.")
+            return redirect("/remote_desktop_windows")
+        else:
+            hibernate = False
     else:
         hibernate = True
 
