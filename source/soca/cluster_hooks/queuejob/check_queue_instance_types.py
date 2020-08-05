@@ -4,7 +4,7 @@ Doc:
 > https://awslabs.github.io/scale-out-computing-on- aws/tutorials/manage-queue-instance-types/
 
 create hook check_queue_instance_types event=queuejob
-import hook check_queue_instance_types application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_queue_instance_types.py
+import hook check_queue_instance_types application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_queue_instance_types.py
 
 Note: If you make any change to this file, you MUST re-execute the import command.
 If you are installing this file manually, make sure to replace %SOCA_CONFIGURATION path below
