@@ -10,7 +10,7 @@ Scheduler Hook (qmgr):
 create hook notify_job_start event=runjob
 create hook notify_job_complete event=execjob_end
 import hook notify_job_start application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/job_notifications.py
-import hook notify_job_complete application/x-python default /apps/soca/$SOCA_CONFIGURATIONcluster_hooks/job_notifications.py
+import hook notify_job_complete application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/job_notifications.py
 '''
 
 import sys
