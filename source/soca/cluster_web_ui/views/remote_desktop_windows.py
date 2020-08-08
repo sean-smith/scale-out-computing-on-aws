@@ -14,6 +14,7 @@ import read_secretmanager
 from botocore.exceptions import ClientError
 import re
 import os
+import json
 
 remote_desktop_windows = Blueprint('remote_desktop_windows', __name__, template_folder='templates')
 client_ec2 = boto3.client('ec2')
@@ -144,7 +145,10 @@ def index():
         session_uuid = session_info.session_uuid
         session_name = session_info.session_name
         session_host = session_info.session_host
+        session_token = session_info.session_token
+        session_instance_id = session_info.session_instance_id
         support_hibernation = session_info.support_hibernation
+        dcv_authentication_token = session_info.dcv_authentication_token
         host_info = get_host_info(session_uuid)
         if not host_info:
             # no host detected, session no longer active
@@ -153,9 +157,17 @@ def index():
             db.session.commit()
         else:
             # detected EC2 host for the session
+            authentication_data = json.dumps({"system": "windows",
+                                              "session_instance_id": session_instance_id,
+                                              "session_token": session_token,
+                                              "session_user": session["user"]})
+
+            session_authentication_token = (base64.b64encode(authentication_data.encode("utf-8"))).decode("utf-8")
+            session_info.dcv_authentication_token = session_authentication_token
             session_info.session_host = host_info["private_dns"]
             session_info.session_instance_id = host_info["instance_id"]
             db.session.commit()
+
 
         if session_state == "pending" and session_host is not False:
             check_dcv_state = get('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host + '/',
@@ -174,6 +186,7 @@ def index():
             "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host +'/',
             "session_password": session_password,
             "session_state": session_state,
+            "session_authentication_token": dcv_authentication_token,
             "session_name": session_name,
             "support_hibernation": support_hibernation}
 
@@ -255,6 +268,11 @@ def create():
     user_data = user_data_script.read()
     user_data_script.close()
     user_data = user_data.replace("%SOCA_USER_PASSWORD%", session_password)
+    user_data = user_data.replace("%SOCA_LoadBalancerDNSName%", soca_configuration['LoadBalancerDNSName'])
+    if config.Config.DCV_WINDOWS_AUTOLOGON is True:
+        user_data = user_data.replace("%SOCA_WINDOWS_AUTOLOGON%", "true")
+    else:
+        user_data = user_data.replace("%SOCA_WINDOWS_AUTOLOGON%", "false")
 
     check_hibernation_support = client_ec2.describe_instance_types(
         InstanceTypes=[instance_type],
@@ -263,6 +281,7 @@ def create():
              "Values": ["true"]}
         ]
     )
+    logger.info("Checking in {} support Hibernation : {}".format(instance_type, check_hibernation_support))
     if len(check_hibernation_support["InstanceTypes"]) == 0:
         if config.Config.DCV_FORCE_INSTANCE_HIBERNATE_SUPPORT is True:
             flash("Sorry your administrator limited <a href='https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/Hibernate.html#hibernating-prerequisites' target='_blank'>DCV to instances that support hibernation mode</a> <br> Please choose a different type of instance.")
@@ -302,6 +321,7 @@ def create():
                                      session_host=False,
                                      session_password=session_password,
                                      session_uuid=session_uuid,
+                                     session_token=str(uuid.uuid4()),
                                      is_active=True,
                                      support_hibernation=hibernate,
                                      created_on=datetime.datetime.utcnow())
@@ -312,9 +332,13 @@ def create():
 
 @remote_desktop_windows.route('/remote_desktop_windows/delete', methods=['GET'])
 @login_required
-def delete_job():
+def delete():
     dcv_session = request.args.get("session", None)
-    hibernate = request.args.get("hibernate", None)
+    action = request.args.get("action", None)
+    if action not in ["terminate", "stop", "hibernate"]:
+        flash("action must be either terminate, stop or hibernate")
+        return redirect("/remote_desktop_windows")
+
     if dcv_session is None:
         flash("Invalid DCV sessions", "error")
         return redirect("/remote_desktop_windows")
@@ -324,7 +348,8 @@ def delete_job():
                                                        is_active=True).first()
     if check_session:
         instance_id = check_session.session_instance_id
-        if hibernate:
+        if action == "hibernate":
+            # Hibernate instance
             try:
                 client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
             except Exception as e:
@@ -334,7 +359,21 @@ def delete_job():
                     db.session.commit()
                 else:
                     flash("Unable to hibernate instance ({}) due to {}".format(instance_id, e), "error")
+
+        elif action == "stop":
+            # Stop Instance
+            try:
+                client_ec2.stop_instances(InstanceIds=[instance_id], DryRun=True)
+            except Exception as e:
+                if e.response['Error'].get('Code') == 'DryRunOperation':
+                    client_ec2.stop_instances(InstanceIds=[instance_id])
+                    check_session.session_state = "stopped"
+                    db.session.commit()
+                else:
+                    flash("Unable to Stop instance ({}) due to {}".format(instance_id, e), "error")
+
         else:
+            # Terminate instance
             try:
                 client_ec2.terminate_instances(InstanceIds=[instance_id], DryRun=True)
             except Exception as e:
@@ -404,6 +443,9 @@ format=1.0
 [connect]
 host=''' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '''
 port=443
+sessionid=console
+user=Administrator
+authToken='''+check_session.dcv_authentication_token+'''
 weburlpath=/''' + check_session.session_host + '''
 '''
         return Response(

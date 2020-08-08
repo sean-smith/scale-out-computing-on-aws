@@ -18,6 +18,7 @@ from api.v1.ldap.groups import Groups
 from api.v1.ldap.authenticate import Authenticate
 from api.v1.system.files import Files
 from api.v1.system.aws_price import AwsPrice
+from api.v1.system.dcv_authenticator import DcvAuthenticator
 from views.index import index
 from views.ssh import ssh
 from views.sftp import sftp
@@ -47,59 +48,6 @@ from flask_apscheduler import APScheduler
 from models import db
 
 app = Flask(__name__)
-csrf = CSRFProtect(app)
-csrf.exempt("api")
-
-# Register routes
-app.config.from_object(app_config)
-
-# Add API
-api = Api(app, decorators=[csrf.exempt])
-
-# LDAP
-api.add_resource(Sudo, '/api/ldap/sudo')
-api.add_resource(Authenticate, '/api/ldap/authenticate')
-api.add_resource(Ids, '/api/ldap/ids')
-api.add_resource(User, '/api/ldap/user')
-api.add_resource(Users, '/api/ldap/users')
-api.add_resource(Group, '/api/ldap/group')
-api.add_resource(Groups, '/api/ldap/groups')
-# Users
-api.add_resource(ApiKey, '/api/user/api_key')
-api.add_resource(Reset, '/api/user/reset_password')
-# System
-api.add_resource(Files, '/api/system/files')
-api.add_resource(AwsPrice, '/api/system/aws_price')
-# Scheduler
-api.add_resource(Job, '/api/scheduler/job')
-api.add_resource(Jobs, '/api/scheduler/jobs')
-api.add_resource(Queue, '/api/scheduler/queue')
-api.add_resource(Queues, '/api/scheduler/queues')
-
-
-
-
-
-# Register views
-app.register_blueprint(index)
-app.register_blueprint(my_api_key)
-app.register_blueprint(my_account)
-app.register_blueprint(admin_users)
-app.register_blueprint(admin_queues)
-app.register_blueprint(admin_groups)
-app.register_blueprint(admin_applications)
-app.register_blueprint(my_files)
-app.register_blueprint(submit_job)
-app.register_blueprint(ssh)
-app.register_blueprint(sftp)
-app.register_blueprint(my_jobs)
-app.register_blueprint(remote_desktop)
-app.register_blueprint(remote_desktop_windows)
-app.register_blueprint(dashboard)
-app.register_blueprint(my_activity)
-
-
-
 
 # Custom Jinja2 filters
 
@@ -161,15 +109,6 @@ dict_config = {
     }
 }
 
-logger = logging.getLogger("api_log")
-logging.config.dictConfig(dict_config)
-app.logger.addHandler(logger)
-
-# Scheduled tasks
-#sched.add_job(clean_tmp_folders, 'interval', hours=1)
-#sched.add_job(auto_hibernate_instance, 'interval', minutes=3)
-#sched.add_job(auto_terminate_stopped_instance, 'interval', hours=1)
-#sched.start()
 
 class Config(object):
     JOBS = [
@@ -177,13 +116,13 @@ class Config(object):
             'id': 'auto_hibernate_instance',
             'func': auto_hibernate_instance,
             'trigger': 'interval',
-            'minutes': 2
+            'minutes': 30
         },
         {
             'id': 'auto_terminate_stopped_instance',
             'func': auto_terminate_stopped_instance,
             'trigger': 'interval',
-            'hours': 1
+            'minutes': 30
         },
         {
             'id': 'clean_tmp_folders',
@@ -198,6 +137,57 @@ class Config(object):
 
 
 with app.app_context():
+    csrf = CSRFProtect(app)
+    csrf.exempt("api")
+
+    # Register routes
+    app.config.from_object(app_config)
+
+    # Add API
+    api = Api(app, decorators=[csrf.exempt])
+
+    # LDAP
+    api.add_resource(Sudo, '/api/ldap/sudo')
+    api.add_resource(Authenticate, '/api/ldap/authenticate')
+    api.add_resource(Ids, '/api/ldap/ids')
+    api.add_resource(User, '/api/ldap/user')
+    api.add_resource(Users, '/api/ldap/users')
+    api.add_resource(Group, '/api/ldap/group')
+    api.add_resource(Groups, '/api/ldap/groups')
+    # Users
+    api.add_resource(ApiKey, '/api/user/api_key')
+    api.add_resource(Reset, '/api/user/reset_password')
+    # System
+    api.add_resource(Files, '/api/system/files')
+    api.add_resource(AwsPrice, '/api/system/aws_price')
+    api.add_resource(DcvAuthenticator, '/api/system/dcv_authenticator')
+    # Scheduler
+    api.add_resource(Job, '/api/scheduler/job')
+    api.add_resource(Jobs, '/api/scheduler/jobs')
+    api.add_resource(Queue, '/api/scheduler/queue')
+    api.add_resource(Queues, '/api/scheduler/queues')
+
+    # Register views
+    app.register_blueprint(index)
+    app.register_blueprint(my_api_key)
+    app.register_blueprint(my_account)
+    app.register_blueprint(admin_users)
+    app.register_blueprint(admin_queues)
+    app.register_blueprint(admin_groups)
+    app.register_blueprint(admin_applications)
+    app.register_blueprint(my_files)
+    app.register_blueprint(submit_job)
+    app.register_blueprint(ssh)
+    app.register_blueprint(sftp)
+    app.register_blueprint(my_jobs)
+    app.register_blueprint(remote_desktop)
+    app.register_blueprint(remote_desktop_windows)
+    app.register_blueprint(dashboard)
+    app.register_blueprint(my_activity)
+
+    logger = logging.getLogger("api_log")
+    logging.config.dictConfig(dict_config)
+    app.logger.addHandler(logger)
     db.app = app
     db.init_app(app)
     db.create_all()

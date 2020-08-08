@@ -447,7 +447,7 @@ Resources:
                   - ssm:SendCommand
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
-                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:document/AWS-RunPowerShellScript"
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-RunPowerShellScript"
 
               - Effect: Allow
                 Action:

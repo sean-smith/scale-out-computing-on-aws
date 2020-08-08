@@ -30,18 +30,18 @@
                   {% for n in range(1,max_number_of_sessions + 1) %}
                     <div class="col-md-6">
                           <div class="card shadow mb-4">
-                              <div class="card-header py-3">
-                                  <h6 class="m-0 font-weight-bold text-primary">Your Session #{{ n }}</h6>
-                              </div>
-                              <div class="card-body">
                               {% if n in user_sessions.keys() %}
                                   {% for session_number, session_data in user_sessions.items() %}
                                       {% if session_number == n %}
+                                          <div class="card-header py-3">
+                                              <h6 class="m-0 font-weight-bold text-primary">Your Session #{{ n }} {% if session_data.session_state == 'running' %}<div class="float-right"><button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#password{{ n }}">Get Password</button></a>&nbsp;<button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#stop{{ n }}">Stop</button></a>&nbsp;<button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#hibernate{{ n }}">Hibernate</button>&nbsp;<button class="btn btn-danger btn-sm" data-toggle="modal" data-target="#terminate{{ n }}">Kill</button></div>{% endif %}</h6>
+                                          </div>
+                                          <div class="card-body">
                                           <h5>{{ session_data.session_name }}</h5>
                                           <hr>
                                           {% if session_data.session_state == 'pending' %}
                                               <div class="alert alert-warning" role="alert">
-                                                  Please wait, your session is starting and will be ready within 10 minutes
+                                                  Please wait, your session is starting and will be ready within 10 minutes. <br>
                                                   This page will automatically be refreshed when the session is active.
                                               </div>
 
@@ -63,21 +63,9 @@
                                               {% endif %}
                                               </div>
 
-
                                           {% elif session_data.session_state == 'running' %}
-                                              <a class="btn btn-primary btn-sm" data-toggle="collapse" href="#sessionpass{{ n }}" role="button" aria-expanded="false" aria-controls="sessionpass{{ n }}">
-                                                 Click here to retrieve your session credentials
-                                              </a>
-                                              <div class="collapse" id="sessionpass{{ n }}">
-                                              <br>
-                                                      <strong>Username:</strong> Administrator <br>
-                                                      <strong>Session Password:</strong> {{ session_data.session_password }}
-                                              </div>
-
-                                              <br><br>
-
                                               <h6>Option1: Browser access</h6>
-                                              <a target="_blank" href="{{ session_data.url }}" class="btn btn-success btn-icon-split">
+                                              <a target="_blank" href="{{ session_data.url }}?authToken={{ session_data.session_authentication_token }}#{{ session_data.session_uuid }}" class="btn btn-success btn-icon-split">
                                                   <span class="icon text-white-50">
                                                       <i class="fas fa-check"></i>
                                                   </span>
@@ -85,8 +73,8 @@
                                               </a>
                                               <br><br>
                                               <h6>Option2: Use Native Application (best performance)</h6>
-                                              <div class="alert alert-warning" role="alert">
-                                                  Download your client <a href="https://download.nice-dcv.com/" target="_blank"> here</a>.
+                                              <div class="alert alert-primary" role="alert">
+                                                  Download your client <strong><a href="https://download.nice-dcv.com/" target="_blank"> here</a></strong>
                                               </div>
                                               <a target="_blank" href="/remote_desktop_windows/client?session={{ n }}" class="btn btn-success btn-icon-split">
                                                 <span class="icon text-white-50">
@@ -94,60 +82,148 @@
                                                 </span>
                                                 <span class="text">Download Session File</span>
                                               </a>
-                                              <hr>
+                                               {% if hibernate_idle_session > 0 %}
+                                                   <hr> This session will be automatically hibernated <strong> after {{ hibernate_idle_session }} hours</strong> if you do not use it.
+                                               {% endif %}
 
-                                              {% if session_data.support_hibernation %}
-                                              <div align="center">
-                                                  <div class="alert alert-warning">
-                                                      Hibernate your session will not cause any data loss. You also won't be charged for the compute time while your session is stopped. You can relaunch an hibernated session at any time.<br>
-                                                      <form method="get" action="/remote_desktop_windows/delete">
-                                                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                          <input type="hidden" name="hibernate" value="yes">
-                                                          <input type="hidden" name="session" value="{{ n }}">
-                                                          <button type="submit" class="btn btn-danger btn-icon-split">
-                                                              <span class="icon text-white-50"><i class="fas fa-bed"></i></span>
-                                                              <span style="margin-top:5px;margin-right:10px; margin-left:10px">Hibernate my Session</span>
-                                                          </button>
-                                                      </form>
-                                                      <br>
-                                                      {% if hibernate_idle_session > 0 %}
-                                                          Your session will be automatically hibernated <strong>after {{ hibernate_idle_session }} hours</strong> if you do not use it.
-                                                      {% endif %}
+                                              <!-- Modal Password -->
+                                              <div class="modal fade" id="password{{ n }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                  <div class="modal-dialog" role="document">
+                                                      <div class="modal-content">
+                                                          <div class="modal-header">
+                                                              <h5 class="modal-title" id="exampleModalLabel">Admin password for session {{ session_data.session_name }}</h5>
+                                                              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                  <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                          </div>
+                                                          <div class="modal-body">
+                                                              This password is unique to this session <hr>
+                                                              <strong>Username:</strong> Administrator <br>
+                                                              <strong>Session Password:</strong> {{ session_data.session_password }}<br>
+                                                              <hr>
+                                                              For your convenience, we also added this information on your Desktop via <code>admin_password.txt</code>
+                                                          </div>
+                                                      </div>
                                                   </div>
-                                              </div>
-                                                  {% else %}
-                                                    <div align="center">
-                                                        <div class="alert alert-warning">
-                                                            Hibernation is not supported for this instance type.
-                                                        </div>
-                                                    </div>
-                                                  {% endif %}
+                                              </div> <!--end  password -->
 
-                                              <div align="center">
-                                               <div class="alert alert-danger">
-                                                  Terminating a session will delete all content from C: drive. Make sure to have uploaded your data to SOCA first to prevent data loss.<br>
-                                                   <form method="get" action="/remote_desktop_windows/delete">
-                                                       <div class="form-group form-check">
-                                                           <input type="checkbox" class="form-check-input" name="verif" id="verif" required>
-                                                           <label class="form-check-label" for="verif">I am sure I want to terminate this session</label>
-                                                       </div>
-                                                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                       <input type="hidden" name="session" value="{{ n }}">
-                                                       <button type="submit" class="btn btn-danger btn-icon-split">
-                                                           <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
-                                                           <span style="margin-top:5px;margin-right:10px; margin-left:10px">Terminate my Session</span>
-                                                       </button>
-                                                   </form>
-                                                   {% if terminate_session > 0 %}
-                                                   <hr>
-                                                  Your session will be automatically terminated <strong>after {{ terminate_session }} hours</strong> if you do not restart it.
-                                              {% endif %}
-                                               </div>
-                                              </div>
+                                              <!-- Modal Hibernation -->
+                                              <div class="modal fade" id="hibernate{{ n }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                  <div class="modal-dialog modal-lg" role="document">
+                                                      <div class="modal-content">
+                                                          <div class="modal-header">
+                                                              <h5 class="modal-title" id="exampleModalLabel">Hibernate session {{ session_data.session_name }} <small><a href="https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/Hibernate.html" target="_blank"> Documentation</a> </small></h5>
+                                                              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                  <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                          </div>
+                                                          <div class="modal-body">
+                                                              {% if session_data.support_hibernation %}
+                                                                  <div class="alert alert-warning" >
+                                                                      Hibernation will not cause any data loss<br>
+                                                                      You won't be charged for the compute time while your session is stopped<br>
+                                                                      Applications are loaded in memory and will restart automatically
+                                                                      {% if hibernate_idle_session > 0 %}
+                                                                          <br> Your session will be automatically hibernated <strong>after {{ hibernate_idle_session }} hours</strong> if you do not use it.
+                                                                      {% endif %}
+                                                                  </div>
+                                                                  <div align="center">
+                                                                      <form method="get" action="/remote_desktop_windows/delete">
+                                                                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                          <input type="hidden" name="action" value="hibernate">
+                                                                          <input type="hidden" name="session" value="{{ n }}">
+                                                                          <button type="submit" class="btn btn-danger btn-icon-split">
+                                                                              <span class="icon text-white-50"><i class="fas fa-bed"></i></span>
+                                                                              <span style="margin-top:5px;margin-right:10px; margin-left:10px">Hibernate {{ session_data.session_name }}</span>
+                                                                          </button>
+                                                                      </form>
+                                                                  </div>
+                                                              {% else %}
+                                                                  <div class="alert alert-warning">
+                                                                      Hibernation is not supported for this instance type. Use "Stop" instead.
+                                                                  </div>
+                                                              {% endif %}
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                              </div> <!--end  hibernate -->
+
+                                              <!-- Modal stop -->
+                                              <div class="modal fade" id="stop{{ n }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                  <div class="modal-dialog modal-lg" role="document">
+                                                      <div class="modal-content">
+                                                          <div class="modal-header">
+                                                              <h5 class="modal-title" id="exampleModalLabel">Stop session {{ session_data.session_name }}</h5>
+                                                              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                  <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                          </div>
+                                                          <div class="modal-body">
+                                                              <div class="alert alert-warning">
+                                                                  Stopping an instance will not cause any data loss<br>
+                                                                  You won't be charged for the compute time while your session is stopped<br>
+                                                                  Any running application will be stopped (use "Hibernate" to preserve state when possible)
+                                                              </div>
+                                                              <div align="center">
+                                                                  <form method="get" action="/remote_desktop_windows/delete">
+                                                                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                      <input type="hidden" name="action" value="stop">
+                                                                      <input type="hidden" name="session" value="{{ n }}">
+                                                                      <button type="submit" class="btn btn-danger btn-icon-split">
+                                                                          <span class="icon text-white-50"><i class="fas fa-bed"></i></span>
+                                                                          <span style="margin-top:5px;margin-right:10px; margin-left:10px">Stop {{ session_data.session_name }}</span>
+                                                                      </button>
+                                                                  </form>
+                                                              </div>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                              </div> <!--end  stop  -->
+                                              <!-- Modal terminate -->
+                                              <div class="modal fade" id="terminate{{ n }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                  <div class="modal-dialog modal-lg" role="document">
+                                                      <div class="modal-content">
+                                                          <div class="modal-header">
+                                                              <h5 class="modal-title" id="exampleModalLabel">Terminate session {{ session_data.session_name }}</h5>
+                                                              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                  <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                          </div>
+                                                          <div class="modal-body">
+                                                              <form method="get" action="/remote_desktop_windows/delete">
+                                                                  <div class="alert alert-danger">
+                                                                      Terminating a session will delete all content from C: drive<br>
+                                                                      Make sure to have uploaded your data to SOCA first to prevent data loss<br>
+                                                                      {% if terminate_session > 0 %}
+                                                                          Your session will be automatically terminated <strong>after {{ terminate_session }} hours</strong> if you do not restart it. <br>
+                                                                      {% endif %}
+                                                                      <div class="form-group form-check">
+                                                                          <input type="checkbox" class="form-check-input" name="verif" id="verif" required>
+                                                                          <label class="form-check-label" for="verif">I am sure I want to terminate this session</label>
+                                                                      </div>
+                                                                  </div>
+                                                                  <div align="center">
+                                                                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                      <input type="hidden" name="session" value="{{ n }}">
+                                                                      <input type="hidden" name="action" value="terminate">
+                                                                      <button type="submit" class="btn btn-danger btn-icon-split">
+                                                                          <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+                                                                          <span style="margin-top:5px;margin-right:10px; margin-left:10px">Terminate {{ session_data.session_name }}</span>
+                                                                      </button>
+                                                                  </div>
+                                                              </form>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                              </div><!--end  terminate  -->
                                           {% endif %}
-                                      {% endif  %}
+                                      {% endif %}
                                   {% endfor %}
                               {% else %}
+                                  <div class="card-header py-3">
+                                      <h6 class="m-0 font-weight-bold text-primary">Your Session #{{ n }}</h6>
+                                  </div>
+                                  <div class="card-body">
                                   <form method="post" action="/remote_desktop_windows/create">
                                       <div class="form-group row">
                                         <label for="walltime" class="col-sm-4 col-form-label">Session Name</label>

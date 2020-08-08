@@ -75,6 +75,7 @@ def auto_hibernate_instance():
             for instance_id in get_host_to_hibernate.keys():
                 logger.info("Checking Instance ID: {}".format(instance_id))
                 ssm_failed = False
+                ssm_list_command_loop = 0
                 powershell_command = ["Invoke-Expression \"& 'C:\\Program Files\\NICE\\DCV\\Server\\bin\\dcv' describe-session console -j\""]
                 try:
                     check_dcv_session = client_ssm.send_command(InstanceIds=[instance_id],
@@ -82,52 +83,68 @@ def auto_hibernate_instance():
                                                                 Parameters={"commands": powershell_command},
                                                                 TimeoutSeconds=30)
                 except ClientError as e:
-                    logger.error("Unable to query SSM: {}".format(e))
-                    return False
+                    logger.error("Unable to query SSM for {} : {}".format(instance_id, e))
+                    if "InvalidInstanceId" in str(e):
+                        logger.error("Instance is not in Running state or SSM daemon is not running. This instance is probably still starting up ...")
+                    ssm_failed = True
 
-                ssm_command_id = check_dcv_session["Command"]["CommandId"]
-                while client_ssm.list_commands(CommandId=ssm_command_id)['Commands'][0]['Status'] != "Success":
-                    time.sleep(2)
-                    if client_ssm.list_commands(CommandId=ssm_command_id)['Commands'][0]['Status'] == "Failed":
-                        logger.error("Unable to query DCV for {} with SSM id ".format(instance_id, ssm_command_id))
-                        ssm_failed = True
+                if ssm_failed is False:
+                    ssm_command_id = check_dcv_session["Command"]["CommandId"]
+                    while ssm_list_command_loop < 6:
+                        check_command_status = client_ssm.list_commands(CommandId=ssm_command_id)['Commands'][0]['Status']
+                        if check_command_status != "Success":
+                            logger.error("SSM command ({}) executed but did not succeed or failed yet. Waiting 20 seconds ... {} ".format(ssm_command_id, client_ssm.list_commands(CommandId=ssm_command_id)['Commands']))
+                            if check_command_status == "Failed":
+                                logger.error("Unable to query DCV for {} with SSM id ".format(instance_id, ssm_command_id))
+                                ssm_failed = True
+                            time.sleep(20)
+                            ssm_list_command_loop += 1
+                        else:
+                            break
+
+                if ssm_list_command_loop >= 5:
+                    logger.error("Unable to determine status SSM responses after 2 minutes timemout for {} : {} ".format(ssm_command_id, str(client_ssm.list_commands(CommandId=ssm_command_id))))
+                    ssm_failed = True
 
                 if ssm_failed is False:
                     ssm_output = client_ssm.get_command_invocation(CommandId=ssm_command_id, InstanceId=instance_id)
                     session_info = json.loads(ssm_output["StandardOutputContent"])
+                    session_current_connection = session_info["num-of-connections"]
                     if not session_info["last-disconnection-time"]:
                         # handle case where user launched DCV but never accessed it
                         last_dcv_disconnect = parse(session_info["creation-time"])
                     else:
                         last_dcv_disconnect = parse(session_info["last-disconnection-time"])
-
-                    current_time = parse(datetime.datetime.now().replace(microsecond=0).replace(tzinfo=datetime.timezone.utc).isoformat())
-                    if (last_dcv_disconnect + datetime.timedelta(hours=hibernate_idle_instance_after)) < current_time:
-                        logger.info("{} is ready for hibernation. Last access time {}".format(instance_id, last_dcv_disconnect))
-                        try:
-                            client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
-                        except ClientError as e:
-                            if e.response['Error'].get('Code') == 'DryRunOperation':
-                                client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True)
-                                logging.info("Stopped {}".format(instance_id))
-                                try:
-                                    check_session = WindowsDCVSessions.query.filter_by(session_instance_id=instance_id,
-                                                                                       session_state="running",
-                                                                                       is_active=True).first()
-                                    if check_session:
-                                        check_session.session_state = "stopped"
-                                        db.session.commit()
-                                        logger.info("DB entry updated")
-                                    else:
-                                        logger.error("Instance ({}) has been stopped but could not find associated database entry".format(instance_id), "error")
-                                except Exception as e:
-                                    logger.error("SQL Query error:".format(e), "error")
-                            else:
-                                logger.error("Unable to hibernate instance ({}) due to {}".format(instance_id, e), "error")
+                    if session_current_connection == 0:
+                        current_time = parse(datetime.datetime.now().replace(microsecond=0).replace(tzinfo=datetime.timezone.utc).isoformat())
+                        if (last_dcv_disconnect + datetime.timedelta(hours=hibernate_idle_instance_after)) < current_time:
+                            logger.info("{} is ready for hibernation. Last access time {}".format(instance_id, last_dcv_disconnect))
+                            try:
+                                client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
+                            except ClientError as e:
+                                if e.response['Error'].get('Code') == 'DryRunOperation':
+                                    client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True)
+                                    logging.info("Stopped {}".format(instance_id))
+                                    try:
+                                        check_session = WindowsDCVSessions.query.filter_by(session_instance_id=instance_id,
+                                                                                           session_state="running",
+                                                                                           is_active=True).first()
+                                        if check_session:
+                                            check_session.session_state = "stopped"
+                                            db.session.commit()
+                                            logger.info("DB entry updated")
+                                        else:
+                                            logger.error("Instance ({}) has been stopped but could not find associated database entry".format(instance_id), "error")
+                                    except Exception as e:
+                                        logger.error("SQL Query error:".format(e), "error")
+                                else:
+                                    logger.error("Unable to hibernate instance ({}) due to {}".format(instance_id, e), "error")
+                        else:
+                            logger.info("{} NOT ready for hibernation. Last access time {}".format(instance_id, last_dcv_disconnect))
+                    else:
+                        logger.info("{} currently has active DCV sessions")
                 else:
                     logger.error("SSM failed for {} with ssm_id {}".format(instance_id, ssm_command_id))
-            else:
-                logger.info("{} NOT ready for hibernation. Last access time {}".format(instance_id, last_dcv_disconnect))
 
 
 def auto_terminate_stopped_instance():
@@ -139,6 +156,7 @@ def auto_terminate_stopped_instance():
             logger.info("List of hosts that are subject to termination if stopped for more than {} hours: {}".format(terminate_stopped_instance_after, get_host_to_terminate))
             for instance_id, time_info in get_host_to_terminate.items():
                 if (time_info["stopped_time"] + datetime.timedelta(hours=terminate_stopped_instance_after)) < time_info["current_time"]:
+                    logger.info("Instance {} is ready to be terminated".format(instance_id))
                     try:
                         client_ec2.terminate_instances(InstanceIds=[instance_id], DryRun=True)
                     except ClientError as e:
@@ -152,7 +170,7 @@ def auto_terminate_stopped_instance():
                                     check_session.is_active = False
                                     check_session.deactivated_in = datetime.datetime.utcnow()
                                     db.session.commit()
-                                    logger.info("{} has been terminated set to inactive on the database.".format(instance_id))
+                                    logger.info("{} has been terminated and set to inactive on the database.".format(instance_id))
                                 else:
                                     logger.error("Instance ({}) has been stopped but could not find associated database entry".format(instance_id), "error")
                             except Exception as e:
@@ -160,7 +178,7 @@ def auto_terminate_stopped_instance():
                         else:
                             logger.error("Unable to delete associated instance ({}) due to {}".format(instance_id, e))
                 else:
-                    logger.info("Stopped instance ({}) is not ready to be terminated. Instance was stopped ast: {}".format(instance_id, time_info["stopped_time"]))
+                    logger.info("Stopped instance ({}) is not ready to be terminated. Instance was stopped at: {}".format(instance_id, time_info["stopped_time"]))
 
 
 def auto_terminate_instance():
