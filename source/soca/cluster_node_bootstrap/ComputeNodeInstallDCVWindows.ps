@@ -2,10 +2,8 @@
 # Script triggered by cluster_web_ui/views/remote_desktop_windows.py
 # DCV parameters: https://docs.aws.amazon.com/dcv/latest/adminguide/config-param-ref.html
 
-
 # Stop DCV service
 Stop-Service -Name dcvserver
-
 
 # Edit dcv.conf
 $Hostname = Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/hostname
@@ -16,7 +14,7 @@ New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18
 
 # Add custom Auth
 New-Item -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\" -Name security -Force
-New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\security" -Name "auth-token-verifier" -PropertyType "String" -Value "https://%SOCA_LoadBalancerDNSName%/api/system/dcv_authenticator" -Force
+New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\security" -Name "auth-token-verifier" -PropertyType "String" -Value "https://%SOCA_LoadBalancerDNSName%/api/dcv/dcv_authenticator" -Force
 New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\security" -Name "no-tls-strict" -PropertyType "DWord" -Value 1 -Force
 New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\security" -Name "authentication" -PropertyType "String" -Value "system" -Force
 
@@ -28,7 +26,7 @@ New-Item -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Softwar
 New-ItemProperty -Path "Microsoft.PowerShell.Core\Registry::\HKEY_USERS\S-1-5-18\Software\GSettings\com\nicesoftware\dcv\security" -Name "disable-display-sleep" -PropertyType "DWord" -Value 1 -Force
 
 # Change password for Admin user
-$Password = ConvertTo-SecureString -String "%SOCA_USER_PASSWORD%" -AsPlainText –Force
+$Password = ConvertTo-SecureString -String "%SOCA_LOCAL_ADMIN_PASSWORD%" -AsPlainText –Force
 $UserAccount = Get-LocalUser -Name "Administrator"
 $UserAccount | Set-LocalUser -Password $Password
 
@@ -39,11 +37,11 @@ if($AutoLogon -eq "true"){
     New-Item -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\" -Name Winlogon -Force
     New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "AutoAdminLogon" -PropertyType "DWord" -Value 1 -Force
     New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultUserName" -PropertyType "String" -Value "Administrator" -Force
-    New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -PropertyType "String" -Value "%SOCA_USER_PASSWORD%" -Force
+    New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -PropertyType "String" -Value "%SOCA_LOCAL_ADMIN_PASSWORD%" -Force
 }
 
 # Specify Admin user/password on the desktop in case user needs it
-New-Item -Path "~/Desktop/" -Name "ADMIN_PASSWORD.txt" -ItemType "file" -Value "In case you need to use your local administrator account: Username: Administrator and password is %SOCA_USER_PASSWORD%"
+New-Item -Path "~/Desktop/" -Name "ADMIN_PASSWORD.txt" -ItemType "file" -Value "In case you need to use your local administrator account: Username: Administrator and password is %SOCA_LOCAL_ADMIN_PASSWORD%"
 
 # Disable Internet Explorer Enhanced Security Configuration
 $AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
@@ -53,5 +51,6 @@ Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0
 
 # Restart Computer to validate all Windows changes
 Restart-Computer
+
 </powershell>
 

@@ -19,7 +19,7 @@ from cachetools import TTLCache
 import datetime
 import read_secretmanager
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("application")
 my_files = Blueprint('my_files', __name__, template_folder='templates')
 app = Flask(__name__)
 

@@ -1,15 +1,26 @@
 import config
-import ldap
+from cryptography.fernet import Fernet
 from flask_restful import Resource, reqparse
+from flask import request
 import logging
-from decorators import admin_api, restricted_api, private_api
 from flask import Response
 import base64
 import ast
 import errors
 from models import db, DCVSessions, WindowsDCVSessions
 
-logger = logging.getLogger("soca_api")
+logger = logging.getLogger("api")
+
+
+def decrypt(encrypted_text):
+    try:
+        key = config.Config.DCV_TOKEN_SYMMETRIC_KEY
+        cipher_suite = Fernet(key)
+        decrypted_text = cipher_suite.decrypt(encrypted_text)
+        return decrypted_text.decode()
+    except Exception as err:
+        print(err)
+        return False
 
 
 class DcvAuthenticator(Resource):
@@ -25,30 +36,26 @@ class DcvAuthenticator(Resource):
           401:
             description: Invalid user/token pair
         """
+        logger.info("DCV Auth")
         parser = reqparse.RequestParser()
         parser.add_argument('sessionId', type=str, location='form')
         parser.add_argument('authenticationToken', type=str, location='form')
         parser.add_argument('clientAddress', type=str, location='form')
         args = parser.parse_args()
+        x_forwarded_for = request.headers.get("X-Forwarded-For", None)
         session_id = args["sessionId"]
         authentication_token = args['authenticationToken']
-        client_address = args["clientAddress"]
-        file1 = open("myfile.txt", "w")
-        file1.write(str(args))
-        file1.close()
+        client_address = args["clientAddress"].split(":")[0]  # keep only ip, remove port
         error = False
         user = False
         required_params = ["system", "session_user", "session_token", "session_instance_id"]
         session_info = {}
-
-        if session_id is None or authentication_token is None:
-            return errors.all_errors('CLIENT_MISSING_PARAMETER', "sessionId (str) and authenticationToken (str) are required.")
-
+        if session_id is None or authentication_token is None or client_address is None:
+            return errors.all_errors('CLIENT_MISSING_PARAMETER', "sessionId (str), clientAddress (str) and authenticationToken (str) are required.")
         try:
-            decoded_token = base64.b64decode(authentication_token)
-            decoded_token = ast.literal_eval(decoded_token.decode("utf-8"))
+            decoded_token = decrypt(base64.b64decode(authentication_token))
+            decoded_token = ast.literal_eval(decoded_token)
         except Exception as err:
-            logger.error("Unable to b64decode DCV authentication token {} due to {}".format(authentication_token, err))
             error = True
 
         if error is False:
@@ -61,12 +68,14 @@ class DcvAuthenticator(Resource):
         if error is False:
             if session_info["system"].lower() == "windows":
                 validate_session = WindowsDCVSessions.query.filter_by(user=session_info["session_user"],
+                                                                      session_host_private_ip=client_address,
                                                                       session_token=session_info["session_token"],
                                                                       session_instance_id=session_info["session_instance_id"],
                                                                       is_active=True).first()
 
             else:
                 validate_session = DCVSessions.query.filter_by(user=session_info["session_user"],
+                                                               session_host_private_ip=client_address,
                                                                session_token=session_info["session_token"],
                                                                session_instance_id=session_id["session_instance_id"],
                                                                is_active=True).first()
@@ -76,11 +85,13 @@ class DcvAuthenticator(Resource):
                 else:
                     user = session_info["user"]
             else:
-                logger.error("Unable to authenticate DCV session for {}".format(decoded_token))
+                logger.error("Unable to authenticate DCV session for {} with args {}".format(decoded_token, args))
                 error = True
 
         if error is False and user is not False:
             xml_response = '<auth result="yes"><username>' + user +'</username></auth>'
+            status = 200
         else:
             xml_response = '<auth result="no"/>'
-        return Response(xml_response, mimetype='text/xml')
+            status = 401
+        return Response(xml_response, status=status, mimetype='text/xml')

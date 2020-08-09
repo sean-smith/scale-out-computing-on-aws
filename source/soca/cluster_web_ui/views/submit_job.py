@@ -11,7 +11,7 @@ from models import ApplicationProfiles
 from collections import OrderedDict
 import re
 import math
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("application")
 submit_job = Blueprint('submit_job', __name__, template_folder='templates')
 
 

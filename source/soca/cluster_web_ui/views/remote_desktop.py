@@ -13,7 +13,7 @@ import datetime
 import read_secretmanager
 import re
 
-logger = logging.getLogger("api_log")
+logger = logging.getLogger("application")
 remote_desktop = Blueprint('remote_desktop', __name__, template_folder='templates')
 client = boto3.client('ec2')
 

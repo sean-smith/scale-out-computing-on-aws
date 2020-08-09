@@ -5,7 +5,7 @@ import ast
 import re
 import math
 
-logger = logging.getLogger("soca_api")
+logger = logging.getLogger("api")
 
 
 def get_compute_pricing(ec2_instance_type):

@@ -55,13 +55,16 @@ class Config(object):
     DCV_AUTH_DIR = "/var/run/dcvsimpleextauth"
     DCV_SIMPLE_AUTH = "/usr/libexec/dcvsimpleextauth.py"
     DCV_SESSION_LOCATION = "tmp/dcv_sessions"
-    DCV_MAX_SESSION_COUNT = 4
     DCV_FORCE_INSTANCE_HIBERNATE_SUPPORT = False  # If True, users can only provision instances that support hibernation
-
+    DCV_TOKEN_SYMMETRIC_KEY = os.environ["SOCA_DCV_TOKEN_SYMMETRIC_KEY"] # used to encrypt/decrypt and validate DCV session auth
+    DCV_BLACKLIST_INSTANCE_TYPE = ['metal', 'nano', 'micro', 'p3', 'p2'] # This instance type won't be visible on the dropdown menu
     # DCV Linux
     DCV_LINUX_TERMINATE_IDLE_SESSION = 0  # In hours. DCV session will be terminated if there is no active connection within the time specified. 0 to disable
+    DCV_MAX_SESSION_COUNT = 4
 
     # DCV Windows
+    DCV_WINDOWS_SESSION_COUNT = 4
+    DCV_WINDOWS_ALLOW_INSTANCE_CHANGE = True  # Allow user to change their instance type if their DCV session is stopped
     DCV_WINDOWS_HIBERNATE_IDLE_SESSION = 2  # In hours. Windows DCV sessions will be stopped to save cost if there is no active connection within the time specified. 0 to disable
     DCV_WINDOWS_STOP_INSTANCE_THAT_CANNOT_BE_HIBERNATED = True  # Instance that cannot be hibernated will still be stopped after DCV_WINDOWS_HIBERNATE_IDLE_SESSION to save cost. Set to False to disable
     DCV_WINDOWS_TERMINATE_STOPPED_SESSION = 0  # In hours. Stopped Windows DCV will be permanently terminated if user won't restart it within the time specified. 0 to disable

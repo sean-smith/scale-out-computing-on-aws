@@ -18,7 +18,7 @@ from api.v1.ldap.groups import Groups
 from api.v1.ldap.authenticate import Authenticate
 from api.v1.system.files import Files
 from api.v1.system.aws_price import AwsPrice
-from api.v1.system.dcv_authenticator import DcvAuthenticator
+from api.v1.dcv.authenticator import DcvAuthenticator
 from views.index import index
 from views.ssh import ssh
 from views.sftp import sftp
@@ -95,17 +95,30 @@ dict_config = {
             'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': "soca_api.log",
+            'filename': "application.log",
+            'when': "midnight",
+            'interval': 1,
+            'backupCount': config.Config.DAILY_BACKUP_COUNT
+        },
+        'api': {
+            'level': 'DEBUG',
+            'formatter': 'default',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': "api.log",
             'when': "midnight",
             'interval': 1,
             'backupCount': config.Config.DAILY_BACKUP_COUNT
         },
     },
     'loggers': {
-        'api_log': {
+        'application': {
             'handlers': ["default"],
             'level': 'DEBUG',
         },
+        'api': {
+            'handlers': ["api"],
+            'level': 'DEBUG',
+        }
     }
 }
 
@@ -160,7 +173,7 @@ with app.app_context():
     # System
     api.add_resource(Files, '/api/system/files')
     api.add_resource(AwsPrice, '/api/system/aws_price')
-    api.add_resource(DcvAuthenticator, '/api/system/dcv_authenticator')
+    api.add_resource(DcvAuthenticator, '/api/dcv/dcv_authenticator')
     # Scheduler
     api.add_resource(Job, '/api/scheduler/job')
     api.add_resource(Jobs, '/api/scheduler/jobs')
@@ -184,10 +197,9 @@ with app.app_context():
     app.register_blueprint(remote_desktop_windows)
     app.register_blueprint(dashboard)
     app.register_blueprint(my_activity)
-
-    logger = logging.getLogger("api_log")
     logging.config.dictConfig(dict_config)
-    app.logger.addHandler(logger)
+    app.logger.addHandler(logging.getLogger("api_log"))
+    app.logger.addHandler(logging.getLogger("api"))
     db.app = app
     db.init_app(app)
     db.create_all()

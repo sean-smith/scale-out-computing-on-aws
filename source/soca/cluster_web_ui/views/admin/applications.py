@@ -4,7 +4,7 @@ from models import db, ApplicationProfiles
 from decorators import login_required, admin_only
 import base64
 import datetime
-logger = logging.getLogger("api_log")
+logger = logging.getLogger("application")
 admin_applications = Blueprint('admin_applications', __name__, template_folder='templates')
 
 

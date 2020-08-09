@@ -15,10 +15,18 @@ from botocore.exceptions import ClientError
 import re
 import os
 import json
+from cryptography.fernet import Fernet
+
 
 remote_desktop_windows = Blueprint('remote_desktop_windows', __name__, template_folder='templates')
 client_ec2 = boto3.client('ec2')
-logger = logging.getLogger("api_log")
+logger = logging.getLogger("application")
+
+
+def encrypt(message):
+    key = config.Config.DCV_TOKEN_SYMMETRIC_KEY
+    cipher_suite = Fernet(key)
+    return cipher_suite.encrypt(message.encode("utf-8"))
 
 
 def launch_instance(launch_parameters, dry_run):
@@ -87,7 +95,11 @@ def launch_instance(launch_parameters, dry_run):
                      },
                      {
                          "Key": "soca:NodeType",
-                         "Value": "soca-dcv-windows"
+                         "Value": "soca-dcv"
+                     },
+                     {
+                         "Key": "soca:DCVSystem",
+                         "Value": "windows"
                      }
                  ]}]
         )
@@ -104,7 +116,7 @@ def launch_instance(launch_parameters, dry_run):
     return True
 
 
-def get_host_info(session_uuid):
+def get_host_info(tag_uuid):
     host_info = {}
     token = True
     next_token = ''
@@ -113,7 +125,7 @@ def get_host_info(session_uuid):
             Filters=[
                 {
                     'Name': 'tag:soca:DCVWindowsSessionUUID',
-                    'Values': [session_uuid]
+                    'Values': [tag_uuid]
                 },
             ],
             MaxResults=1000,
@@ -129,7 +141,9 @@ def get_host_info(session_uuid):
             for instance in reservation['Instances']:
                 if instance['PrivateDnsName'].split('.')[0]:
                     host_info["private_dns"] = instance['PrivateDnsName'].split('.')[0]
+                    host_info["private_ip"] = instance['PrivateIpAddress']
                     host_info["instance_id"] = instance['InstanceId']
+                    host_info["status"] = instance['State']['Name']
 
     return host_info
 
@@ -141,15 +155,17 @@ def index():
     for session_info in WindowsDCVSessions.query.filter_by(user=session["user"], is_active=True).all():
         session_number = session_info.session_number
         session_state = session_info.session_state
-        session_password = session_info.session_password
-        session_uuid = session_info.session_uuid
+        session_local_admin_password = session_info.session_local_admin_password
+        tag_uuid = session_info.tag_uuid
         session_name = session_info.session_name
-        session_host = session_info.session_host
+        session_host_private_dns = session_info.session_host_private_dns
         session_token = session_info.session_token
+        session_instance_type = session_info.session_instance_type
         session_instance_id = session_info.session_instance_id
         support_hibernation = session_info.support_hibernation
         dcv_authentication_token = session_info.dcv_authentication_token
-        host_info = get_host_info(session_uuid)
+        session_id = session_info.session_id
+        host_info = get_host_info(tag_uuid)
         if not host_info:
             # no host detected, session no longer active
             session_info.is_active = False
@@ -157,24 +173,29 @@ def index():
             db.session.commit()
         else:
             # detected EC2 host for the session
-            authentication_data = json.dumps({"system": "windows",
-                                              "session_instance_id": session_instance_id,
-                                              "session_token": session_token,
-                                              "session_user": session["user"]})
+            if not dcv_authentication_token:
+                session_info.session_host_private_dns = host_info["private_dns"]
+                session_info.session_host_private_ip = host_info["private_ip"]
+                session_info.session_instance_id = host_info["instance_id"]
+                authentication_data = json.dumps({"system": "windows",
+                                                  "session_instance_id": host_info["instance_id"],
+                                                  "session_token": session_token,
+                                                  "session_user": session["user"]})
+                session_authentication_token = base64.b64encode(encrypt(authentication_data)).decode("utf-8")
+                session_info.dcv_authentication_token = session_authentication_token
+                db.session.commit()
 
-            session_authentication_token = (base64.b64encode(authentication_data.encode("utf-8"))).decode("utf-8")
-            session_info.dcv_authentication_token = session_authentication_token
-            session_info.session_host = host_info["private_dns"]
-            session_info.session_instance_id = host_info["instance_id"]
+        if host_info["status"] in ["stopped", "stopping"] and session_state != "stopped":
+            session_state = "stopped"
+            session_info.session_state = "stopped"
             db.session.commit()
 
-
-        if session_state == "pending" and session_host is not False:
-            check_dcv_state = get('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host + '/',
+        if session_state == "pending" and session_host_private_dns is not False:
+            check_dcv_state = get('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns + '/',
                                   allow_redirects=False,
                                   verify=False)
 
-            logger.info("Checking {} for {} and received status {} ".format('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host + '/',
+            logger.info("Checking {} for {} and received status {} ".format('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns + '/',
                                                                             session_info,
                                                                             check_dcv_state.status_code))
 
@@ -183,16 +204,20 @@ def index():
                 db.session.commit()
 
         user_sessions[session_number] = {
-            "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host +'/',
-            "session_password": session_password,
+            "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns +'/',
+            "session_local_admin_password": session_local_admin_password,
             "session_state": session_state,
             "session_authentication_token": dcv_authentication_token,
+            "session_id": session_id,
             "session_name": session_name,
+            "session_instance_id": session_instance_id,
+            "session_instance_type": session_instance_type,
+            "tag_uuid": tag_uuid,
             "support_hibernation": support_hibernation}
 
-    max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
+    max_number_of_sessions = config.Config.DCV_WINDOWS_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
-    blacklist = ['metal', 'nano', 'micro', 'p3', 'p2']
+    blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
     all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
     return render_template('remote_desktop_windows.html',
@@ -201,6 +226,7 @@ def index():
                            hibernate_idle_session=config.Config.DCV_WINDOWS_HIBERNATE_IDLE_SESSION,
                            terminate_stopped_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
                            terminate_session=config.Config.DCV_WINDOWS_TERMINATE_SESSION,
+                           allow_instance_change=config.Config.DCV_WINDOWS_ALLOW_INSTANCE_CHANGE,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -210,11 +236,16 @@ def index():
 @login_required
 def create():
     parameters = {}
-    for parameter in ["instance_type", "disk_size", "session_number", "session_name", "instance_ami"]:
+    for parameter in ["instance_type", "disk_size", "session_number", "session_name", "instance_ami", "hibernate"]:
         if not request.form[parameter]:
             parameters[parameter] = False
         else:
-            parameters[parameter] = request.form[parameter]
+            if request.form[parameter].lower() in ["yes", "true"]:
+                parameters[parameter] = True
+            elif request.form[parameter].lower() in ["no", "false"]:
+                parameters[parameter] = False
+            else:
+                parameters[parameter] = request.form[parameter]
 
     session_uuid = str(uuid.uuid4())
     region = os.environ["AWS_DEFAULT_REGION"]
@@ -263,23 +294,24 @@ def create():
     uppercase = ([random.choice(''.join(random.choice(string.ascii_uppercase) for _ in range(10))) for _ in range(3)])
     lowercase = ([random.choice(''.join(random.choice(string.ascii_lowercase) for _ in range(10))) for _ in range(3)])
     pw = digits + uppercase + lowercase
-    session_password = ''.join(random.sample(pw, len(pw)))
+    session_local_admin_password = ''.join(random.sample(pw, len(pw)))
     user_data_script = open("/apps/soca/"+soca_configuration["ClusterId"]+"/cluster_node_bootstrap/ComputeNodeInstallDCVWindows.ps", "r")
     user_data = user_data_script.read()
     user_data_script.close()
-    user_data = user_data.replace("%SOCA_USER_PASSWORD%", session_password)
+    user_data = user_data.replace("%SOCA_LOCAL_ADMIN_PASSWORD%", session_local_admin_password)
     user_data = user_data.replace("%SOCA_LoadBalancerDNSName%", soca_configuration['LoadBalancerDNSName'])
     if config.Config.DCV_WINDOWS_AUTOLOGON is True:
         user_data = user_data.replace("%SOCA_WINDOWS_AUTOLOGON%", "true")
     else:
         user_data = user_data.replace("%SOCA_WINDOWS_AUTOLOGON%", "false")
 
+
+
     check_hibernation_support = client_ec2.describe_instance_types(
         InstanceTypes=[instance_type],
         Filters=[
             {"Name": "hibernation-supported",
-             "Values": ["true"]}
-        ]
+             "Values": ["true"]}]
     )
     logger.info("Checking in {} support Hibernation : {}".format(instance_type, check_hibernation_support))
     if len(check_hibernation_support["InstanceTypes"]) == 0:
@@ -287,9 +319,13 @@ def create():
             flash("Sorry your administrator limited <a href='https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/Hibernate.html#hibernating-prerequisites' target='_blank'>DCV to instances that support hibernation mode</a> <br> Please choose a different type of instance.")
             return redirect("/remote_desktop_windows")
         else:
-            hibernate = False
+            hibernate_support = False
     else:
-        hibernate = True
+        hibernate_support = True
+
+    if parameters["hibernate"] and not hibernate_support:
+        flash("Sorry you have selected {} with hibernation support, but this instance type does not support it. Either disable hibernation support or pick a different instance type".format(instance_type), "error")
+        return redirect("/remote_desktop_windows")
 
     launch_parameters = {"security_group_id": security_group_id,
                          "instance_profile": instance_profile,
@@ -301,7 +337,7 @@ def create():
                          "session_uuid": session_uuid,
                          "disk_size": parameters["disk_size"],
                          "cluster_id": soca_configuration["ClusterId"],
-                         "hibernate": hibernate
+                         "hibernate": parameters["hibernate"]
                          }
     dry_run_launch = launch_instance(launch_parameters, dry_run=True)
     if dry_run_launch is True:
@@ -318,12 +354,16 @@ def create():
                                      session_number=parameters["session_number"],
                                      session_name=session_name,
                                      session_state="pending",
-                                     session_host=False,
-                                     session_password=session_password,
-                                     session_uuid=session_uuid,
+                                     session_host_private_dns=False,
+                                     session_host_private_ip=False,
+                                     session_instance_type=instance_type,
+                                     dcv_authentication_token=None,
+                                     session_local_admin_password=session_local_admin_password,
+                                     session_id="console",
+                                     tag_uuid=session_uuid,
                                      session_token=str(uuid.uuid4()),
                                      is_active=True,
-                                     support_hibernation=hibernate,
+                                     support_hibernation=parameters["hibernate"],
                                      created_on=datetime.datetime.utcnow())
     db.session.add(new_session)
     db.session.commit()
@@ -340,7 +380,7 @@ def delete():
         return redirect("/remote_desktop_windows")
 
     if dcv_session is None:
-        flash("Invalid DCV sessions", "error")
+        flash("Invalid graphical session ID", "error")
         return redirect("/remote_desktop_windows")
 
     check_session = WindowsDCVSessions.query.filter_by(user=session["user"],
@@ -379,7 +419,7 @@ def delete():
             except Exception as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.terminate_instances(InstanceIds=[instance_id])
-                    flash("DCV session is about to be terminated.", "success")
+                    flash("Your graphical session is about to be terminated.", "success")
                     check_session.is_active = False
                     check_session.deactivated_on = datetime.datetime.utcnow()
                     db.session.commit()
@@ -398,7 +438,7 @@ def delete():
 def restart_from_hibernate():
     dcv_session = request.args.get("session", None)
     if dcv_session is None:
-        flash("Invalid DCV sessions", "error")
+        flash("Invalid graphical session", "error")
         return redirect("/remote_desktop_windows")
 
     check_session = WindowsDCVSessions.query.filter_by(user=session["user"],
@@ -425,13 +465,60 @@ def restart_from_hibernate():
 
     return redirect("/remote_desktop_windows")
 
+@remote_desktop_windows.route('/remote_desktop_windows/modify', methods=['POST'])
+@login_required
+def modify():
+    dcv_session = None if not "session_number" in request.form else request.form["session_number"]
+    new_instance_type = None if not "instance_type" in request.form else request.form["instance_type"]
+    if dcv_session is None:
+        flash("Invalid graphical session", "error")
+        return redirect("/remote_desktop_windows")
+
+    if new_instance_type is None:
+        flash("Invalid new EC2 instance type", "error")
+        return redirect("/remote_desktop_windows")
+
+    blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
+    all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
+    all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
+    if new_instance_type not in all_instances:
+        flash("This EC2 instance type is not authorized", "error")
+        return redirect("/remote_desktop_windows")
+
+    check_session = WindowsDCVSessions.query.filter_by(user=session["user"],
+                                                       session_number=dcv_session,
+                                                       session_state="stopped",
+                                                       is_active=True).first()
+    if check_session:
+        instance_id = check_session.session_instance_id
+        try:
+            client_ec2.modify_instance_attribute(InstanceId=instance_id,
+                                                 InstanceType={'Value': new_instance_type},
+                                                 DryRun=True)
+        except Exception as e:
+            if e.response['Error'].get('Code') == 'DryRunOperation':
+                try:
+                    client_ec2.modify_instance_attribute(InstanceId=instance_id,
+                                                         InstanceType={'Value': new_instance_type})
+                    check_session.session_instance_type = new_instance_type
+                    db.session.commit()
+                    flash("Your EC2 instance has been updated successfully to: {}".format(new_instance_type), "success")
+                except Exception as err:
+                    flash("Unable to modify EC2 instance type due to {}".format(err))
+            else:
+                flash("Unable to restart instance ({}) due to {}".format(instance_id, e), "error")
+    else:
+        flash("Unable to retrieve this session. Either session does not exist or is not stopped", "error")
+
+    return redirect("/remote_desktop_windows")
+
 
 @remote_desktop_windows.route('/remote_desktop_windows/client', methods=['GET'])
 @login_required
 def generate_client():
     dcv_session = request.args.get("session", None)
     if dcv_session is None:
-        flash("Invalid DCV sessions", "error")
+        flash("Invalid graphical sessions", "error")
         return redirect("/remote_desktop_windows")
 
     check_session = WindowsDCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True).first()
