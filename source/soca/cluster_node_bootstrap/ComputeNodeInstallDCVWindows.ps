@@ -43,11 +43,22 @@ if($AutoLogon -eq "true"){
 # Specify Admin user/password on the desktop in case user needs it
 New-Item -Path "~/Desktop/" -Name "ADMIN_PASSWORD.txt" -ItemType "file" -Value "In case you need to use your local administrator account: Username: Administrator and password is %SOCA_LOCAL_ADMIN_PASSWORD%"
 
+# Create Shortcut to SOCA web interface
+$WshShell = New-Object -comObject WScript.Shell
+$SocaShortcut = $WshShell.CreateShortcut("C:/Users/Administrator/Desktop/SOCA_Interface.url")
+$SocaShortcut.TargetPath = "https://%SOCA_LoadBalancerDNSName%"
+$SocaShortcut.Save()
+
+# Disable User Access Control (UAC)
+Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 00000000 -Force
+
 # Disable Internet Explorer Enhanced Security Configuration
-$AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
-Set-ItemProperty -Path $AdminKey -Name "IsInstalled" -Value 0 -PropertyType "DWord" -Force
-$UserKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}"
-Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0 -PropertyType "DWord" -Force
+$AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
+$UserKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}"
+Set-ItemProperty -Path $AdminKey -Name "IsInstalled" -Value 0 -Force
+Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0 -Force
+Stop-Process -Name Explorer
+
 
 # Restart Computer to validate all Windows changes
 Restart-Computer

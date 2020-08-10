@@ -300,6 +300,7 @@ def create():
     user_data_script.close()
     user_data = user_data.replace("%SOCA_LOCAL_ADMIN_PASSWORD%", session_local_admin_password)
     user_data = user_data.replace("%SOCA_SchedulerPrivateIP%", soca_configuration['SchedulerPrivateIP'] + ":8443")
+    user_data = user_data.replace("%SOCA_LoadBalancerDNSName%", soca_configuration['LoadBalancerDNSName'])
     if config.Config.DCV_WINDOWS_AUTOLOGON is True:
         user_data = user_data.replace("%SOCA_WINDOWS_AUTOLOGON%", "true")
     else:
@@ -495,7 +496,7 @@ def modify():
             client_ec2.modify_instance_attribute(InstanceId=instance_id,
                                                  InstanceType={'Value': new_instance_type},
                                                  DryRun=True)
-        except Exception as e:
+        except ClientError as e:
             if e.response['Error'].get('Code') == 'DryRunOperation':
                 try:
                     client_ec2.modify_instance_attribute(InstanceId=instance_id,
@@ -503,10 +504,13 @@ def modify():
                     check_session.session_instance_type = new_instance_type
                     db.session.commit()
                     flash("Your EC2 instance has been updated successfully to: {}".format(new_instance_type), "success")
-                except Exception as err:
-                    flash("Unable to modify EC2 instance type due to {}".format(err))
+                except ClientError as err:
+                    if "not supported for instances with hibernation configured." in err.response['Error'].get('Code'):
+                        flash("Your intance has been started with hibernation enabled. You cannot change the instance type. Start a new session with Hibernation disabled if you want to be able to change your instance type. ", "error")
+                    else:
+                        flash("Unable to modify EC2 instance type due to {}".format(err), "error")
             else:
-                flash("Unable to restart instance ({}) due to {}".format(instance_id, e), "error")
+                flash("Unable to modify instance ({}) due to {}".format(instance_id, e), "error")
     else:
         flash("Unable to retrieve this session. Either session does not exist or is not stopped", "error")
 
@@ -521,7 +525,9 @@ def generate_client():
         flash("Invalid graphical sessions", "error")
         return redirect("/remote_desktop_windows")
 
-    check_session = WindowsDCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True).first()
+    check_session = WindowsDCVSessions.query.filter_by(user=session["user"],
+                                                       session_number=dcv_session,
+                                                       is_active=True).first()
     if check_session:
         session_file = '''
 [version]
@@ -533,7 +539,7 @@ port=443
 sessionid=console
 user=Administrator
 authToken='''+check_session.dcv_authentication_token+'''
-weburlpath=/''' + check_session.session_host + '''
+weburlpath=/''' + check_session.session_host_private_dns + '''
 '''
         return Response(
             session_file,

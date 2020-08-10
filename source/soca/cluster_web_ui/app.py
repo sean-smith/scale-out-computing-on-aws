@@ -95,7 +95,7 @@ dict_config = {
             'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': "application.log",
+            'filename': "logs/application.log",
             'when': "midnight",
             'interval': 1,
             'backupCount': config.Config.DAILY_BACKUP_COUNT
@@ -104,7 +104,7 @@ dict_config = {
             'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': "api.log",
+            'filename': "logs/api.log",
             'when': "midnight",
             'interval': 1,
             'backupCount': config.Config.DAILY_BACKUP_COUNT
@@ -113,7 +113,7 @@ dict_config = {
             'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': "scheduled_tasks.log",
+            'filename': "logs/scheduled_tasks.log",
             'when': "midnight",
             'interval': 1,
             'backupCount': config.Config.DAILY_BACKUP_COUNT
@@ -186,7 +186,7 @@ with app.app_context():
     # System
     api.add_resource(Files, '/api/system/files')
     api.add_resource(AwsPrice, '/api/system/aws_price')
-    api.add_resource(DcvAuthenticator, '/api/dcv/dcv_authenticator')
+    api.add_resource(DcvAuthenticator, '/api/dcv/authenticator')
     # Scheduler
     api.add_resource(Job, '/api/scheduler/job')
     api.add_resource(Jobs, '/api/scheduler/jobs')

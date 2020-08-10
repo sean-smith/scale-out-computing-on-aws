@@ -40,8 +40,12 @@ def retrieve_host(instance_state, hibernate):
                 },
                 {
                     "Name": "tag:soca:NodeType",
-                    "Values": ["soca-dcv-windows"]
-                }
+                    "Values": ["soca-dcv"]
+                },
+                {
+                    "Name": "tag:soca:DCVSystem",
+                    "Values": ["windows", "linux"]
+                },
             ],
             MaxResults=1000,
             NextToken=next_token,
@@ -93,7 +97,7 @@ def auto_hibernate_instance():
                     while ssm_list_command_loop < 6:
                         check_command_status = client_ssm.list_commands(CommandId=ssm_command_id)['Commands'][0]['Status']
                         if check_command_status != "Success":
-                            logger.error("SSM command ({}) executed but did not succeed or failed yet. Waiting 20 seconds ... {} ".format(ssm_command_id, client_ssm.list_commands(CommandId=ssm_command_id)['Commands']))
+                            logger.info("SSM command ({}) executed but did not succeed or failed yet. Waiting 20 seconds ... {} ".format(ssm_command_id, client_ssm.list_commands(CommandId=ssm_command_id)['Commands']))
                             if check_command_status == "Failed":
                                 logger.error("Unable to query DCV for {} with SSM id ".format(instance_id, ssm_command_id))
                                 ssm_failed = True
