@@ -54,13 +54,16 @@ case "$1" in
             fi
             if [[ ! -f dcv_secret_key.txt ]]; then
                 echo 'No dcv Key detected, creating new one ...'
-                echo "DCV Secret Key used to authenticate DCV sessions via /api/system/dcv_authenticator. If you delete/change this value, your existing sessions will become inaccessible and your user must re-create them"
+                # /!\ ATTENTION
+                # DCV Secret Key used to authenticate DCV sessions via /api/system/dcv_authenticator.
+                # If you delete/change this value, your existing sessions will become inaccessible and your user must re-create them
                 dd if=/dev/urandom bs=32 count=1 2>/dev/null | openssl base64 > dcv_secret_key.txt
                 chmod 600 dcv_secret_key.txt
             fi
 
             export SOCA_FLASK_SECRET_KEY=$(cat flask_secret_key.txt)
             export SOCA_DCV_TOKEN_SYMMETRIC_KEY=$(cat dcv_secret_key.txt)
+
             # Creating unique, random and temp credentials
             export SOCA_FLASK_FERNET_KEY=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | openssl base64)
             export SOCA_FLASK_API_ROOT_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)

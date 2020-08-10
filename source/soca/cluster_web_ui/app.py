@@ -109,6 +109,15 @@ dict_config = {
             'interval': 1,
             'backupCount': config.Config.DAILY_BACKUP_COUNT
         },
+        'scheduled_tasks': {
+            'level': 'DEBUG',
+            'formatter': 'default',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': "scheduled_tasks.log",
+            'when': "midnight",
+            'interval': 1,
+            'backupCount': config.Config.DAILY_BACKUP_COUNT
+        },
     },
     'loggers': {
         'application': {
@@ -117,6 +126,10 @@ dict_config = {
         },
         'api': {
             'handlers': ["api"],
+            'level': 'DEBUG',
+        },
+        'scheduled_tasks': {
+            'handlers': ["scheduled_tasks"],
             'level': 'DEBUG',
         }
     }
@@ -198,8 +211,9 @@ with app.app_context():
     app.register_blueprint(dashboard)
     app.register_blueprint(my_activity)
     logging.config.dictConfig(dict_config)
-    app.logger.addHandler(logging.getLogger("api_log"))
+    app.logger.addHandler(logging.getLogger("application"))
     app.logger.addHandler(logging.getLogger("api"))
+    app.logger.addHandler(logging.getLogger("scheduled_tasks"))
     db.app = app
     db.init_app(app)
     db.create_all()

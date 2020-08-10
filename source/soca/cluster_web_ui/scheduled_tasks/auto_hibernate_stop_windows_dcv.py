@@ -10,7 +10,7 @@ from dateutil.parser import parse
 from models import db, WindowsDCVSessions
 from botocore.exceptions import ClientError
 from models import db
-logger = logging.getLogger("api_log")
+logger = logging.getLogger("scheduled_tasks")
 client_ec2 = boto3.client("ec2")
 client_ssm = boto3.client("ssm")
 
