@@ -210,7 +210,7 @@ Run the following command (as root) if you want to restart any service:
    - Scheduler: `service pbs start`
    - SSSD: `service sssd start`
    - OpenLDAP: `service openldap start`
-   - Web UI `/apps/soca/<CLUSTER_ID>/cluster_web_ui/socawebui.sh start`
+   - Web UI `/apps/soca/$SOCA_CONFIGURATION/cluster_web_ui/socawebui.sh start`
    - NFS partitions `mount -a` (mount configuration is available on `/etc/fstab`)
 
 
@@ -219,7 +219,7 @@ Run the following command (as root) if you want to restart any service:
 This solution includes an option to send anonymous operational metrics to AWS. We use this data to better understand how customers use this solution and related services and products. 
 Note that AWS will own the data gathered via this survey. Data collection will be subject to the [AWS Privacy Policy](https://aws.amazon.com/privacy/). 
 
-To opt out of this feature, modify the `/apps/soca/<CLUSTER_ID>/cluster_manager/cloudformation_builder` and set `allow_anonymous_data_collection` variable to `False`
+To opt out of this feature, modify the `/apps/soca/$SOCA_CONFIGURATION/cluster_manager/cloudformation_builder` and set `allow_anonymous_data_collection` variable to `False`
 
 When enabled, the following information is collected and sent to AWS:
 

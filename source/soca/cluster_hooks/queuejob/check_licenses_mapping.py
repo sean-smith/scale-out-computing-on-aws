@@ -4,7 +4,7 @@ Doc:
 > https://awslabs.github.io/scale-out-computing-on-aws/tutorials/manage-queue-restricted-parameters/
 
 create hook check_licenses_mapping event=queuejob
-import hook check_licenses_mapping application/x-python default /apps/soca/<CLUSTER_ID>/cluster_hooks/queuejob/check_licenses_mapping.py
+import hook check_licenses_mapping application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/queuejob/check_licenses_mapping.py
 
 Note: If you make any change to this file, you MUST re-execute the import command.
 If you are installing this file manually, make sure to replace %SOCA_CONFIGURATION path below
