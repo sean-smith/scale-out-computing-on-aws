@@ -185,7 +185,7 @@
                                                 </span>
                                                 <span class="text">Download Session File</span>
                                               </a>
-                                               {% if hibernate_idle_session > 0 %}
+                                               {% if hibernate_idle_session > 0 and session_data.support_hibernation == true %}
                                                    <hr> This session will be automatically hibernated <strong> after {{ hibernate_idle_session }} hours</strong> if you do not use it.
                                                {% endif %}
 

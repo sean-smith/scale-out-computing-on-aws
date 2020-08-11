@@ -36,7 +36,7 @@ from views.my_account import my_account
 from views.my_files import my_files
 from views.submit_job import submit_job
 from scheduled_tasks.clean_tmp_folders import clean_tmp_folders
-from scheduled_tasks.auto_hibernate_stop_windows_dcv import auto_hibernate_instance, auto_terminate_stopped_instance
+from scheduled_tasks.auto_hibernate_stop_windows_dcv import auto_stop_instance, auto_terminate_stopped_instance
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
 from flask_swagger import swagger
@@ -139,8 +139,8 @@ dict_config = {
 class Config(object):
     JOBS = [
         {
-            'id': 'auto_hibernate_instance',
-            'func': auto_hibernate_instance,
+            'id': 'auto_stop_instance',
+            'func': auto_stop_instance,
             'trigger': 'interval',
             'minutes': 30
         },
