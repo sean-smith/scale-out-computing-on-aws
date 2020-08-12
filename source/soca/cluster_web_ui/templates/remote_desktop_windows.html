@@ -185,9 +185,17 @@
                                                 </span>
                                                 <span class="text">Download Session File</span>
                                               </a>
-                                               {% if hibernate_idle_session > 0 and session_data.support_hibernation == true %}
-                                                   <hr> This session will be automatically hibernated <strong> after {{ hibernate_idle_session }} hours</strong> if you do not use it.
-                                               {% endif %}
+                                              {% if session_data.support_hibernation == true %}
+                                                  {% if hibernate_idle_session > 0 %}
+                                                      <hr> This session will be automatically hibernated <strong> after {{ hibernate_idle_session }} hours</strong> if you do not use it.
+                                                  {% endif %}
+                                              {% else %}
+                                                {% if stop_idle_session > 0  %}
+                                                    <hr> This session will be automatically stopped <strong> after {{ stop_idle_session }} hours</strong> if you do not use it.
+                                                {% endif %}
+                                              {% endif %}
+
+
 
                                               <!-- Modal Password -->
                                               <div class="modal fade" id="password{{ n }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
