@@ -142,13 +142,13 @@ class Config(object):
             'id': 'auto_stop_instance',
             'func': auto_stop_instance,
             'trigger': 'interval',
-            'minutes': 30
+            'minutes': 15
         },
         {
             'id': 'auto_terminate_stopped_instance',
             'func': auto_terminate_stopped_instance,
             'trigger': 'interval',
-            'minutes': 30
+            'minutes': 15
         },
         {
             'id': 'clean_tmp_folders',
