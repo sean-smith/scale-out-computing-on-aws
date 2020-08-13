@@ -1,7 +1,7 @@
 import logging
 import config
 from flask import render_template, Blueprint, request, redirect, session, flash, Response
-from requests import post, get, delete
+from requests import get
 from decorators import login_required
 import boto3
 from models import db, WindowsDCVSessions
@@ -296,7 +296,7 @@ def create():
     lowercase = ([random.choice(''.join(random.choice(string.ascii_lowercase) for _ in range(10))) for _ in range(3)])
     pw = digits + uppercase + lowercase
     session_local_admin_password = ''.join(random.sample(pw, len(pw)))
-    user_data_script = open("/apps/soca/"+soca_configuration["ClusterId"]+"/cluster_node_bootstrap/ComputeNodeInstallDCVWindows.ps", "r")
+    user_data_script = open("/apps/soca/"+soca_configuration["ClusterId"]+"/cluster_node_bootstrap/windows/ComputeNodeInstallDCVWindows.ps", "r")
     user_data = user_data_script.read()
     user_data_script.close()
     user_data = user_data.replace("%SOCA_LOCAL_ADMIN_PASSWORD%", session_local_admin_password)
