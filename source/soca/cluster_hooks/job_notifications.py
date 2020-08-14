@@ -8,15 +8,15 @@ Update ses_region with the region where you configured SES (may be different wit
 Scheduler Hook (qmgr):
 create hook notify_job_start event=runjob
 create hook notify_job_complete event=execjob_end
-import hook notify_job_start application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/job_notifications.py
-import hook notify_job_complete application/x-python default /apps/soca/$SOCA_CONFIGURATION/cluster_hooks/job_notifications.py
+import hook notify_job_start application/x-python default /apps/soca/%SOCA_CONFIGURATION/cluster_hooks/job_notifications.py
+import hook notify_job_complete application/x-python default /apps/soca/%SOCA_CONFIGURATION/cluster_hooks/job_notifications.py
 '''
 
 import sys
 import pbs
 
-if "/apps/soca/$SOCA_CONFIGURATION/python/latest/lib/python3.7/site-packages" not in sys.path:
-    sys.path.append("/apps/soca/$SOCA_CONFIGURATION/python/latest/lib/python3.7/site-packages")
+if "/apps/soca/%SOCA_CONFIGURATION/python/latest/lib/python3.7/site-packages" not in sys.path:
+    sys.path.append("/apps/soca/%SOCA_CONFIGURATION/python/latest/lib/python3.7/site-packages")
 
 import boto3
 import socket

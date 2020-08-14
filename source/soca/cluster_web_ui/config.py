@@ -62,7 +62,7 @@ class Config(object):
 
     # DCV Linux
     DCV_LINUX_SESSION_COUNT = 4
-    DCV_LINUX_ALLOW_INSTANCE_CHANGE = True  # Allow user to change their instance type if their DCV session is stopped
+    DCV__ALLOW_INSTANCE_CHANGE = True  # Allow user to change their instance type if their DCV session is stopped
     DCV_LINUX_HIBERNATE_IDLE_SESSION = 2  # In hours. Windows DCV sessions will be hibernated to save cost if there is no active connection within the time specified. 0 to disable
     DCV_LINUX_STOP_IDLE_SESSION = 2  # In hours. Windows DCV sessions will be stopped to save cost if there is no active connection within the time specified. 0 to disable
     DCV_LINUX_TERMINATE_STOPPED_SESSION = 0  # In hours. Stopped Windows DCV will be permanently terminated if user won't restart it within the time specified. 0 to disable
