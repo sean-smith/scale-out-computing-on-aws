@@ -1,4 +1,3 @@
-#!/apps/python/latest/bin/python3
 '''
 Update ses_sender_email with your SES user. https://awslabs.github.io/scale-out-computing-on-aws/tutorials/job-start-stop-email-notification/ for help
 If SES verified your domain, you can use any address @yourdomain
@@ -14,11 +13,10 @@ import hook notify_job_complete application/x-python default /apps/soca/$SOCA_CO
 '''
 
 import sys
-
 import pbs
 
-if "/apps/python/latest/lib/python3.7/site-packages" not in sys.path:
-    sys.path.append("/apps/python/latest/lib/python3.7/site-packages/")
+if "/apps/soca/$SOCA_CONFIGURATION/python/latest/lib/python3.7/site-packages" not in sys.path:
+    sys.path.append("/apps/soca/$SOCA_CONFIGURATION/python/latest/lib/python3.7/site-packages")
 
 import boto3
 import socket

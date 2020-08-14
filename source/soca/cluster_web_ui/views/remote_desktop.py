@@ -63,7 +63,7 @@ def index():
                 "session_state": session_state,
                 "session_name": session_name}
 
-    max_number_of_sessions = config.Config.DCV_MAX_SESSION_COUNT
+    max_number_of_sessions = config.Config.DCV_LINUX_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
     blacklist = ['metal', 'nano', 'micro', 'p3', 'p2']
     all_instances_available = client._service_model.shape_for('InstanceType').enum
@@ -71,7 +71,7 @@ def index():
     return render_template('remote_desktop.html',
                            user=session["user"],
                            user_sessions=user_sessions,
-                           terminate_idle_session=config.Config.DCV_LINUX_TERMINATE_IDLE_SESSION,
+                           terminate_idle_session=config.Config.DCV_LINUX_TERMINATE_STOPPED_SESSION,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -110,7 +110,7 @@ def create():
               'session_password': session_password,
               'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
               'walltime': parameters["walltime"],
-              'terminate_idle_session': str(config.Config.DCV_LINUX_TERMINATE_IDLE_SESSION)}
+              'terminate_idle_session': str(config.Config.DCV_LINUX_TERMINATE_STOPPED_SESSION)}
 
     job_to_submit = '''#!/bin/bash
 #PBS -N ''' + params['pbs_job_name'] + '''
