@@ -1,77 +1,235 @@
 import logging
 import config
 from flask import render_template, Blueprint, request, redirect, session, flash, Response
-from requests import post, get, delete
+from requests import get
 from decorators import login_required
 import boto3
-from models import db, DCVSessions
+from models import db, LinuxDCVSessions
 import uuid
 import random
 import string
 import base64
 import datetime
 import read_secretmanager
+from botocore.exceptions import ClientError
 import re
+import os
+import json
+from cryptography.fernet import Fernet
 
-logger = logging.getLogger("application")
+
 remote_desktop = Blueprint('remote_desktop', __name__, template_folder='templates')
-client = boto3.client('ec2')
+client_ec2 = boto3.client('ec2')
+logger = logging.getLogger("application")
+
+
+def encrypt(message):
+    key = config.Config.DCV_TOKEN_SYMMETRIC_KEY
+    cipher_suite = Fernet(key)
+    return cipher_suite.encrypt(message.encode("utf-8"))
+
+
+def launch_instance(launch_parameters, dry_run):
+    # Launch Actual Capacity
+    try:
+        client_ec2.run_instances(
+            BlockDeviceMappings=[
+                {
+                    'DeviceName': '/dev/sda1',
+                    'Ebs': {
+                        'DeleteOnTermination': True,
+                        'VolumeSize': 30 if launch_parameters["disk_size"] is False else int(launch_parameters["disk_size"]),
+                        'VolumeType': 'gp2',
+                        'Encrypted': True
+                    },
+                },
+            ],
+            MaxCount=1,
+            MinCount=1,
+            SecurityGroupIds=[launch_parameters["security_group_id"]],
+            InstanceType=launch_parameters["instance_type"],
+            IamInstanceProfile={'Arn': launch_parameters["instance_profile"]},
+            SubnetId=random.choice(launch_parameters["soca_private_subnets"]),
+            UserData=launch_parameters["user_data"],
+            ImageId=launch_parameters["image_id"],
+            DryRun=False if dry_run is False else True,
+            HibernationOptions={'Configured': launch_parameters["hibernate"]},
+            TagSpecifications=[
+                {"ResourceType": "instance",
+                 "Tags": [
+                     {
+                         "Key": "Name",
+                         "Value": launch_parameters["cluster_id"] + "-" + launch_parameters["session_name"] + "-" + session["user"]
+                     },
+                     {
+                         "Key": "soca:JobName",
+                         "Value": launch_parameters["session_name"]
+                     },
+                     {
+                         "Key": "soca:JobOwner",
+                         "Value": session["user"]
+                     },
+                     {
+                         "Key": "soca:JobProject",
+                         "Value": "Desktop"
+                     },
+                     {
+                         "Key": "soca:JobQueue",
+                         "Value": "desktop"
+                     },
+                     {
+                         "Key": "soca:KeepForever",
+                         "Value": "false"
+                     },
+                     {
+                         "Key": "soca:DCVSupportHibernate",
+                         "Value": str(launch_parameters["hibernate"]).lower()
+                     },
+                     {
+                         "Key": "soca:ClusterId",
+                         "Value": launch_parameters["cluster_id"]
+                     },
+                     {
+                         "Key": "soca:DCVSessionUUID",
+                         "Value": launch_parameters["session_uuid"]
+                     },
+                     {
+                         "Key": "soca:NodeType",
+                         "Value": "soca-dcv"
+                     },
+                     {
+                         "Key": "soca:DCVSystem",
+                         "Value": "linux"
+                     }
+                 ]}]
+        )
+
+    except ClientError as err:
+        if dry_run is True:
+            if err.response['Error'].get('Code') == 'DryRunOperation':
+                return True
+            else:
+                return "Dry run failed. Unable to launch capacity due to: {}".format(err)
+        else:
+            return "Unable to provision capacity due to {}".format(err)
+
+    return True
+
+
+def get_host_info(tag_uuid):
+    host_info = {}
+    token = True
+    next_token = ''
+    while token is True:
+        response = client_ec2.describe_instances(
+            Filters=[
+                {
+                    'Name': 'tag:soca:DCVSessionUUID',
+                    'Values': [tag_uuid]
+                },
+                {
+                    "Name": "tag:soca:DCVSystem",
+                    "Values": ["linux"]
+                }
+            ],
+            MaxResults=1000,
+            NextToken=next_token,
+        )
+
+        try:
+            next_token = response['NextToken']
+        except KeyError:
+            token = False
+
+        for reservation in response['Reservations']:
+            for instance in reservation['Instances']:
+                if instance['PrivateDnsName'].split('.')[0]:
+                    host_info["private_dns"] = instance['PrivateDnsName'].split('.')[0]
+                    host_info["private_ip"] = instance['PrivateIpAddress']
+                    host_info["instance_id"] = instance['InstanceId']
+                    host_info["status"] = instance['State']['Name']
+
+    return host_info
+
 
 @remote_desktop.route('/remote_desktop', methods=['GET'])
 @login_required
 def index():
     user_sessions = {}
-    for session_info in DCVSessions.query.filter_by(user=session["user"], is_active=True).all():
+    for session_info in LinuxDCVSessions.query.filter_by(user=session["user"], is_active=True).all():
         session_number = session_info.session_number
         session_state = session_info.session_state
-        session_password = session_info.session_password
-        session_uuid = session_info.session_uuid
+        tag_uuid = session_info.tag_uuid
         session_name = session_info.session_name
-        job_id = session_info.job_id
-
-        get_job_info = get(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
-                           headers={"X-SOCA-USER": session["user"],
-                                    "X-SOCA-TOKEN": session["api_key"]},
-                           params={"job_id": job_id},
-                           verify=False)
-
-        check_session = DCVSessions.query.filter_by(job_id=job_id).all()
-        if len(check_session) > 1:
-            flash("More than 1 entry on the DB was found for this job ("+job_id+"). Most likely this is because this db was copied from a different cluster. Please remove the entry for the DB first")
-            return redirect("/remote_desktop")
+        session_host_private_dns = session_info.session_host_private_dns
+        session_token = session_info.session_token
+        session_instance_type = session_info.session_instance_type
+        session_instance_id = session_info.session_instance_id
+        support_hibernation = session_info.support_hibernation
+        dcv_authentication_token = session_info.dcv_authentication_token
+        session_id = session_info.session_id
+        host_info = get_host_info(session_id)
+        if not host_info:
+            # no host detected, session no longer active
+            session_info.is_active = False
+            session_info.deactivated_on = datetime.datetime.utcnow()
+            db.session.commit()
         else:
-            for job_info in check_session:
-                if get_job_info.status_code == 200:
-                    # Job in queue, edit only if state is running
-                    job_state = get_job_info.json()["message"]["job_state"]
-                    if job_state == "R" and job_info.session_state != "running":
-                        exec_host = (get_job_info.json()["message"]["exec_host"]).split("/")[0]
-                        job_info.session_host = exec_host
-                        job_info.session_state = "running"
-                        db.session.commit()
+            # detected EC2 host for the session
+            if not dcv_authentication_token:
+                session_info.session_host_private_dns = host_info["private_dns"]
+                session_info.session_host_private_ip = host_info["private_ip"]
+                session_info.session_instance_id = host_info["instance_id"]
+                authentication_data = json.dumps({"system": "linux",
+                                                  "session_instance_id": host_info["instance_id"],
+                                                  "session_token": session_token,
+                                                  "session_user": session["user"]})
+                session_authentication_token = base64.b64encode(encrypt(authentication_data)).decode("utf-8")
+                session_info.dcv_authentication_token = session_authentication_token
+                db.session.commit()
 
-                elif get_job_info.status_code == 210:
-                    # Job is no longer in the queue
-                    job_info.is_active = False
-                    job_info.deactivated_on = datetime.datetime.utcnow()
-                    db.session.commit()
-                else:
-                    flash("Unknown error for session " + str(session_number) + " assigned to job " + str(job_id) + " with error " + str(get_job_info.text), "error")
+        if host_info["status"] in ["stopped", "stopping"] and session_state != "stopped":
+            session_state = "stopped"
+            session_info.session_state = "stopped"
+            db.session.commit()
 
-            user_sessions[session_number] = {
-                "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + job_info.session_host + '/?authToken=' + session_password + '#' + session_uuid ,
-                "session_state": session_state,
-                "session_name": session_name}
+        if session_state == "pending" and session_host_private_dns is not False:
+            check_dcv_state = get('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns + '/',
+                                  allow_redirects=False,
+                                  verify=False)
 
-    max_number_of_sessions = config.Config.DCV_LINUX_SESSION_COUNT
+            logger.info("Checking {} for {} and received status {} ".format('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns + '/',
+                                                                            session_info,
+                                                                            check_dcv_state.status_code))
+
+            if check_dcv_state.status_code == 200:
+                session_info.session_state = "running"
+                db.session.commit()
+
+        user_sessions[session_number] = {
+            "url": 'https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns +'/',
+            "session_state": session_state,
+            "session_authentication_token": dcv_authentication_token,
+            "session_id": session_id,
+            "session_name": session_name,
+            "session_instance_id": session_instance_id,
+            "session_instance_type": session_instance_type,
+            "tag_uuid": tag_uuid,
+            "support_hibernation": support_hibernation}
+
+    max_number_of_sessions = config.Config.DCV_WINDOWS_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
-    blacklist = ['metal', 'nano', 'micro', 'p3', 'p2']
-    all_instances_available = client._service_model.shape_for('InstanceType').enum
+    blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
+    all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
     return render_template('remote_desktop.html',
                            user=session["user"],
                            user_sessions=user_sessions,
-                           terminate_idle_session=config.Config.DCV_LINUX_TERMINATE_STOPPED_SESSION,
+                           hibernate_idle_session=config.Config.DCV_WINDOWS_HIBERNATE_IDLE_SESSION,
+                           stop_idle_session=config.Config.DCV_WINDOWS_STOP_IDLE_SESSION,
+                           terminate_stopped_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
+                           terminate_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
+                           allow_instance_change=config.Config.DCV_WINDOWS_ALLOW_INSTANCE_CHANGE,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -81,162 +239,345 @@ def index():
 @login_required
 def create():
     parameters = {}
-    for parameter in ["walltime", "instance_type", "session_number", "instance_ami", "base_os", "scratch_size", "session_name"]:
+    for parameter in ["instance_type", "disk_size", "session_number", "session_name", "instance_ami", "hibernate"]:
         if not request.form[parameter]:
             parameters[parameter] = False
         else:
-            parameters[parameter] = request.form[parameter]
+            if request.form[parameter].lower() in ["yes", "true"]:
+                parameters[parameter] = True
+            elif request.form[parameter].lower() in ["no", "false"]:
+                parameters[parameter] = False
+            else:
+                parameters[parameter] = request.form[parameter]
 
     session_uuid = str(uuid.uuid4())
-    session_password = ''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(80))
-    command_dcv_create_session = "create-session --owner " + session["user"] + " " + session_uuid
+    region = os.environ["AWS_DEFAULT_REGION"]
+    instance_type = parameters["instance_type"]
+    soca_configuration = read_secretmanager.get_soca_configuration()
+    instance_profile = soca_configuration["ComputeNodeInstanceProfileArn"]
+    security_group_id = soca_configuration["ComputeNodeSecurityGroup"]
+    soca_private_subnets = [soca_configuration["PrivateSubnet1"],
+                            soca_configuration["PrivateSubnet2"],
+                            soca_configuration["PrivateSubnet3"]]
 
     # sanitize session_name, limit to 255 chars
     if parameters["session_name"] is False:
-        session_name = 'Desktop' + str(parameters["session_number"])
+        session_name = 'LinuxDesktop' + str(parameters["session_number"])
     else:
         session_name = re.sub(r'\W+', '', parameters["session_name"])[:255]
         if session_name == "":
             # handle case when session name specified by user only contains invalid char
-            session_name = 'Desktop' + str(parameters["session_number"])
+            session_name = 'LinuxDesktop' + str(parameters["session_number"])
 
-    params = {'pbs_job_name': session_name,
-              'pbs_queue': 'desktop',
-              'pbs_project': 'remotedesktop',
-              'instance_type': parameters["instance_type"],
-              'instance_ami': "#PBS -l instance_ami=" + parameters["instance_ami"] if parameters["instance_ami"] is not False else "",
-              'base_os': "#PBS -l base_os=" + parameters["base_os"] if parameters["base_os"] is not False else "",
-              'scratch_size': "#PBS -l scratch_size=" + parameters["scratch_size"] if parameters["scratch_size"] is not False else "",
-              'session_password': session_password,
-              'session_password_b64': (base64.b64encode(session_password.encode('utf-8'))).decode('utf-8'),
-              'walltime': parameters["walltime"],
-              'terminate_idle_session': str(config.Config.DCV_LINUX_TERMINATE_STOPPED_SESSION)}
-
-    job_to_submit = '''#!/bin/bash
-#PBS -N ''' + params['pbs_job_name'] + '''
-#PBS -q ''' + params['pbs_queue'] + '''
-#PBS -P ''' + params['pbs_project'] + '''
-#PBS -l walltime=''' + params['walltime'] + '''
-#PBS -l instance_type=''' + params['instance_type'] + '''
-''' + params['instance_ami'] + '''
-''' + params['base_os'] + '''
-''' + params['scratch_size'] + '''
-
-cd $PBS_O_WORKDIR
-
-# Create the DCV Session
-DCV="/bin/dcv"
-echo "DCV detected $DCV" >> dcv.log 2>&1
-$DCV ''' + command_dcv_create_session + ''' >> dcv.log 2>&1
-    
-# Query dcvsimpleauth with add-user
-echo "''' + params['session_password_b64'] + '''" | base64 --decode | ''' + config.Config.DCV_SIMPLE_AUTH + ''' add-user --user ''' + session["user"] + ''' --session ''' + session_uuid + ''' --auth-dir ''' + config.Config.DCV_AUTH_DIR + ''' >> dcv.log 2>&1
-
-# Uncomment if you want to disable Gnome Lock Screen (require webui restart)
-# GSETTINGS=$(which gsettings)
-# $GSETTINGS set org.gnome.desktop.lockdown disable-lock-screen true
-# $GSETTINGS set org.gnome.desktop.session idle-delay 0
-
-# Keep job open
-while true
-    echo "===============================" >> dcv.log 2>&1
-    terminate_idle_session=''' + params["terminate_idle_session"] + '''
-    echo "terminate_idle_session: $terminate_idle_session" >> dcv.log 2>&1
-    do
-        session_keepalive=$($DCV list-sessions | grep ''' + session_uuid + ''' | wc -l)
-        if [[ $session_keepalive -ne 1 ]];
-            then
-                exit 0
-        else
-            if [[ $terminate_idle_session -ne 0 ]];
-                then
-                    now=$(date "+%s")
-                    terminate_idle_session_in_seconds=$(( terminate_idle_session * 3600 ))
-                    dcv_create_time=$(dcv describe-session ''' + session_uuid + ''' -j | grep -oP '"creation-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
-                    dcv_create_time_epoch=$(date -d "$dcv_create_time" +"%s")
-                    dcv_last_disconnect_datetime=$(dcv describe-session ''' + session_uuid + ''' -j | grep -oP '"last-disconnection-time" : "(.*)"' | awk '{print $3}' | tr -d '"')
-                    dcv_last_disconnect_epoch=$(date -d "$dcv_last_disconnect_datetime" +"%s")
-                    if [[ -z "$dcv_last_disconnect_datetime" ]];
-                        then
-                        # No previous connection detected, default to create_time
-                        echo "Session has not been used yet ..." >> dcv.log 2>&1
-                        disconnect_session_after=$(( dcv_create_time_epoch + terminate_idle_session_in_seconds ))
-                    else
-                        disconnect_session_after=$(( dcv_last_disconnect_epoch + terminate_idle_session_in_seconds ))
-                    fi
-                    
-                    echo "dcv_create_time: $dcv_create_time" >> dcv.log 2>&1
-                    echo "dcv_create_time_epoch: $dcv_create_time_epoch" >> dcv.log 2>&1
-                    echo "dcv_last_disconnect_datetime: $dcv_last_disconnect_datetime" >> dcv.log 2>&1
-                    echo "dcv_last_disconnect_epoch: $dcv_last_disconnect_epoch" >> dcv.log 2>&1
-                    echo "terminate_idle_session_in_seconds: $terminate_idle_session_in_seconds" >> dcv.log 2>&1
-                    echo "disconnect_session_after: $disconnect_session_after" >> dcv.log 2>&1
-                    echo "now: $now"  >> dcv.log 2>&1
-                    
-                    if [[ $disconnect_session_after < $now ]];
-                       then
-                           echo "session was inactive for too long, terminate session ..." >> dcv.log 2>&1
-                           exit 0
-                    fi
-            fi
-            sleep 1200  
-        fi
-done
-    '''
-
-    payload = base64.b64encode(job_to_submit.encode()).decode()
-    send_to_to_queue = post(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
-                            headers={"X-SOCA-TOKEN": session["api_key"],
-                                     "X-SOCA-USER": session["user"]},
-                            data={"payload": payload, },
-                            verify=False)
-
-    if send_to_to_queue.status_code == 200:
-        job_id = str(send_to_to_queue.json()["message"])
-        flash("Your session has been initiated (job number " + job_id + "). It will be ready within 20 minutes.", "success")
-        new_session = DCVSessions(user=session["user"],
-                                  job_id=job_id,
-                                  session_number=parameters["session_number"],
-                                  session_name=session_name,
-                                  session_state="pending",
-                                  session_host=False,
-                                  session_password=session_password,
-                                  session_uuid=session_uuid,
-                                  is_active=True,
-                                  created_on=datetime.datetime.utcnow())
-        db.session.add(new_session)
-        db.session.commit()
+    if parameters["instance_ami"] == "base":
+        image_id = soca_configuration["CustomAMI"]
     else:
-        flash("Error during job submission: " + str(send_to_to_queue.json()["message"]), "error")
+        image_id = parameters["instance_ami"]
+        if not image_id.startswith("ami-"):
+            flash("AMI selectioned {} does not seems to be valid. Must start with ami-<id>".format(image_id), "error")
+            return redirect("/remote_desktop")
+
+    user_data = '''#!/bin/bash -x
+    export PATH=$PATH:/usr/local/bin
+    if [[ "''' + soca_configuration['BaseOS'] + '''" == "centos7" ]] || [[ "''' + soca_configuration['BaseOS'] + '''" == "rhel7" ]];
+        then
+            EASY_INSTALL=$(which easy_install-2.7)
+            $EASY_INSTALL pip
+            PIP=$(which pip2.7)
+            $PIP install awscli
+            yum install -y nfs-utils # enforce install of nfs-utils
+    else
+         # Upgrade awscli on ALI (do not use yum)
+         EASY_INSTALL=$(which easy_install-2.7)
+         $EASY_INSTALL pip
+         PIP=$(which pip)
+         $PIP install awscli --upgrade 
+    fi
+    if [[ "''' + soca_configuration['BaseOS'] + '''" == "amazonlinux2" ]];
+        then
+            /usr/sbin/update-motd --disable
+    fi
+    
+    GET_INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type)
+    echo export "SOCA_DCV_AUTHENTICATOR="https://''' + soca_configuration['SchedulerPrivateDnsName'] + ''':8443/api/dcv/authenticator"" >> /etc/environment
+    echo export "SOCA_DCV_SESSION_ID="''' + str(session_uuid) +'''"" >> /etc/environment
+    echo export "SOCA_CONFIGURATION="''' + str(soca_configuration['ClusterId']) + '''"" >> /etc/environment
+    echo export "SOCA_DCV_OWNER="''' + str(session["user"]) + '''"" >> /etc/environment
+    echo export "SOCA_BASE_OS="''' + str(soca_configuration['BaseOS']) + '''"" >> /etc/environment
+    echo export "SOCA_JOB_TYPE="desktop"" >> /etc/environment
+    echo export "SOCA_SCRATCH_SIZE=''' + str(parameters['disk_size']) + '''" >> /etc/environment
+    echo export "SOCA_INSTALL_BUCKET="''' + str(soca_configuration['S3Bucket']) + '''"" >> /etc/environment
+    echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + str(soca_configuration['S3InstallFolder']) + '''"" >> /etc/environment
+    echo export "SOCA_INSTANCE_TYPE=$GET_INSTANCE_TYPE" >> /etc/environment
+    echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(soca_configuration['ClusterId']) + '''/cluster_node_bootstrap/logs/desktop/''' + str(session["user"]) + '''/''' + session_name + '''/$(hostname -s)"" >> /etc/environment
+    echo export "AWS_DEFAULT_REGION="'''+region+'''"" >> /etc/environment
+    source /etc/environment
+    AWS=$(which aws)
+    # Give yum permission to the user on this specific machine
+    echo "''' + session['user'] + ''' ALL=(ALL) /bin/yum" >> /etc/sudoers
+
+    mkdir -p /apps
+    mkdir -p /data
+
+    # Mount EFS
+    echo "''' + soca_configuration['EFSDataDns'] + ''':/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport 0 0" >> /etc/fstab
+    echo "''' + soca_configuration['EFSAppsDns'] + ''':/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport 0 0" >> /etc/fstab
+    EFS_MOUNT=0
+    mount -a 
+    while [[ $? -ne 0 ]] && [[ $EFS_MOUNT -lt 5 ]]
+      do
+        SLEEP_TIME=$(( RANDOM % 60 ))
+        echo "Failed to mount EFS, retrying in $SLEEP_TIME seconds and Loop $EFS_MOUNT/5..."
+        sleep $SLEEP_TIME
+        ((EFS_MOUNT++))
+        mount -a
+      done
+
+    # Configure NTP
+    yum remove -y ntp
+    yum install -y chrony
+    mv /etc/chrony.conf  /etc/chrony.conf.original
+    echo -e """
+    # use the local instance NTP service, if available
+    server 169.254.169.123 prefer iburst minpoll 4 maxpoll 4
+
+    # Use public servers from the pool.ntp.org project.
+    # Please consider joining the pool (http://www.pool.ntp.org/join.html).
+    # !!! [BEGIN] SOCA REQUIREMENT
+    # You will need to open UDP egress traffic on your security group if you want to enable public pool
+    #pool 2.amazon.pool.ntp.org iburst
+    # !!! [END] SOCA REQUIREMENT
+    # Record the rate at which the system clock gains/losses time.
+    driftfile /var/lib/chrony/drift
+
+    # Allow the system clock to be stepped in the first three updates
+    # if its offset is larger than 1 second.
+    makestep 1.0 3
+
+    # Specify file containing keys for NTP authentication.
+    keyfile /etc/chrony.keys
+
+    # Specify directory for log files.
+    logdir /var/log/chrony
+
+    # save data between restarts for fast re-load
+    dumponexit
+    dumpdir /var/run/chrony
+    """ > /etc/chrony.conf
+    systemctl enable chronyd
+
+    # Prepare  Log folder
+    mkdir -p $SOCA_HOST_SYSTEM_LOG
+    echo "@reboot /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodePostReboot.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodePostReboot.log 2>&1" | crontab -
+    $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.cfg /root/
+    /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNode.sh ''' + soca_configuration['SchedulerPrivateDnsName'] + ''' >> $SOCA_HOST_SYSTEM_LOG/ComputeNode.sh.log 2>&1'''
+
+
+
+    check_hibernation_support = client_ec2.describe_instance_types(
+        InstanceTypes=[instance_type],
+        Filters=[
+            {"Name": "hibernation-supported",
+             "Values": ["true"]}]
+    )
+    logger.info("Checking in {} support Hibernation : {}".format(instance_type, check_hibernation_support))
+    if len(check_hibernation_support["InstanceTypes"]) == 0:
+        if config.Config.DCV_FORCE_INSTANCE_HIBERNATE_SUPPORT is True:
+            flash("Sorry your administrator limited <a href='https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/Hibernate.html#hibernating-prerequisites' target='_blank'>DCV to instances that support hibernation mode</a> <br> Please choose a different type of instance.")
+            return redirect("/remote_desktop")
+        else:
+            hibernate_support = False
+    else:
+        hibernate_support = True
+
+    if parameters["hibernate"] and not hibernate_support:
+        flash("Sorry you have selected {} with hibernation support, but this instance type does not support it. Either disable hibernation support or pick a different instance type".format(instance_type), "error")
+        return redirect("/remote_desktop")
+
+    launch_parameters = {"security_group_id": security_group_id,
+                         "instance_profile": instance_profile,
+                         "instance_type": instance_type,
+                         "soca_private_subnets": soca_private_subnets,
+                         "user_data": user_data,
+                         "image_id": image_id,
+                         "session_name": session_name,
+                         "session_uuid": session_uuid,
+                         "disk_size": parameters["disk_size"],
+                         "cluster_id": soca_configuration["ClusterId"],
+                         "hibernate": parameters["hibernate"]
+                         }
+    dry_run_launch = launch_instance(launch_parameters, dry_run=True)
+    if dry_run_launch is True:
+        actual_launch = launch_instance(launch_parameters, dry_run=False)
+        if actual_launch is not True:
+            flash(actual_launch, "error")
+            return redirect("/remote_desktop")
+    else:
+        flash(dry_run_launch, "error")
+        return redirect("/remote_desktop")
+
+    flash("Your session has been initiated. It will be ready within 10 minutes.", "success")
+    new_session = LinuxDCVSessions(user=session["user"],
+                                     session_number=parameters["session_number"],
+                                     session_name=session_name,
+                                     session_state="pending",
+                                     session_host_private_dns=False,
+                                     session_host_private_ip=False,
+                                     session_instance_type=instance_type,
+                                     dcv_authentication_token=None,
+                                     session_id=session_uuid,
+                                     tag_uuid=session_uuid,
+                                     session_token=str(uuid.uuid4()),
+                                     is_active=True,
+                                     support_hibernation=parameters["hibernate"],
+                                     created_on=datetime.datetime.utcnow())
+    db.session.add(new_session)
+    db.session.commit()
     return redirect("/remote_desktop")
 
 
 @remote_desktop.route('/remote_desktop/delete', methods=['GET'])
 @login_required
-def delete_job():
+def delete():
     dcv_session = request.args.get("session", None)
-    if dcv_session is None:
-        flash("Invalid DCV sessions", "error")
+    action = request.args.get("action", None)
+    if action not in ["terminate", "stop", "hibernate"]:
+        flash("action must be either terminate, stop or hibernate")
         return redirect("/remote_desktop")
 
-    check_session = DCVSessions.query.filter_by(user=session["user"],
-                                                session_number=dcv_session,
-                                                is_active=True).first()
+    if dcv_session is None:
+        flash("Invalid graphical session ID", "error")
+        return redirect("/remote_desktop")
+
+    check_session = LinuxDCVSessions.query.filter_by(user=session["user"],
+                                                       session_number=dcv_session,
+                                                       is_active=True).first()
     if check_session:
-        job_id = check_session.job_id
-        delete_job = delete(config.Config.FLASK_ENDPOINT + "/api/scheduler/job",
-                            headers={"X-SOCA-TOKEN": session["api_key"],
-                                     "X-SOCA-USER": session["user"]},
-                            params={"job_id": job_id},
-                            verify=False)
-        if delete_job.status_code == 200:
-            check_session.is_active = False
-            db.session.commit()
-            flash("DCV session is about to be terminated. Job may still be visible in the queue for a couple of minutes before being completely removed.", "success")
+        instance_id = check_session.session_instance_id
+        if action == "hibernate":
+            # Hibernate instance
+            try:
+                client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
+            except Exception as e:
+                if e.response['Error'].get('Code') == 'DryRunOperation':
+                    client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True)
+                    check_session.session_state = "stopped"
+                    db.session.commit()
+                else:
+                    flash("Unable to hibernate instance ({}) due to {}".format(instance_id, e), "error")
+
+        elif action == "stop":
+            # Stop Instance
+            try:
+                client_ec2.stop_instances(InstanceIds=[instance_id], DryRun=True)
+            except Exception as e:
+                if e.response['Error'].get('Code') == 'DryRunOperation':
+                    client_ec2.stop_instances(InstanceIds=[instance_id])
+                    check_session.session_state = "stopped"
+                    db.session.commit()
+                else:
+                    flash("Unable to Stop instance ({}) due to {}".format(instance_id, e), "error")
+
         else:
-            flash("Unable to delete associated job id (" +str(job_id) + "). " + str(delete_job.json()["message"]), "error")
+            # Terminate instance
+            try:
+                client_ec2.terminate_instances(InstanceIds=[instance_id], DryRun=True)
+            except Exception as e:
+                if e.response['Error'].get('Code') == 'DryRunOperation':
+                    client_ec2.terminate_instances(InstanceIds=[instance_id])
+                    flash("Your graphical session is about to be terminated.", "success")
+                    check_session.is_active = False
+                    check_session.deactivated_on = datetime.datetime.utcnow()
+                    db.session.commit()
+                    return redirect("/remote_desktop")
+                else:
+                    flash("Unable to delete associated instance ({}) due to {}".format(instance_id, e), "error")
+
     else:
         flash("Unable to retrieve this session", "error")
+
+    return redirect("/remote_desktop")
+
+
+@remote_desktop.route('/remote_desktop/restart', methods=['GET'])
+@login_required
+def restart_from_hibernate():
+    dcv_session = request.args.get("session", None)
+    if dcv_session is None:
+        flash("Invalid graphical session", "error")
+        return redirect("/remote_desktop")
+
+    check_session = LinuxDCVSessions.query.filter_by(user=session["user"],
+                                                       session_number=dcv_session,
+                                                       session_state="stopped",
+                                                       is_active=True).first()
+    if check_session:
+        instance_id = check_session.session_instance_id
+        try:
+            client_ec2.start_instances(InstanceIds=[instance_id], DryRun=True)
+        except Exception as e:
+            if e.response['Error'].get('Code') == 'DryRunOperation':
+                try:
+                    client_ec2.start_instances(InstanceIds=[instance_id])
+                    check_session.session_state = "pending"
+                    db.session.commit()
+                except Exception as err:
+                    flash("Please wait a little bit before restarting this session as the underlying resource is still being stopped.", "error")
+
+            else:
+                flash("Unable to restart instance ({}) due to {}".format(instance_id, e), "error")
+    else:
+        flash("Unable to retrieve this session", "error")
+
+    return redirect("/remote_desktop")
+
+@remote_desktop.route('/remote_desktop/modify', methods=['POST'])
+@login_required
+def modify():
+    dcv_session = None if not "session_number" in request.form else request.form["session_number"]
+    new_instance_type = None if not "instance_type" in request.form else request.form["instance_type"]
+    if dcv_session is None:
+        flash("Invalid graphical session", "error")
+        return redirect("/remote_desktop")
+
+    if new_instance_type is None:
+        flash("Invalid new EC2 instance type", "error")
+        return redirect("/remote_desktop")
+
+    blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
+    all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
+    all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
+    if new_instance_type not in all_instances:
+        flash("This EC2 instance type is not authorized", "error")
+        return redirect("/remote_desktop")
+
+    check_session = LinuxDCVSessions.query.filter_by(user=session["user"],
+                                                       session_number=dcv_session,
+                                                       session_state="stopped",
+                                                       is_active=True).first()
+    if check_session:
+        instance_id = check_session.session_instance_id
+        try:
+            client_ec2.modify_instance_attribute(InstanceId=instance_id,
+                                                 InstanceType={'Value': new_instance_type},
+                                                 DryRun=True)
+        except ClientError as e:
+            if e.response['Error'].get('Code') == 'DryRunOperation':
+                try:
+                    client_ec2.modify_instance_attribute(InstanceId=instance_id,
+                                                         InstanceType={'Value': new_instance_type})
+                    check_session.session_instance_type = new_instance_type
+                    db.session.commit()
+                    flash("Your EC2 instance has been updated successfully to: {}".format(new_instance_type), "success")
+                except ClientError as err:
+                    if "not supported for instances with hibernation configured." in err.response['Error'].get('Code'):
+                        flash("Your intance has been started with hibernation enabled. You cannot change the instance type. Start a new session with Hibernation disabled if you want to be able to change your instance type. ", "error")
+                    else:
+                        flash("Unable to modify EC2 instance type due to {}".format(err), "error")
+            else:
+                flash("Unable to modify instance ({}) due to {}".format(instance_id, e), "error")
+    else:
+        flash("Unable to retrieve this session. Either session does not exist or is not stopped", "error")
 
     return redirect("/remote_desktop")
 
@@ -246,10 +587,12 @@ def delete_job():
 def generate_client():
     dcv_session = request.args.get("session", None)
     if dcv_session is None:
-        flash("Invalid DCV sessions", "error")
+        flash("Invalid graphical sessions", "error")
         return redirect("/remote_desktop")
 
-    check_session = DCVSessions.query.filter_by(user=session["user"], session_number=dcv_session, is_active=True).first()
+    check_session = LinuxDCVSessions.query.filter_by(user=session["user"],
+                                                       session_number=dcv_session,
+                                                       is_active=True).first()
     if check_session:
         session_file = '''
 [version]
@@ -258,10 +601,10 @@ format=1.0
 [connect]
 host=''' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '''
 port=443
-weburlpath=/''' + check_session.session_host + '''
-sessionid=''' + check_session.session_uuid + '''
-user=''' + session["user"] + '''
-authToken=''' + check_session.session_password + '''
+sessionid=console
+user=Administrator
+authToken='''+check_session.dcv_authentication_token+'''
+weburlpath=/''' + check_session.session_host_private_dns + '''
 '''
         return Response(
             session_file,

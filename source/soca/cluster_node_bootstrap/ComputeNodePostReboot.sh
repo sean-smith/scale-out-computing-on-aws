@@ -34,7 +34,7 @@ then
 fi
 
 # Begin DCV Customization
-if [[ "$SOCA_JOB_QUEUE" == "desktop" ]]; then
+if [[ "$SOCA_JOB_TYPE" == "desktop" ]]; then
     echo "Installing DCV"
     /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeInstallDCV.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeInstallDCV.log 2>&1
     if [[ $? -eq 3 ]];

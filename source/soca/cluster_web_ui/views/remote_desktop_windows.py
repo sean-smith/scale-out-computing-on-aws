@@ -38,7 +38,7 @@ def launch_instance(launch_parameters, dry_run):
                     'DeviceName': '/dev/sda1',
                     'Ebs': {
                         'DeleteOnTermination': True,
-                        'VolumeSize': 30 if launch_parameters["disk_size"] is False else launch_parameters["disk_size"],
+                        'VolumeSize': 30 if launch_parameters["disk_size"] is False else int(launch_parameters["disk_size"]),
                         'VolumeType': 'gp2',
                         'Encrypted': True
                     },
@@ -90,7 +90,7 @@ def launch_instance(launch_parameters, dry_run):
                          "Value": launch_parameters["cluster_id"]
                      },
                      {
-                         "Key": "soca:DCVWindowsSessionUUID",
+                         "Key": "soca:DCVSessionUUID",
                          "Value": launch_parameters["session_uuid"]
                      },
                      {
@@ -124,9 +124,13 @@ def get_host_info(tag_uuid):
         response = client_ec2.describe_instances(
             Filters=[
                 {
-                    'Name': 'tag:soca:DCVWindowsSessionUUID',
+                    'Name': 'tag:soca:DCVSessionUUID',
                     'Values': [tag_uuid]
                 },
+                {
+                    "Name": "tag:soca:DCVSystem",
+                    "Values": ["windows"]
+                }
             ],
             MaxResults=1000,
             NextToken=next_token,

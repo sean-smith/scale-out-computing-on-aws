@@ -7,7 +7,7 @@ from flask import Response
 import base64
 import ast
 import errors
-from models import db, DCVSessions, WindowsDCVSessions
+from models import db, LinuxDCVSessions, WindowsDCVSessions
 
 logger = logging.getLogger("api")
 
@@ -43,6 +43,8 @@ class DcvAuthenticator(Resource):
         parser.add_argument('clientAddress', type=str, location='form')
         args = parser.parse_args()
         remote_addr = request.remote_addr
+        if args["sessionId"] is None or args['authenticationToken'] is None or args["clientAddress"] is None:
+            return errors.all_errors('CLIENT_MISSING_PARAMETER', "sessionId (str), clientAddress (str) and authenticationToken (str) are required.")
         session_id = args["sessionId"]
         authentication_token = args['authenticationToken']
         client_address = args["clientAddress"].split(":")[0]  # keep only ip, remove port
@@ -51,8 +53,7 @@ class DcvAuthenticator(Resource):
         required_params = ["system", "session_user", "session_token", "session_instance_id"]
         session_info = {}
         logger.info("Detected {} and remote_addr {}".format(args, remote_addr))
-        if session_id is None or authentication_token is None or client_address is None:
-            return errors.all_errors('CLIENT_MISSING_PARAMETER', "sessionId (str), clientAddress (str) and authenticationToken (str) are required.")
+
         try:
             decoded_token = decrypt(base64.b64decode(authentication_token))
             if decoded_token is False:
@@ -80,16 +81,16 @@ class DcvAuthenticator(Resource):
                                                                       is_active=True).first()
 
             else:
-                validate_session = DCVSessions.query.filter_by(user=session_info["session_user"],
-                                                               session_host_private_ip=remote_addr,
-                                                               session_token=session_info["session_token"],
-                                                               session_instance_id=session_id["session_instance_id"],
-                                                               is_active=True).first()
+                validate_session = LinuxDCVSessions.query.filter_by(user=session_info["session_user"],
+                                                                    session_host_private_ip=remote_addr,
+                                                                    session_token=session_info["session_token"],
+                                                                    session_instance_id=session_info["session_instance_id"],
+                                                                    is_active=True).first()
             if validate_session:
                 if session_info["system"].lower() == "windows":
                     user = "Administrator"  # will need to be changed when we support AD authentication
                 else:
-                    user = session_info["user"]
+                    user = session_info["session_user"]
             else:
                 error = True
 
