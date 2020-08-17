@@ -74,14 +74,6 @@ def launch_instance(launch_parameters, dry_run):
                          "Value": "Desktop"
                      },
                      {
-                         "Key": "soca:JobQueue",
-                         "Value": "desktop"
-                     },
-                     {
-                         "Key": "soca:KeepForever",
-                         "Value": "false"
-                     },
-                     {
                          "Key": "soca:DCVSupportHibernate",
                          "Value": str(launch_parameters["hibernate"]).lower()
                      },
@@ -116,7 +108,7 @@ def launch_instance(launch_parameters, dry_run):
     return True
 
 
-def get_host_info(tag_uuid):
+def get_host_info(tag_uuid, cluster_id):
     host_info = {}
     token = True
     next_token = ''
@@ -126,6 +118,10 @@ def get_host_info(tag_uuid):
                 {
                     'Name': 'tag:soca:DCVSessionUUID',
                     'Values': [tag_uuid]
+                },
+                {
+                    "Name": "tag:soca:ClusterId",
+                    "Values": [cluster_id]
                 },
                 {
                     "Name": "tag:soca:DCVSystem",
@@ -168,7 +164,7 @@ def index():
         support_hibernation = session_info.support_hibernation
         dcv_authentication_token = session_info.dcv_authentication_token
         session_id = session_info.session_id
-        host_info = get_host_info(session_id)
+        host_info = get_host_info(session_id, read_secretmanager.get_soca_configuration()["ClusterId"])
         if not host_info:
             # no host detected, session no longer active
             session_info.is_active = False
@@ -217,7 +213,7 @@ def index():
             "tag_uuid": tag_uuid,
             "support_hibernation": support_hibernation}
 
-    max_number_of_sessions = config.Config.DCV_WINDOWS_SESSION_COUNT
+    max_number_of_sessions = config.Config.DCV_LINUX_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
     blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
     all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
@@ -225,11 +221,11 @@ def index():
     return render_template('remote_desktop.html',
                            user=session["user"],
                            user_sessions=user_sessions,
-                           hibernate_idle_session=config.Config.DCV_WINDOWS_HIBERNATE_IDLE_SESSION,
-                           stop_idle_session=config.Config.DCV_WINDOWS_STOP_IDLE_SESSION,
-                           terminate_stopped_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
-                           terminate_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
-                           allow_instance_change=config.Config.DCV_WINDOWS_ALLOW_INSTANCE_CHANGE,
+                           hibernate_idle_session=config.Config.DCV_LINUX_HIBERNATE_IDLE_SESSION,
+                           stop_idle_session=config.Config.DCV_LINUX_STOP_IDLE_SESSION,
+                           terminate_stopped_session=config.Config.DCV_LINUX_TERMINATE_STOPPED_SESSION,
+                           terminate_session=config.Config.DCV_LINUX_TERMINATE_STOPPED_SESSION,
+                           allow_instance_change=config.Config.DCV_LINUX_ALLOW_INSTANCE_CHANGE,
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions)
@@ -383,7 +379,7 @@ def create():
     logger.info("Checking in {} support Hibernation : {}".format(instance_type, check_hibernation_support))
     if len(check_hibernation_support["InstanceTypes"]) == 0:
         if config.Config.DCV_FORCE_INSTANCE_HIBERNATE_SUPPORT is True:
-            flash("Sorry your administrator limited <a href='https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/Hibernate.html#hibernating-prerequisites' target='_blank'>DCV to instances that support hibernation mode</a> <br> Please choose a different type of instance.")
+            flash("Sorry your administrator limited <a href='https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html' target='_blank'>DCV to instances that support hibernation mode</a> <br> Please choose a different type of instance.")
             return redirect("/remote_desktop")
         else:
             hibernate_support = False

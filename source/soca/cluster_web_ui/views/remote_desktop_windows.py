@@ -74,14 +74,6 @@ def launch_instance(launch_parameters, dry_run):
                          "Value": "Desktop"
                      },
                      {
-                         "Key": "soca:JobQueue",
-                         "Value": "desktop"
-                     },
-                     {
-                         "Key": "soca:KeepForever",
-                         "Value": "false"
-                     },
-                     {
                          "Key": "soca:DCVSupportHibernate",
                          "Value": str(launch_parameters["hibernate"]).lower()
                      },
@@ -116,7 +108,7 @@ def launch_instance(launch_parameters, dry_run):
     return True
 
 
-def get_host_info(tag_uuid):
+def get_host_info(tag_uuid, cluster_id):
     host_info = {}
     token = True
     next_token = ''
@@ -126,6 +118,10 @@ def get_host_info(tag_uuid):
                 {
                     'Name': 'tag:soca:DCVSessionUUID',
                     'Values': [tag_uuid]
+                },
+                {
+                    "Name": "tag:soca:ClusterId",
+                    "Values": [cluster_id]
                 },
                 {
                     "Name": "tag:soca:DCVSystem",
@@ -169,7 +165,7 @@ def index():
         support_hibernation = session_info.support_hibernation
         dcv_authentication_token = session_info.dcv_authentication_token
         session_id = session_info.session_id
-        host_info = get_host_info(tag_uuid)
+        host_info = get_host_info(tag_uuid, read_secretmanager.get_soca_configuration()["ClusterId"])
         if not host_info:
             # no host detected, session no longer active
             session_info.is_active = False
