@@ -162,8 +162,17 @@ def index():
         session_token = session_info.session_token
         session_instance_type = session_info.session_instance_type
         session_instance_id = session_info.session_instance_id
+        session_schedule = {"monday": session_info.session_schedule_monday,
+                            "tuesday": session_info.session_schedule_tuesday,
+                            "wednesday": session_info.session_schedule_wednesday,
+                            "thursday": session_info.session_schedule_thursday,
+                            "friday": session_info.session_schedule_friday,
+                            "saturday": session_info.session_schedule_saturday,
+                            "sunday": session_info.session_schedule_sunday
+                            }
         support_hibernation = session_info.support_hibernation
         dcv_authentication_token = session_info.dcv_authentication_token
+
         session_id = session_info.session_id
         host_info = get_host_info(tag_uuid, read_secretmanager.get_soca_configuration()["ClusterId"])
         if not host_info:
@@ -213,7 +222,8 @@ def index():
             "session_instance_id": session_instance_id,
             "session_instance_type": session_instance_type,
             "tag_uuid": tag_uuid,
-            "support_hibernation": support_hibernation}
+            "support_hibernation": support_hibernation,
+            "session_schedule": session_schedule}
 
     max_number_of_sessions = config.Config.DCV_WINDOWS_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
@@ -352,6 +362,7 @@ def create():
         return redirect("/remote_desktop_windows")
 
     flash("Your session has been initiated. It will be ready within 10 minutes.", "success")
+    default_session_schedule = "480-1080"
     new_session = WindowsDCVSessions(user=session["user"],
                                      session_number=parameters["session_number"],
                                      session_name=session_name,
@@ -366,7 +377,14 @@ def create():
                                      session_token=str(uuid.uuid4()),
                                      is_active=True,
                                      support_hibernation=parameters["hibernate"],
-                                     created_on=datetime.datetime.utcnow())
+                                     created_on=datetime.datetime.utcnow(),
+                                     session_schedule_monday=default_session_schedule,
+                                     session_schedule_tuesday=default_session_schedule,
+                                     session_schedule_wednesday=default_session_schedule,
+                                     session_schedule_thursday=default_session_schedule,
+                                     session_schedule_friday=default_session_schedule,
+                                     session_schedule_saturday="norun",
+                                     session_schedule_sunday="norun")
     db.session.add(new_session)
     db.session.commit()
     return redirect("/remote_desktop_windows")

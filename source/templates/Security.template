@@ -449,6 +449,7 @@ Resources:
                 Resource:
                   - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
                   - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-RunPowerShellScript"
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}::document/AWS-RunShellScript"
 
               - Effect: Allow
                 Action:

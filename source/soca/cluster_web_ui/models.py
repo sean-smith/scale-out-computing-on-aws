@@ -32,29 +32,10 @@ class ApplicationProfiles(db.Model):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
-class DCVSessions(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user = db.Column(db.String(255), nullable=False)
-    job_id = db.Column(db.String(255), nullable=False)
-    session_name = db.Column(db.String(255))
-    session_number = db.Column(db.Integer, nullable=False)
-    session_state = db.Column(db.String(255), nullable=False)
-    session_host = db.Column(db.String(255))
-    session_password = db.Column(db.String(255), nullable=False)
-    session_uuid = db.Column(db.String(255), nullable=False)
-    session_thumbnail = db.Column(db.Text)
-    is_active = db.Column(db.Boolean)
-    created_on = db.Column(db.DateTime)
-    deactivated_on = db.Column(db.DateTime)
-
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
-
 class LinuxDCVSessions(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user = db.Column(db.String(255), nullable=False)  # Session owner
-    tag_uuid = db.Column(db.Text)  # Manage EC2 tag soca:DCVWindowsSessionUUID
+    tag_uuid = db.Column(db.Text)  # Manage EC2 tag soca:DCVSessionUUID
     session_name = db.Column(db.String(255))  # Session name specified by the user
     session_number = db.Column(db.Integer, nullable=False)  # DCV session number
     session_state = db.Column(db.String(255), nullable=False)  # State of the session (pending/stopped/running)
@@ -70,6 +51,14 @@ class LinuxDCVSessions(db.Model):
     is_active = db.Column(db.Boolean)  # If session is active or not
     created_on = db.Column(db.DateTime)  # Timestamp when session was created
     deactivated_on = db.Column(db.DateTime)  # Timestamp when session was deleted
+    session_schedule_monday = db.Column(db.String(255))  # Schedule for monday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_tuesday = db.Column(db.String(255))  # Schedule for tuesday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_wednesday = db.Column(db.String(255))  # Schedule for wednesday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_thursday = db.Column(db.String(255))  # Schedule for thursday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_friday = db.Column(db.String(255))  # Schedule for friday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_saturday = db.Column(db.String(255))  # Schedule for saturday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_sunday = db.Column(db.String(255))  # Schedule for sunday. Can be norun, allday or start,stop such as 8,17
+
 
 class WindowsDCVSessions(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -91,9 +80,22 @@ class WindowsDCVSessions(db.Model):
     is_active = db.Column(db.Boolean)  # If session is active or not
     created_on = db.Column(db.DateTime)  # Timestamp when session was created
     deactivated_on = db.Column(db.DateTime)  # Timestamp when session was deleted
+    session_schedule_monday = db.Column(db.String(255))  # Schedule for monday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_tuesday = db.Column(db.String(255))  # Schedule for tuesday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_wednesday = db.Column(db.String(255))  # Schedule for wednesday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_thursday = db.Column(db.String(255))  # Schedule for thursday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_friday = db.Column(db.String(255))  # Schedule for friday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_saturday = db.Column(db.String(255))  # Schedule for saturday. Can be norun, allday or start,stop such as 8,17
+    session_schedule_sunday = db.Column(db.String(255))  # Schedule for sunday. Can be norun, allday or start,stop such as 8,17
+
+
+
+
+
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 
 class ProjectList(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

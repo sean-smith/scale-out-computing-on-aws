@@ -597,8 +597,8 @@ format=1.0
 [connect]
 host=''' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '''
 port=443
-sessionid=console
-user=Administrator
+sessionid='''+check_session.session_id+'''
+user='''+session["user"]+'''
 authToken='''+check_session.dcv_authentication_token+'''
 weburlpath=/''' + check_session.session_host_private_dns + '''
 '''
