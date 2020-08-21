@@ -163,13 +163,13 @@ def index():
         session_token = session_info.session_token
         session_instance_type = session_info.session_instance_type
         session_instance_id = session_info.session_instance_id
-        session_schedule = {"monday": session_info.session_schedule_monday,
-                            "tuesday": session_info.session_schedule_tuesday,
-                            "wednesday": session_info.session_schedule_wednesday,
-                            "thursday": session_info.session_schedule_thursday,
-                            "friday": session_info.session_schedule_friday,
-                            "saturday": session_info.session_schedule_saturday,
-                            "sunday": session_info.session_schedule_sunday
+        session_schedule = {"monday": str(session_info.schedule_monday_start) + "-" + str(session_info.schedule_monday_stop),
+                            "tuesday": str(session_info.schedule_tuesday_start) + "-" + str(session_info.schedule_tuesday_stop),
+                            "wednesday": str(session_info.schedule_wednesday_start) + "-" + str(session_info.schedule_wednesday_stop),
+                            "thursday": str(session_info.schedule_thursday_start) + "-" + str(session_info.schedule_thursday_stop),
+                            "friday": str(session_info.schedule_friday_start) + "-" + str(session_info.schedule_friday_stop),
+                            "saturday": str(session_info.schedule_saturday_start) + "-" + str(session_info.schedule_saturday_stop),
+                            "sunday": str(session_info.schedule_sunday_start) + "-" + str(session_info.schedule_sunday_stop)
                             }
         support_hibernation = session_info.support_hibernation
         dcv_authentication_token = session_info.dcv_authentication_token
@@ -381,7 +381,8 @@ def create():
         return redirect("/remote_desktop_windows")
 
     flash("Your session has been initiated. It will be ready within 10 minutes.", "success")
-    default_session_schedule = "480-1080"
+    default_session_schedule_start = 480  # 8 AM
+    default_session_schedule_stop = 1080  # 6 PM
     new_session = WindowsDCVSessions(user=session["user"],
                                      session_number=parameters["session_number"],
                                      session_name=session_name,
@@ -397,13 +398,22 @@ def create():
                                      is_active=True,
                                      support_hibernation=parameters["hibernate"],
                                      created_on=datetime.datetime.utcnow(),
-                                     session_schedule_monday=default_session_schedule,
-                                     session_schedule_tuesday=default_session_schedule,
-                                     session_schedule_wednesday=default_session_schedule,
-                                     session_schedule_thursday=default_session_schedule,
-                                     session_schedule_friday=default_session_schedule,
-                                     session_schedule_saturday="norun",
-                                     session_schedule_sunday="norun")
+                                     schedule_monday_start=default_session_schedule_start,
+                                     schedule_tuesday_start=default_session_schedule_start,
+                                     schedule_wednesday_start=default_session_schedule_start,
+                                     schedule_thursday_start=default_session_schedule_start,
+                                     schedule_friday_start=default_session_schedule_start,
+                                     schedule_saturday_start=0,
+                                     schedule_sunday_start=0,
+                                     schedule_monday_stop=default_session_schedule_stop,
+                                     schedule_tuesday_stop=default_session_schedule_stop,
+                                     schedule_wednesday_stop=default_session_schedule_stop,
+                                     schedule_thursday_stop=default_session_schedule_stop,
+                                     schedule_friday_stop=default_session_schedule_start,
+                                     schedule_saturday_stop=0,
+                                     schedule_sunday_stop=0,
+
+                                     )
     db.session.add(new_session)
     db.session.commit()
     return redirect("/remote_desktop_windows")
@@ -431,7 +441,7 @@ def delete():
             # Hibernate instance
             try:
                 client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
-            except Exception as e:
+            except ClientError as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True)
                     check_session.session_state = "stopped"
@@ -443,7 +453,7 @@ def delete():
             # Stop Instance
             try:
                 client_ec2.stop_instances(InstanceIds=[instance_id], DryRun=True)
-            except Exception as e:
+            except ClientError as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.stop_instances(InstanceIds=[instance_id])
                     check_session.session_state = "stopped"
@@ -455,7 +465,7 @@ def delete():
             # Terminate instance
             try:
                 client_ec2.terminate_instances(InstanceIds=[instance_id], DryRun=True)
-            except Exception as e:
+            except ClientError as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.terminate_instances(InstanceIds=[instance_id])
                     flash("Your graphical session is about to be terminated.", "success")
@@ -488,7 +498,7 @@ def restart_from_hibernate():
         instance_id = check_session.session_instance_id
         try:
             client_ec2.start_instances(InstanceIds=[instance_id], DryRun=True)
-        except Exception as e:
+        except ClientError as e:
             if e.response['Error'].get('Code') == 'DryRunOperation':
                 try:
                     client_ec2.start_instances(InstanceIds=[instance_id])
@@ -558,19 +568,75 @@ def modify():
 @remote_desktop_windows.route('/remote_desktop_windows/schedule', methods=['POST'])
 @login_required
 def schedule():
+    week_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    schedule = {}
     session_number = None if "session_number" not in request.form else request.form["session_number"]
+    error = False
     if not session_number:
         flash("Session Number is missing", "error")
         logger.error("Session number is missing {}".format(request.form))
         return redirect("/remote_desktop_windows")
 
-    schedule_mode = None if "schedule_mode" not in request.form else request.form["schedule_mode"]
-    if schedule_mode not in ["allday", "norun", "custom"]:
-        flash("Schedule Mpde must be either allday, norun or custom", "error")
-        logger.error("Schedule Mpde must be either allday, norun or custom".format(request.form))
+    for day in week_days:
+        schedule_name = "schedule-" + day + "-" + session_number
+        if schedule_name not in request.form.keys():
+            error = "Unable to retrieve schedule for {}".format(day)
+        else:
+            schedule_value = request.form[schedule_name].split("-")
+            if len(schedule_value) == 2:
+                try:
+                    start_time = int(schedule_value[0])
+                    end_time = int(schedule_value[1])
+                    if end_time < start_time:
+                        error = "End time ({}) must be greater than start time ({})".format(end_time,start_time)
+                    elif end_time > 1440:
+                        error = "End Time ({}) cannot be greater than 1440 (12PM)".format(end_time)
+                    elif start_time < 0:
+                        error = "Start time ({}) must be greater than 0 (12AM)".format(start_time)
+                    elif start_time == end_time:
+                        schedule[day] = "0-0"  # no run
+                    else:
+                        schedule[day] = str(start_time) + "-" + str(end_time)
+                except ValueError:
+                    error = "Schedule must use number1-number2 format where number1 and number2 are valid integer : ".format(schedule_value)
+            else:
+                error = "Schedule values must be number1-number2 format and not {}".format(schedule_value)
+
+    if error is not False:
+        flash(error, "error")
+        logger.error(error)
         return redirect("/remote_desktop_windows")
 
-    return request.form
+    else:
+        check_session = WindowsDCVSessions.query.filter_by(user=session["user"],
+                                                           session_number=session_number,
+                                                           is_active=True).first()
+        if check_session:
+            check_session.schedule_monday_start = schedule["monday"].split("-")[0]
+            check_session.schedule_monday_stop = schedule["monday"].split("-")[1]
+            check_session.schedule_tuesday_start = schedule["tuesday"].split("-")[0]
+            check_session.schedule_tuesday_stop = schedule["tuesday"].split("-")[1]
+            check_session.schedule_wednesday_start = schedule["wednesday"].split("-")[0]
+            check_session.schedule_wednesday_stop = schedule["wednesday"].split("-")[1]
+            check_session.schedule_thursday_start = schedule["thursday"].split("-")[0]
+            check_session.schedule_thursday_stop = schedule["thursday"].split("-")[1]
+            check_session.schedule_friday_start = schedule["friday"].split("-")[0]
+            check_session.schedule_friday_stop = schedule["friday"].split("-")[1]
+            check_session.schedule_saturday_start = schedule["saturday"].split("-")[0]
+            check_session.schedule_saturday_stop = schedule["saturday"].split("-")[1]
+            check_session.schedule_sunday_start = schedule["sunday"].split("-")[0]
+            check_session.schedule_sunday_stop = schedule["sunday"].split("-")[1]
+            db.session.commit()
+            flash("Your session schedule has been updated correctly", "success")
+            return redirect("/remote_desktop_windows")
+
+        else:
+            flash("Unable to retrieve this session. This session may have been terminated.", "error")
+            return redirect("/remote_desktop_windows")
+
+
+
+
 
 
 

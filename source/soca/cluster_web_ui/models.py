@@ -51,13 +51,20 @@ class LinuxDCVSessions(db.Model):
     is_active = db.Column(db.Boolean)  # If session is active or not
     created_on = db.Column(db.DateTime)  # Timestamp when session was created
     deactivated_on = db.Column(db.DateTime)  # Timestamp when session was deleted
-    session_schedule_monday = db.Column(db.String(255))  # Schedule for monday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_tuesday = db.Column(db.String(255))  # Schedule for tuesday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_wednesday = db.Column(db.String(255))  # Schedule for wednesday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_thursday = db.Column(db.String(255))  # Schedule for thursday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_friday = db.Column(db.String(255))  # Schedule for friday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_saturday = db.Column(db.String(255))  # Schedule for saturday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_sunday = db.Column(db.String(255))  # Schedule for sunday. Can be norun, allday or start,stop such as 8,17
+    schedule_monday_start = db.Column(db.Integer)  # What time session will start on Monday, 0 (12AM) to 1440 (12PM) -1 = run all day, -2 = stopped all day
+    schedule_monday_stop = db.Column(db.Integer)  # What time session will be stopped on Monday, 0 (12AM) to 1440 (12PM) -1 = run all day, -2 = stopped all day
+    schedule_tuesday_start = db.Column(db.Integer)
+    schedule_tuesday_stop = db.Column(db.Integer)
+    schedule_wednesday_start = db.Column(db.Integer)
+    schedule_wednesday_stop = db.Column(db.Integer)
+    schedule_thursday_start = db.Column(db.Integer)
+    schedule_thursday_stop = db.Column(db.Integer)
+    schedule_friday_start = db.Column(db.Integer)
+    schedule_friday_stop = db.Column(db.Integer)
+    schedule_saturday_start = db.Column(db.Integer)
+    schedule_saturday_stop = db.Column(db.Integer)
+    schedule_sunday_start = db.Column(db.Integer)
+    schedule_sunday_stop = db.Column(db.Integer)
 
 
 class WindowsDCVSessions(db.Model):
@@ -80,20 +87,23 @@ class WindowsDCVSessions(db.Model):
     is_active = db.Column(db.Boolean)  # If session is active or not
     created_on = db.Column(db.DateTime)  # Timestamp when session was created
     deactivated_on = db.Column(db.DateTime)  # Timestamp when session was deleted
-    session_schedule_monday = db.Column(db.String(255))  # Schedule for monday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_tuesday = db.Column(db.String(255))  # Schedule for tuesday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_wednesday = db.Column(db.String(255))  # Schedule for wednesday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_thursday = db.Column(db.String(255))  # Schedule for thursday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_friday = db.Column(db.String(255))  # Schedule for friday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_saturday = db.Column(db.String(255))  # Schedule for saturday. Can be norun, allday or start,stop such as 8,17
-    session_schedule_sunday = db.Column(db.String(255))  # Schedule for sunday. Can be norun, allday or start,stop such as 8,17
+    schedule_monday_start = db.Column(db.Integer)  # What time session will start on Monday, 0 (12AM) to 1440 (12PM) -1 = run all day, -2 = stopped all day
+    schedule_monday_stop = db.Column(db.Integer)  # What time session will be stopped on Monday, 0 (12AM) to 1440 (12PM) -1 = run all day, -2 = stopped all day
+    schedule_tuesday_start = db.Column(db.Integer)
+    schedule_tuesday_stop = db.Column(db.Integer)
+    schedule_wednesday_start = db.Column(db.Integer)
+    schedule_wednesday_stop = db.Column(db.Integer)
+    schedule_thursday_start = db.Column(db.Integer)
+    schedule_thursday_stop = db.Column(db.Integer)
+    schedule_friday_start = db.Column(db.Integer)
+    schedule_friday_stop = db.Column(db.Integer)
+    schedule_saturday_start = db.Column(db.Integer)
+    schedule_saturday_stop = db.Column(db.Integer)
+    schedule_sunday_start = db.Column(db.Integer)
+    schedule_sunday_stop = db.Column(db.Integer)
 
 
-
-
-
-
-    def as_dict(self):
+def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 

@@ -125,8 +125,7 @@ def windows_auto_stop_instance():
                     if ssm_failed is False:
                         ssm_command_id = check_dcv_session["Command"]["CommandId"]
                         while ssm_list_command_loop < 6:
-                            check_command_status = \
-                            client_ssm.list_commands(CommandId=ssm_command_id)['Commands'][0]['Status']
+                            check_command_status = client_ssm.list_commands(CommandId=ssm_command_id)['Commands'][0]['Status']
                             if check_command_status != "Success":
                                 logger.info("SSM command ({}) executed but did not succeed or failed yet. Waiting 20 seconds ... {} ".format(ssm_command_id, client_ssm.list_commands(CommandId=ssm_command_id)['Commands']))
                                 if check_command_status == "Failed":
