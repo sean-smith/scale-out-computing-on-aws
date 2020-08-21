@@ -20,6 +20,7 @@ from cryptography.fernet import Fernet
 
 remote_desktop_windows = Blueprint('remote_desktop_windows', __name__, template_folder='templates')
 client_ec2 = boto3.client('ec2')
+client_lambda = boto3.client('lambda')
 logger = logging.getLogger("application")
 
 
@@ -357,6 +358,24 @@ def create():
         if actual_launch is not True:
             flash(actual_launch, "error")
             return redirect("/remote_desktop_windows")
+        else:
+            if str(soca_configuration["DefaultMetricCollection"]).lower() == "true":
+                # invoke lambda function for tracking
+                payload = {}
+                payload['DesiredCapacity'] = '1'
+                payload['InstanceType'] = instance_type
+                payload['Efa'] = "false"
+                payload['ScratchSize'] = "false"
+                payload['RootSize'] = str(parameters["disk_size"])
+                payload['SpotPrice'] = "false"
+                payload['BaseOS'] = "windows"
+                payload['StackUUID'] = session_uuid
+                payload['KeepForever'] = "false"
+                payload['FsxLustre'] = "false"
+                payload['TerminateWhenIdle'] = "false"
+                payload['DCV'] = "windows"
+                #client_lambda.invoke(soca_configuration['SolutionMetricLambda'], payload=payload)
+                pass
     else:
         flash(dry_run_launch, "error")
         return redirect("/remote_desktop_windows")
@@ -534,6 +553,25 @@ def modify():
         flash("Unable to retrieve this session. Either session does not exist or is not stopped", "error")
 
     return redirect("/remote_desktop_windows")
+
+
+@remote_desktop_windows.route('/remote_desktop_windows/schedule', methods=['POST'])
+@login_required
+def schedule():
+    session_number = None if "session_number" not in request.form else request.form["session_number"]
+    if not session_number:
+        flash("Session Number is missing", "error")
+        logger.error("Session number is missing {}".format(request.form))
+        return redirect("/remote_desktop_windows")
+
+    schedule_mode = None if "schedule_mode" not in request.form else request.form["schedule_mode"]
+    if schedule_mode not in ["allday", "norun", "custom"]:
+        flash("Schedule Mpde must be either allday, norun or custom", "error")
+        logger.error("Schedule Mpde must be either allday, norun or custom".format(request.form))
+        return redirect("/remote_desktop_windows")
+
+    return request.form
+
 
 
 @remote_desktop_windows.route('/remote_desktop_windows/client', methods=['GET'])

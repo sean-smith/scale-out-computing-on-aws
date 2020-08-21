@@ -43,6 +43,7 @@ class CustomResourceSendAnonymousMetrics(AWSCustomObject):
         "KeepForever": (str, True),
         "TerminateWhenIdle": (str, True),
         "FsxLustre": (str, True),
+        "DCV": (str, True),
     }
 
 
@@ -411,6 +412,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
             metrics.KeepForever = str(params["KeepForever"])
             metrics.FsxLustre = str(params["FSxLustreConfiguration"])
             metrics.TerminateWhenIdle = str(params["TerminateWhenIdle"])
+            metrics.DCV = "false"
             t.add_resource(metrics)
         # End Custom Resource
 

@@ -222,55 +222,46 @@
                                                               </div>
 
                                                               <div class="container">
-                                                              <br>
                                                                   {% for day in ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"] %}
                                                                       <div class="form-inline">
-                                                                       <div class="col-md-8">
-                                                                           <strong
-                                                                                   {% if session_data.session_schedule[day] == "norun" %} style="color: #e02d1b"
-                                                                                   {% else %} style="color: #16bf9f" {% endif %}>{{ day | capitalize }} </strong> &nbsp;
-                                                                           <select  class="custom-select" id="schedule_mode" onchange="manageSchedule('{{ day }}{{ n }}', this.value)">
-                                                                               <option value="custom" {% if session_data.session_schedule[day] == "custom" %}selected{% endif %}>Custom Schedule</option>
-                                                                               <option value="norun" {% if session_data.session_schedule[day] == "norun" %}selected{% endif %}>Stopped all day</option>
-                                                                               <option value="allday" {% if session_data.session_schedule[day] == "allday" %}selected{% endif %}>Session runs all day</option>
-                                                                          </select>
-
-                                                                       </div>
+                                                                          <div class="col-md-8">
+                                                                              <form action="/remote_desktop_windows/schedule" method="POST">
+                                                                                  <strong
+                                                                                          {% if session_data.session_schedule[day] == "norun" %} style="color: #e02d1b"{% else %} style="color: #16bf9f" {% endif %}>{{ day | capitalize }} </strong> &nbsp;
+                                                                                  <select  class="custom-select"  id="schedule_mode" onchange="manageSchedule('{{ day }}-{{ n }}', this.value)">
+                                                                                      <option value="custom" {% if session_data.session_schedule[day] == "custom" %}selected{% endif %}>Custom Schedule</option>
+                                                                                      <option value="norun" {% if session_data.session_schedule[day] == "norun" %}selected{% endif %}>Stopped all day</option>
+                                                                                      <option value="allday" {% if session_data.session_schedule[day] == "allday" %}selected{% endif %}>Session runs all day</option>
+                                                                                  </select>
+                                                                          </div>
                                                                           <br>
                                                                       </div>
-                                                                      <div {% if session_data.session_schedule[day] == "norun" or session_data.session_schedule[day] == "allday" %} style="display: none"{% endif %} id="{{ day }}{{ n }}"></div>
+
+                                                                      <div {% if session_data.session_schedule[day] == "norun" or session_data.session_schedule[day] == "allday" %} style="display: none"{% endif %} id="slider-{{ day }}-{{ n }}"></div>
+                                                                      <input type="hidden" id="schedule-{{ day }}-{{ n }}" name="schedule-{{ day }}-{{ n }}" value="{{ session_data.session_schedule[day] }}">
+
                                                                       <script>
                                                                    $(function () {
-                                                                       $("#{{day}}{{ n }}").slider({
+                                                                       $("#slider-{{day}}-{{ n }}").slider({
                                                                            range: true,
                                                                            min: 0,
                                                                            max: 1440,
                                                                            step: 30,
                                                                            {% if session_data.session_schedule[day] == "norun" or session_data.session_schedule[day] == "allday" %}
-                                                                            values: [800,1200], // ignored as if schedule is set to norun or alldays
+                                                                            values: [450,1200], // ignored as if schedule is set to norun or alldays, but values must exist
                                                                            {% else %}
                                                                             values: [{{session_data.session_schedule[day].split("-")[0]}}, {{session_data.session_schedule[day].split("-")[1]}}],
                                                                            {% endif %}
                                                                     slide: function(event, ui) {
-                                                                    //return false;
-                                                                      if ((ui.values[1] - ui.values[0]) < 5) {
+                                                                        if ((ui.values[1] - ui.values[0]) < 5) {
                                                                           return false;
-                                                                      }
-                                                                      var start_hour = Math.floor(ui.values[0] / 60);
-                                                                      var start_minute = ui.values[0] - (start_hour * 60);
-                                                                      var end_hour = Math.floor(ui.values[1] / 60);
-                                                                      var end_minute = ui.values[0] - (start_hour * 60);
-                                                                      if(start_hour.toString().length == 1) start_hour = '0' + start_hour;
-                                                                      if(start_minute.toString().length == 1) start_minute = '0' + start_minute;
-                                                                      if(end_hour.toString().length == 1) end_hour = '0' + end_hour;
-                                                                      if(end_minute.toString().length == 1) end_minute = '0' + end_minute;
-                                                                      var startTime = start_hour + ":" + start_minute
-                                                                      var endTime = end_hour + ":" + end_minute
-
+                                                                        }
+                                                                        var startTime = ui.values[0]
+                                                                        var endTime = ui.values[1]
+                                                                        document.getElementById("schedule-{{ day }}-{{ n }}").value = startTime + "-" + endTime;
                                                                     },
-
-                                                                }).slider("float", {
-                                                                    handle: true,
+                                                                       }).slider("float", {
+                                                                           handle: true,
                                                                            pips: true,
                                                                            labels: [
                                                                                '00', "00:30", "01:00", "01:30",
@@ -285,13 +276,12 @@
                                                                                '18:00', "18:30", "19:00", "19:30",
                                                                                '20:00', "20:30", "20:00", "20:30",
                                                                                '22:00', "22:30", "21:00", "21:30",
-                                                                               '24:00']}).slider("pips",
-                                                                           {
-                                                                                   rest: "label",
-                                                                           labels: [,,,,,,,"3",,,,,,"6",,,,,,"9",,,,,,"12",,,,,,"15",,,,,,"18",,,,,,"21"],
-                                                                       });
-                                                            });
-                                                               </script>
+                                                                               '24:00']}
+                                                                               ).slider("pips", {
+                                                                           rest: "label",
+                                                                           labels: [,,,,,,,"3",,,,,,"6",,,,,,"9",,,,,,"12",,,,,,"15",,,,,,"18",,,,,,"21"]});});
+                                                                      </script>
+                                                                      <br>
                                                                   {% endfor %}
                                                               </div>
                                                           <br>
@@ -299,11 +289,15 @@
                                                           <hr>
 
                                                           <div align="center">
+                                                               <input type="hidden" name="session_number" value="{{ n }}">
+                                                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                                                                <button type="submit" class="btn btn-primary btn-icon-split">
                                                                    <span class="icon text-white-50"><i class="far fa-clock"></i></span>
                                                                    <span style="margin-top:5px;margin-right:10px; margin-left:10px">Save Schedule</span>
                                                                </button>
                                                           </div>
+                                                          </form>
 
                                                           </div>
                                                       </div>
@@ -541,17 +535,21 @@
     function manageSchedule(scheduleId, mode){
         if (mode === "custom")
         {
-            document.getElementById(scheduleId).style.display = "block"
+            $("#slider-"+scheduleId).css('display', 'block');
+            var startValue = $("#slider-"+scheduleId).slider("values")[0]
+            var endValue =  $("#slider-"+scheduleId).slider("values")[1]
+            $("#slider-"+scheduleId).slider('values',0, startValue);
+            $("#slider-"+scheduleId).slider('values',1, endValue);
+            $("#schedule-"+scheduleId).val(startValue + "-" +endValue);
         }
         else
         {
-            document.getElementById(scheduleId).style.display = "none"
+             $("#slider-"+scheduleId).css('display', 'none');
+             $("#schedule-"+scheduleId).val(mode);
         }
     }
     </script>
     {% include 'common/footer.html' %}
 
-
 </body>
-
 </html>
