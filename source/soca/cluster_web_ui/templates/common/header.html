@@ -14,7 +14,7 @@
 <link href="{{ url_for('static', filename='css/prism.css') }}" rel="stylesheet">
 
 <!-- Bootstrap core JavaScript-->
-<script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/jquery/jquery.js') }}"></script>
 <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
@@ -22,7 +22,7 @@
 
 {% if page == 'remote_desktop' %}
     <meta http-equiv="refresh" content="120">
-    <script src="{{ url_for('static', filename='vendor/jquery-ui/jquery-ui.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/jquery-ui/jquery-ui.js') }}"></script>
     <link href="{{ url_for('static', filename='css/jquery-ui-lightness.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/jquery-ui-slider-pips.css') }}" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/jquery-ui-slider-pips.js') }}"></script>
@@ -54,7 +54,6 @@
     position: absolute;
     top: -10px;
 }
-
 </style>
 
 {% elif page == 'my_jobs' %}

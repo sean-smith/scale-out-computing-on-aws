@@ -328,6 +328,7 @@ cd $PBS_O_WORKDIR
                                       <h6 class="m-0 font-weight-bold text-primary">Delete an existing application</h6>
                                   </div>
                                   <div class="card-body">
+                                  {% if application_profiles %}
                                       <form action="/admin/applications/delete" method="post">
                                           <div class="form-group col-md-6">
                                               <label for="walltime"> Select the application to delete</label>
@@ -346,6 +347,9 @@ cd $PBS_O_WORKDIR
                                               <button type="submit" class="btn btn-danger">Delete</button>
                                           </div>
                                       </form>
+                                  {% else %}
+                                  No application profiles found. Create one first
+                                  {% endif %}
                                   </div>
                               </div>
                           </div>

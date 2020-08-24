@@ -4,12 +4,13 @@ from flask import render_template, Blueprint, request, redirect, session, flash,
 from requests import get
 from decorators import login_required
 import boto3
-from models import db, WindowsDCVSessions
+from models import db, WindowsDCVSessions,AmiList
 import uuid
 import random
 import string
 import base64
-import datetime
+from datetime import datetime, timezone
+import pytz
 import read_secretmanager
 from botocore.exceptions import ClientError
 import re
@@ -17,12 +18,16 @@ import os
 import json
 from cryptography.fernet import Fernet
 
-
 remote_desktop_windows = Blueprint('remote_desktop_windows', __name__, template_folder='templates')
 client_ec2 = boto3.client('ec2')
 client_lambda = boto3.client('lambda')
 logger = logging.getLogger("application")
 
+def get_ami_info():
+    ami_info = {}
+    for session_info in AmiList.query.filter_by(is_active=True, ami_type="windows").all():
+        ami_info[session_info.ami_label] = session_info.ami_id
+    return ami_info
 
 def encrypt(message):
     key = config.Config.DCV_TOKEN_SYMMETRIC_KEY
@@ -179,7 +184,7 @@ def index():
         if not host_info:
             # no host detected, session no longer active
             session_info.is_active = False
-            session_info.deactivated_on = datetime.datetime.utcnow()
+            session_info.deactivated_on = datetime.utcnow()
             db.session.commit()
         else:
             # detected EC2 host for the session
@@ -231,6 +236,14 @@ def index():
     blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
     all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
+    try:
+        tz = pytz.timezone(config.Config.TIMEZONE)
+    except pytz.exceptions.UnknownTimeZoneError:
+        flash("Timezone {} configured by the admin does not exist. Defaulting to UTC. Refer to https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a full list of supported timezones".format(config.Config.TIMEZONE))
+        tz = pytz.timezone("UTC")
+
+    server_time = (datetime.now(timezone.utc)).astimezone(tz).strftime("%Y-%m-%d (%A) %H:%M")
+
     return render_template('remote_desktop_windows.html',
                            user=session["user"],
                            user_sessions=user_sessions,
@@ -240,8 +253,11 @@ def index():
                            terminate_session=config.Config.DCV_WINDOWS_TERMINATE_STOPPED_SESSION,
                            allow_instance_change=config.Config.DCV_WINDOWS_ALLOW_INSTANCE_CHANGE,
                            page='remote_desktop',
+                           server_time=server_time,
+                           server_timezone_human=config.Config.TIMEZONE,
                            all_instances=all_instances,
-                           max_number_of_sessions=max_number_of_sessions)
+                           max_number_of_sessions=max_number_of_sessions,
+                           ami_list=get_ami_info())
 
 
 @remote_desktop_windows.route('/remote_desktop_windows/create', methods=['POST'])
@@ -382,7 +398,7 @@ def create():
 
     flash("Your session has been initiated. It will be ready within 10 minutes.", "success")
     default_session_schedule_start = 480  # 8 AM
-    default_session_schedule_stop = 1080  # 6 PM
+    default_session_schedule_stop = 1140  # 7 PM
     new_session = WindowsDCVSessions(user=session["user"],
                                      session_number=parameters["session_number"],
                                      session_name=session_name,
@@ -397,7 +413,7 @@ def create():
                                      session_token=str(uuid.uuid4()),
                                      is_active=True,
                                      support_hibernation=parameters["hibernate"],
-                                     created_on=datetime.datetime.utcnow(),
+                                     created_on=datetime.utcnow(),
                                      schedule_monday_start=default_session_schedule_start,
                                      schedule_tuesday_start=default_session_schedule_start,
                                      schedule_wednesday_start=default_session_schedule_start,
@@ -409,7 +425,7 @@ def create():
                                      schedule_tuesday_stop=default_session_schedule_stop,
                                      schedule_wednesday_stop=default_session_schedule_stop,
                                      schedule_thursday_stop=default_session_schedule_stop,
-                                     schedule_friday_stop=default_session_schedule_start,
+                                     schedule_friday_stop=default_session_schedule_stop,
                                      schedule_saturday_stop=0,
                                      schedule_sunday_stop=0,
 
@@ -470,7 +486,7 @@ def delete():
                     client_ec2.terminate_instances(InstanceIds=[instance_id])
                     flash("Your graphical session is about to be terminated.", "success")
                     check_session.is_active = False
-                    check_session.deactivated_on = datetime.datetime.utcnow()
+                    check_session.deactivated_on = datetime.utcnow()
                     db.session.commit()
                     return redirect("/remote_desktop_windows")
                 else:

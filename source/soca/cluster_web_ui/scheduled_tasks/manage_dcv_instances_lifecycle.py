@@ -2,8 +2,9 @@ import boto3
 import logging
 import os
 import config
-import datetime
 import re
+from datetime import datetime, timezone, timedelta
+import pytz
 import json
 import time
 from dateutil.parser import parse
@@ -14,6 +15,15 @@ logger = logging.getLogger("scheduled_tasks")
 client_ec2 = boto3.client("ec2")
 client_ssm = boto3.client("ssm")
 
+def now():
+    try:
+        tz = pytz.timezone(config.Config.TIMEZONE)
+    except pytz.exceptions.UnknownTimeZoneError:
+        print("Timezone {} configured by the admin does not exist. Defaulting to UTC. Refer to https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a full list of supported timezones".format(config.Config.TIMEZONE))
+        tz = pytz.timezone("UTC")
+
+    server_time = datetime.now(timezone.utc).astimezone(tz)
+    return server_time
 
 def retrieve_host(instance_state, operating_system):
     host_info = {}
@@ -154,8 +164,8 @@ def windows_auto_stop_instance():
                         session_cpu_average = session_info["CPUAveragePerformanceLast10Secs"]
                         if session_cpu_average < config.Config.DCV_IDLE_CPU_THRESHOLD:
                             if session_current_connection == 0:
-                                current_time = parse(datetime.datetime.now().replace(microsecond=0).replace(tzinfo=datetime.timezone.utc).isoformat())
-                                if (last_dcv_disconnect + datetime.timedelta(hours=stop_instance_after)) < current_time:
+                                current_time = parse(datetime.now().replace(microsecond=0).replace(tzinfo=timezone.utc).isoformat())
+                                if (last_dcv_disconnect + timedelta(hours=stop_instance_after)) < current_time:
                                     logger.info("{} is ready for {}. Last access time {}".format(instance_id, action, last_dcv_disconnect))
                                     try:
                                         if action == "hibernate":
@@ -261,8 +271,8 @@ def linux_auto_stop_instance():
                         session_cpu_average = session_info["CPUAveragePerformanceLast10Secs"]
                         if session_cpu_average < config.Config.DCV_IDLE_CPU_THRESHOLD:
                             if session_current_connection == 0:
-                                current_time = parse(datetime.datetime.now().replace(microsecond=0).replace(tzinfo=datetime.timezone.utc).isoformat())
-                                if (last_dcv_disconnect + datetime.timedelta(hours=stop_instance_after)) < current_time:
+                                current_time = parse(datetime.now().replace(microsecond=0).replace(tzinfo=timezone.utc).isoformat())
+                                if (last_dcv_disconnect + timedelta(hours=stop_instance_after)) < current_time:
                                     logger.info("{} is ready for {}. Last access time {}".format(instance_id,action, last_dcv_disconnect))
                                     try:
                                         if action == "hibernate":
@@ -313,7 +323,7 @@ def auto_terminate_stopped_instance():
                 get_host_to_terminate = retrieve_host(["stopped"], distribution)
                 logger.info("List of hosts that are subject to termination if stopped for more than {} hours: {}".format(terminate_stopped_instance_after, get_host_to_terminate))
                 for instance_id, time_info in get_host_to_terminate.items():
-                    if (time_info["stopped_time"] + datetime.timedelta(hours=terminate_stopped_instance_after)) < time_info["current_time"]:
+                    if (time_info["stopped_time"] + timedelta(hours=terminate_stopped_instance_after)) < time_info["current_time"]:
                         logger.info("Instance {} is ready to be terminated".format(instance_id))
                         try:
                             client_ec2.terminate_instances(InstanceIds=[instance_id], DryRun=True)
@@ -331,7 +341,7 @@ def auto_terminate_stopped_instance():
                                                                                          is_active=True).first()
                                     if check_session:
                                         check_session.is_active = False
-                                        check_session.deactivated_in = datetime.datetime.utcnow()
+                                        check_session.deactivated_in = datetime.utcnow()
                                         db.session.commit()
                                         logger.info("{} has been terminated and set to inactive on the database.".format(instance_id))
                                     else:

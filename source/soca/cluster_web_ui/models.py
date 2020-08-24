@@ -65,7 +65,8 @@ class LinuxDCVSessions(db.Model):
     schedule_saturday_stop = db.Column(db.Integer)
     schedule_sunday_start = db.Column(db.Integer)
     schedule_sunday_stop = db.Column(db.Integer)
-
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 class WindowsDCVSessions(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -102,10 +103,22 @@ class WindowsDCVSessions(db.Model):
     schedule_sunday_start = db.Column(db.Integer)
     schedule_sunday_stop = db.Column(db.Integer)
 
-
-def as_dict(self):
+    def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
+
+class AmiList(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    ami_id = db.Column(db.String(17), nullable=False)
+    ami_type = db.Column(db.String(7), nullable=False)
+    ami_label = db.Column(db.Text, nullable=False)
+    created_on = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, nullable=False)
+    deactivated_on = db.Column(db.DateTime)
+    ami_root_disk_size = db.Column(db.Integer)
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 class ProjectList(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

@@ -27,6 +27,7 @@ from views.admin.users import admin_users
 from views.admin.queues import admin_queues
 from views.admin.groups import admin_groups
 from views.admin.applications import admin_applications
+from views.admin.ami_management import admin_ami_management
 from views.my_jobs import my_jobs
 from views.my_activity import my_activity
 from views.dashboard import dashboard
@@ -207,6 +208,7 @@ with app.app_context():
     app.register_blueprint(admin_queues)
     app.register_blueprint(admin_groups)
     app.register_blueprint(admin_applications)
+    app.register_blueprint(admin_ami_management)
     app.register_blueprint(my_files)
     app.register_blueprint(submit_job)
     app.register_blueprint(ssh)
