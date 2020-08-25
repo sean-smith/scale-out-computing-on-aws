@@ -4,7 +4,7 @@ from flask import render_template, Blueprint, request, redirect, session, flash,
 from requests import get
 from decorators import login_required
 import boto3
-from models import db, LinuxDCVSessions
+from models import db, LinuxDCVSessions, AmiList
 import uuid
 import random
 import string
@@ -22,6 +22,11 @@ remote_desktop = Blueprint('remote_desktop', __name__, template_folder='template
 client_ec2 = boto3.client('ec2')
 logger = logging.getLogger("application")
 
+def get_ami_info():
+    ami_info = {}
+    for session_info in AmiList.query.filter_by(is_active=True, ami_type="linux").all():
+        ami_info[session_info.ami_label] = session_info.ami_id
+    return ami_info
 
 def encrypt(message):
     key = config.Config.DCV_TOKEN_SYMMETRIC_KEY
@@ -164,7 +169,17 @@ def index():
         support_hibernation = session_info.support_hibernation
         dcv_authentication_token = session_info.dcv_authentication_token
         session_id = session_info.session_id
+        session_schedule = {
+            "monday": str(session_info.schedule_monday_start) + "-" + str(session_info.schedule_monday_stop),
+            "tuesday": str(session_info.schedule_tuesday_start) + "-" + str(session_info.schedule_tuesday_stop),
+            "wednesday": str(session_info.schedule_wednesday_start) + "-" + str(session_info.schedule_wednesday_stop),
+            "thursday": str(session_info.schedule_thursday_start) + "-" + str(session_info.schedule_thursday_stop),
+            "friday": str(session_info.schedule_friday_start) + "-" + str(session_info.schedule_friday_stop),
+            "saturday": str(session_info.schedule_saturday_start) + "-" + str(session_info.schedule_saturday_stop),
+            "sunday": str(session_info.schedule_sunday_start) + "-" + str(session_info.schedule_sunday_stop)
+            }
         host_info = get_host_info(session_id, read_secretmanager.get_soca_configuration()["ClusterId"])
+
         if not host_info:
             # no host detected, session no longer active
             session_info.is_active = False
@@ -211,7 +226,8 @@ def index():
             "session_instance_id": session_instance_id,
             "session_instance_type": session_instance_type,
             "tag_uuid": tag_uuid,
-            "support_hibernation": support_hibernation}
+            "support_hibernation": support_hibernation,
+            "session_schedule": session_schedule}
 
     max_number_of_sessions = config.Config.DCV_LINUX_SESSION_COUNT
     # List of instances not available for DCV. Adjust as needed
@@ -228,7 +244,8 @@ def index():
                            allow_instance_change=config.Config.DCV_LINUX_ALLOW_INSTANCE_CHANGE,
                            page='remote_desktop',
                            all_instances=all_instances,
-                           max_number_of_sessions=max_number_of_sessions)
+                           max_number_of_sessions=max_number_of_sessions,
+                           ami_list=get_ami_info())
 
 
 @remote_desktop.route('/remote_desktop/create', methods=['POST'])
@@ -300,9 +317,12 @@ def create():
     echo export "SOCA_CONFIGURATION="''' + str(soca_configuration['ClusterId']) + '''"" >> /etc/environment
     echo export "SOCA_DCV_OWNER="''' + str(session["user"]) + '''"" >> /etc/environment
     echo export "SOCA_BASE_OS="''' + str(soca_configuration['BaseOS']) + '''"" >> /etc/environment
-    echo export "SOCA_JOB_TYPE="desktop"" >> /etc/environment
+    echo export "SOCA_JOB_QUEUE="dcv"" >> /etc/environment
+    echo export "SOCA_JOB_TYPE="dcv"" >> /etc/environment
     echo export "SOCA_SCRATCH_SIZE=''' + str(parameters['disk_size']) + '''" >> /etc/environment
     echo export "SOCA_INSTALL_BUCKET="''' + str(soca_configuration['S3Bucket']) + '''"" >> /etc/environment
+    echo export "SOCA_FSX_LUSTRE_BUCKET="false"" >> /etc/environment
+    echo export "SOCA_FSX_LUSTRE_DNS="false"" >> /etc/environment
     echo export "SOCA_INSTALL_BUCKET_FOLDER="''' + str(soca_configuration['S3InstallFolder']) + '''"" >> /etc/environment
     echo export "SOCA_INSTANCE_TYPE=$GET_INSTANCE_TYPE" >> /etc/environment
     echo export "SOCA_HOST_SYSTEM_LOG="/apps/soca/''' + str(soca_configuration['ClusterId']) + '''/cluster_node_bootstrap/logs/desktop/''' + str(session["user"]) + '''/''' + session_name + '''/$(hostname -s)"" >> /etc/environment
@@ -413,20 +433,37 @@ def create():
         return redirect("/remote_desktop")
 
     flash("Your session has been initiated. It will be ready within 10 minutes.", "success")
+    default_session_schedule_start = 480  # 8 AM
+    default_session_schedule_stop = 1140  # 7 PM
     new_session = LinuxDCVSessions(user=session["user"],
-                                     session_number=parameters["session_number"],
-                                     session_name=session_name,
-                                     session_state="pending",
-                                     session_host_private_dns=False,
-                                     session_host_private_ip=False,
-                                     session_instance_type=instance_type,
-                                     dcv_authentication_token=None,
-                                     session_id=session_uuid,
-                                     tag_uuid=session_uuid,
-                                     session_token=str(uuid.uuid4()),
-                                     is_active=True,
-                                     support_hibernation=parameters["hibernate"],
-                                     created_on=datetime.datetime.utcnow())
+                                   session_number=parameters["session_number"],
+                                   session_name=session_name,
+                                   session_state="pending",
+                                   session_host_private_dns=False,
+                                   session_host_private_ip=False,
+                                   session_instance_type=instance_type,
+                                   dcv_authentication_token=None,
+                                   session_id=session_uuid,
+                                   tag_uuid=session_uuid,
+                                   session_token=str(uuid.uuid4()),
+                                   is_active=True,
+                                   support_hibernation=parameters["hibernate"],
+                                   created_on=datetime.datetime.utcnow(),
+                                   schedule_monday_start=default_session_schedule_start,
+                                   schedule_tuesday_start=default_session_schedule_start,
+                                   schedule_wednesday_start=default_session_schedule_start,
+                                   schedule_thursday_start=default_session_schedule_start,
+                                   schedule_friday_start=default_session_schedule_start,
+                                   schedule_saturday_start=0,
+                                   schedule_sunday_start=0,
+                                   schedule_monday_stop=default_session_schedule_stop,
+                                   schedule_tuesday_stop=default_session_schedule_stop,
+                                   schedule_wednesday_stop=default_session_schedule_stop,
+                                   schedule_thursday_stop=default_session_schedule_stop,
+                                   schedule_friday_stop=default_session_schedule_stop,
+                                   schedule_saturday_stop=0,
+                                   schedule_sunday_stop=0,
+                                   )
     db.session.add(new_session)
     db.session.commit()
     return redirect("/remote_desktop")
@@ -454,7 +491,7 @@ def delete():
             # Hibernate instance
             try:
                 client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True, DryRun=True)
-            except Exception as e:
+            except ClientError as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.stop_instances(InstanceIds=[instance_id], Hibernate=True)
                     check_session.session_state = "stopped"
@@ -466,7 +503,7 @@ def delete():
             # Stop Instance
             try:
                 client_ec2.stop_instances(InstanceIds=[instance_id], DryRun=True)
-            except Exception as e:
+            except ClientError as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.stop_instances(InstanceIds=[instance_id])
                     check_session.session_state = "stopped"
@@ -478,7 +515,7 @@ def delete():
             # Terminate instance
             try:
                 client_ec2.terminate_instances(InstanceIds=[instance_id], DryRun=True)
-            except Exception as e:
+            except ClientError as e:
                 if e.response['Error'].get('Code') == 'DryRunOperation':
                     client_ec2.terminate_instances(InstanceIds=[instance_id])
                     flash("Your graphical session is about to be terminated.", "success")
@@ -511,7 +548,7 @@ def restart_from_hibernate():
         instance_id = check_session.session_instance_id
         try:
             client_ec2.start_instances(InstanceIds=[instance_id], DryRun=True)
-        except Exception as e:
+        except ClientError as e:
             if e.response['Error'].get('Code') == 'DryRunOperation':
                 try:
                     client_ec2.start_instances(InstanceIds=[instance_id])
@@ -611,3 +648,71 @@ weburlpath=/''' + check_session.session_host_private_dns + '''
         flash("Unable to retrieve this session. This session may have been terminated.", "error")
         return redirect("/remote_desktop")
 
+@remote_desktop.route('/remote_desktop_windows/schedule', methods=['POST'])
+@login_required
+def schedule():
+    week_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    schedule = {}
+    session_number = None if "session_number" not in request.form else request.form["session_number"]
+    error = False
+    if not session_number:
+        flash("Session Number is missing", "error")
+        logger.error("Session number is missing {}".format(request.form))
+        return redirect("/remote_desktop_windows")
+
+    for day in week_days:
+        schedule_name = "schedule-" + day + "-" + session_number
+        if schedule_name not in request.form.keys():
+            error = "Unable to retrieve schedule for {}".format(day)
+        else:
+            schedule_value = request.form[schedule_name].split("-")
+            if len(schedule_value) == 2:
+                try:
+                    start_time = int(schedule_value[0])
+                    end_time = int(schedule_value[1])
+                    if end_time < start_time:
+                        error = "End time ({}) must be greater than start time ({})".format(end_time,start_time)
+                    elif end_time > 1440:
+                        error = "End Time ({}) cannot be greater than 1440 (12PM)".format(end_time)
+                    elif start_time < 0:
+                        error = "Start time ({}) must be greater than 0 (12AM)".format(start_time)
+                    elif start_time == end_time:
+                        schedule[day] = "0-0"  # no run
+                    else:
+                        schedule[day] = str(start_time) + "-" + str(end_time)
+                except ValueError:
+                    error = "Schedule must use number1-number2 format where number1 and number2 are valid integer : ".format(schedule_value)
+            else:
+                error = "Schedule values must be number1-number2 format and not {}".format(schedule_value)
+
+    if error is not False:
+        flash(error, "error")
+        logger.error(error)
+        return redirect("/remote_desktop_windows")
+
+    else:
+        check_session = LinuxDCVSessions.query.filter_by(user=session["user"],
+                                                         session_number=session_number,
+                                                         is_active=True).first()
+        if check_session:
+            check_session.schedule_monday_start = schedule["monday"].split("-")[0]
+            check_session.schedule_monday_stop = schedule["monday"].split("-")[1]
+            check_session.schedule_tuesday_start = schedule["tuesday"].split("-")[0]
+            check_session.schedule_tuesday_stop = schedule["tuesday"].split("-")[1]
+            check_session.schedule_wednesday_start = schedule["wednesday"].split("-")[0]
+            check_session.schedule_wednesday_stop = schedule["wednesday"].split("-")[1]
+            check_session.schedule_thursday_start = schedule["thursday"].split("-")[0]
+            check_session.schedule_thursday_stop = schedule["thursday"].split("-")[1]
+            check_session.schedule_friday_start = schedule["friday"].split("-")[0]
+            check_session.schedule_friday_stop = schedule["friday"].split("-")[1]
+            check_session.schedule_saturday_start = schedule["saturday"].split("-")[0]
+            check_session.schedule_saturday_stop = schedule["saturday"].split("-")[1]
+            check_session.schedule_sunday_start = schedule["sunday"].split("-")[0]
+            check_session.schedule_sunday_stop = schedule["sunday"].split("-")[1]
+            db.session.commit()
+            flash("Your session schedule has been updated correctly", "success")
+            return redirect("/remote_desktop")
+
+        else:
+            flash("Unable to retrieve this session. This session may have been terminated.", "error")
+            return redirect("/remote_desktop")

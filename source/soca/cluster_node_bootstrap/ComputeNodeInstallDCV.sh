@@ -88,7 +88,11 @@ sudo systemctl start dcvserver
 systemctl stop firewalld
 systemctl disable firewalld
 
+# Start X
+systemctl isolate graphical.target
+
 dcv create-session --owner $SOCA_DCV_OWNER $SOCA_DCV_SESSION_ID
+sleep 5
 echo "@reboot dcv create-session --owner $SOCA_DCV_OWNER $SOCA_DCV_SESSION_ID" | crontab -
 
 # Final reboot is needed to update GPU drivers if running on G2/G3. Reboot will be triggered by ComputeNodePostReboot.sh
@@ -97,6 +101,5 @@ then
     exit 3 # notify ComputeNodePostReboot.sh to force reboot
 fi
 
-# Start X
-systemctl isolate graphical.target
+
 exit 0

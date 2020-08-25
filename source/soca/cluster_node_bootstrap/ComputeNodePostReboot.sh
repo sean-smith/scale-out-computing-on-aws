@@ -34,7 +34,7 @@ then
 fi
 
 # Begin DCV Customization
-if [[ "$SOCA_JOB_TYPE" == "desktop" ]]; then
+if [[ "$SOCA_JOB_TYPE" == "dcv" ]]; then
     echo "Installing DCV"
     /bin/bash /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ComputeNodeInstallDCV.sh >> $SOCA_HOST_SYSTEM_LOG/ComputeNodeInstallDCV.log 2>&1
     if [[ $? -eq 3 ]];
@@ -160,7 +160,7 @@ while [[ $? -ne 0 ]] && [[ $LOOP_ENI_TAG -lt 5 ]]
     $AWS ec2 create-tags --resources $ENI_IDS --region $AWS_REGION --tags Key=Name,Value="ENI for $SOCA_JOB_ID" Key=soca:JobOwner,Value="$SOCA_JOB_OWNER" Key=soca:JobProject,Value="$SOCA_JOB_PROJECT" Key=Name,Value="soca-job-$SOCA_JOB_ID"  Key=soca:JobId,Value="$SOCA_JOB_ID" Key=soca:JobQueue,Value="$SOCA_JOB_QUEUE" Key=soca:ClusterId,Value="$SOCA_CONFIGURATION"
 done
 
-
+echo "Require Reboot: $REQUIRE_REBOOT"
 if [[ $REQUIRE_REBOOT -eq 1 ]];
 then
     echo "systemctl stop pbs
