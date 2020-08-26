@@ -37,7 +37,7 @@ from views.my_account import my_account
 from views.my_files import my_files
 from views.submit_job import submit_job
 from scheduled_tasks.clean_tmp_folders import clean_tmp_folders
-from scheduled_tasks.manage_dcv_instances_lifecycle import windows_auto_stop_instance, linux_auto_stop_instance, auto_terminate_stopped_instance
+from scheduled_tasks.manage_dcv_instances_lifecycle import auto_terminate_stopped_instance, schedule_auto_start, schedule_auto_stop
 from flask_wtf.csrf import CSRFProtect
 from config import app_config
 from flask_swagger import swagger
@@ -140,22 +140,22 @@ dict_config = {
 class Config(object):
     JOBS = [
         {
-            'id': 'linux_auto_stop_instance',
-            'func': linux_auto_stop_instance,
-            'trigger': 'interval',
-            'minutes': 15
-        },
-        {
-            'id': 'windows_auto_stop_instance',
-            'func': windows_auto_stop_instance,
-            'trigger': 'interval',
-            'minutes': 15
-        },
-        {
             'id': 'auto_terminate_stopped_instance',
             'func': auto_terminate_stopped_instance,
             'trigger': 'interval',
             'minutes': 30
+        },
+        {
+            'id': 'schedule_auto_start',
+            'func': schedule_auto_start,
+            'trigger': 'interval',
+            'minutes': 2
+        },
+        {
+            'id': 'schedule_auto_stop',
+            'func': schedule_auto_stop,
+            'trigger': 'interval',
+            'minutes': 2
         },
         {
             'id': 'clean_tmp_folders',

@@ -105,7 +105,7 @@
                                                                   {% for day in ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"] %}
                                                                       <div class="form-inline">
                                                                           <div class="col-md-8">
-                                                                              <form action="/remote_desktop_windows/schedule" method="POST">
+                                                                              <form action="/remote_desktop/schedule" method="POST">
                                                                                   <strong
                                                                                           {% if session_data.session_schedule[day] == "0-0" %} style="color: #e02d1b"{% else %} style="color: #16bf9f" {% endif %}>{{ day | capitalize }} </strong> &nbsp;
                                                                                   <select  class="custom-select"  id="schedule_mode" onchange="manageSchedule('{{ day }}-{{ n }}', this.value)">

@@ -8,8 +8,9 @@ from models import db, LinuxDCVSessions, AmiList
 import uuid
 import random
 import string
+import pytz
+from datetime import datetime,timezone
 import base64
-import datetime
 import read_secretmanager
 from botocore.exceptions import ClientError
 import re
@@ -234,6 +235,15 @@ def index():
     blacklist = config.Config.DCV_BLACKLIST_INSTANCE_TYPE
     all_instances_available = client_ec2._service_model.shape_for('InstanceType').enum
     all_instances = [p for p in all_instances_available if not any(substr in p for substr in blacklist)]
+    try:
+        tz = pytz.timezone(config.Config.TIMEZONE)
+    except pytz.exceptions.UnknownTimeZoneError:
+        flash(
+            "Timezone {} configured by the admin does not exist. Defaulting to UTC. Refer to https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a full list of supported timezones".format(
+                config.Config.TIMEZONE))
+        tz = pytz.timezone("UTC")
+
+    server_time = (datetime.now(timezone.utc)).astimezone(tz).strftime("%Y-%m-%d (%A) %H:%M")
     return render_template('remote_desktop.html',
                            user=session["user"],
                            user_sessions=user_sessions,
@@ -245,6 +255,8 @@ def index():
                            page='remote_desktop',
                            all_instances=all_instances,
                            max_number_of_sessions=max_number_of_sessions,
+                           server_time=server_time,
+                           server_timezone_human=config.Config.TIMEZONE,
                            ami_list=get_ami_info())
 
 
@@ -648,7 +660,7 @@ weburlpath=/''' + check_session.session_host_private_dns + '''
         flash("Unable to retrieve this session. This session may have been terminated.", "error")
         return redirect("/remote_desktop")
 
-@remote_desktop.route('/remote_desktop_windows/schedule', methods=['POST'])
+@remote_desktop.route('/remote_desktop/schedule', methods=['POST'])
 @login_required
 def schedule():
     week_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -658,7 +670,7 @@ def schedule():
     if not session_number:
         flash("Session Number is missing", "error")
         logger.error("Session number is missing {}".format(request.form))
-        return redirect("/remote_desktop_windows")
+        return redirect("/remote_desktop")
 
     for day in week_days:
         schedule_name = "schedule-" + day + "-" + session_number
@@ -688,7 +700,7 @@ def schedule():
     if error is not False:
         flash(error, "error")
         logger.error(error)
-        return redirect("/remote_desktop_windows")
+        return redirect("/remote_desktop")
 
     else:
         check_session = LinuxDCVSessions.query.filter_by(user=session["user"],
