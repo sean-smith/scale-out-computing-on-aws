@@ -221,7 +221,7 @@ $AWS s3 cp s3://$SOCA_INSTALL_BUCKET/$SOCA_INSTALL_BUCKET_FOLDER/scripts/config.
                     DeviceName="/dev/xvdbx",
                     Ebs=EBSBlockDevice(
                         VolumeSize=params["ScratchSize"],
-                        VolumeType="io1" if int(params["VolumeTypeIops"]) > 0 else "gp2",
+                        VolumeType=params["ScratchType"],
                         Iops=params["VolumeTypeIops"] if int(params["VolumeTypeIops"]) > 0 else Ref("AWS::NoValue"),
                         DeleteOnTermination="false" if params["KeepEbs"] is True else "true",
                         Encrypted=True))

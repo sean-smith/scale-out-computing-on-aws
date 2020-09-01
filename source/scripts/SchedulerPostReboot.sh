@@ -45,6 +45,7 @@ queue_type:
     root_size: "10"
     #scratch_size: "100"
     #scratch_iops: "3600"
+    #scratch_type: "gp2"
     #efa_support: "false"
     # .. Refer to the doc for more supported parameters
   desktop:

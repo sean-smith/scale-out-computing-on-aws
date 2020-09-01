@@ -126,6 +126,7 @@ placement_group type=string
 root_size type=string
 scratch_iops type=string
 scratch_size type=string
+scratch_type type=string
 spot_allocation_count type=string
 spot_allocation_strategy type=string
 spot_price type=string
