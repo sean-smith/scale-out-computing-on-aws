@@ -149,13 +149,13 @@ class Config(object):
             'id': 'schedule_auto_start',
             'func': schedule_auto_start,
             'trigger': 'interval',
-            'minutes': 2
+            'minutes': 10
         },
         {
             'id': 'schedule_auto_stop',
             'func': schedule_auto_stop,
             'trigger': 'interval',
-            'minutes': 2
+            'minutes': 5
         },
         {
             'id': 'clean_tmp_folders',

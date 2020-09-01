@@ -67,8 +67,8 @@ def ami_create():
                         flash(f"{ami_id} registration not successful", "error")
                         logger.error(f"Failed Creating AMI {ami_label} {ami_id} {e}")
             else:
-                    flash(f"{ami_id} not available in AWS account" )
-                    logger.error(f"{ami_id} not available in AWS account")
+                    flash(f"{ami_id} is not available in AWS account. If you just created it, make sure the state of the image is 'available' on the AWS console" )
+                    logger.error(f"{ami_id} is not available in AWS account")
         except botocore.exceptions.ClientError as error:
             flash(f"Couldn't locate {ami_id} in AWS account. Make sure you do have permission to view it", "error")
             logger.error(f"Failed Creating AMI {ami_label} {ami_id} {error}")

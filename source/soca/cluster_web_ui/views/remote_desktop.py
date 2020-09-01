@@ -184,7 +184,7 @@ def index():
         if not host_info:
             # no host detected, session no longer active
             session_info.is_active = False
-            session_info.deactivated_on = datetime.datetime.utcnow()
+            session_info.deactivated_on = datetime.utcnow()
             db.session.commit()
         else:
             # detected EC2 host for the session
@@ -200,10 +200,16 @@ def index():
                 session_info.dcv_authentication_token = session_authentication_token
                 db.session.commit()
 
-        if host_info["status"] in ["stopped", "stopping"] and session_state != "stopped":
-            session_state = "stopped"
-            session_info.session_state = "stopped"
+        if "status" not in host_info.keys():
+            session_info.is_active = False
+            session_info.deactivated_on = datetime.utcnow()
             db.session.commit()
+            db.session.commit()
+        else:
+            if host_info["status"] in ["stopped", "stopping"] and session_state != "stopped":
+                session_state = "stopped"
+                session_info.session_state = "stopped"
+                db.session.commit()
 
         if session_state == "pending" and session_host_private_dns is not False:
             check_dcv_state = get('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns + '/',
@@ -460,7 +466,7 @@ def create():
                                    session_token=str(uuid.uuid4()),
                                    is_active=True,
                                    support_hibernation=parameters["hibernate"],
-                                   created_on=datetime.datetime.utcnow(),
+                                   created_on=datetime.utcnow(),
                                    schedule_monday_start=default_session_schedule_start,
                                    schedule_tuesday_start=default_session_schedule_start,
                                    schedule_wednesday_start=default_session_schedule_start,
@@ -532,7 +538,7 @@ def delete():
                     client_ec2.terminate_instances(InstanceIds=[instance_id])
                     flash("Your graphical session is about to be terminated.", "success")
                     check_session.is_active = False
-                    check_session.deactivated_on = datetime.datetime.utcnow()
+                    check_session.deactivated_on = datetime.utcnow()
                     db.session.commit()
                     return redirect("/remote_desktop")
                 else:

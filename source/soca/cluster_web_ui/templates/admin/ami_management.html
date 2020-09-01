@@ -38,7 +38,9 @@
                     {% endwith %}
                     <div class="col-md-10">
                        <div class="alert alert-warning">
-                        Make sure your Amazon Machine Images (AMI) are generated for your current region: <strong>{{ region_name }}</strong>
+                        Make sure your Amazon Machine Images (AMI) are generated for your current region: <strong>{{ region_name }}</strong> <br>
+                           <a  target="_blank" href="https://awslabs.github.io/scale-out-computing-on-aws/web-interface/ceate-dcv-images">Click here to learn how to create custom images</a>
+
                     </div>
                     <nav>
                         <div class="nav nav-tabs" id="nav-tab" role="tablist">
@@ -61,7 +63,7 @@
                                     <form action="/admin/ami_management/create" method="post">
                                         <div class="form-group">
                                             <label for="ami_id" data-toggle="tooltip" data-placement="top" title="Unique ID of your Amazon image. Must be a valid image, start with ami- and between 8 to 21 chars">AMI ID</label>
-                                            <input id="ami_id" placeholder="AMI ID of the region" class="form-control"
+                                            <input id="ami_id" placeholder="Image ID (start with ami-xxx)" class="form-control"
                                                    type="text"
                                                    required name="ami_id" minlength="8" maxlength="21">
                                         </div>

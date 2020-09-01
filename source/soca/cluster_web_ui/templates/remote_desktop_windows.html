@@ -64,7 +64,7 @@
                                               </div><!--end  terminate  -->
 
                                           <div class="card-header py-3">
-                                              <h6 class="m-0 font-weight-bold text-primary"><i data-toggle="tooltip" data-placement="top" title="Troubleshooting: EC2 tag is {{ session_data.tag_uuid }}, instance ID is  {{ session_data.session_instance_id }}" class="fas fa-question-circle"></i> Your Session #{{ n }}
+                                              <h6 class="m-0 font-weight-bold text-primary"><i data-toggle="tooltip" data-placement="top" title="Troubleshooting: EC2 tag is {{ session_data.tag_uuid }}, instance ID is  {{ session_data.session_instance_id }}" class="fas fa-question-circle"></i> Windows Session #{{ n }}
                                                   {% if session_data.session_state == 'running' %}
                                                       <div class="float-right"><button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#password{{ n }}">Get Password</button>&nbsp;<button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#schedule{{ n }}">Schedule</button>
                                                            {% if session_data.support_hibernation == true %}
@@ -98,6 +98,7 @@
                                                               <div class="alert alert-primary">
                                                                   Automatically start/stop this session based on schedule<br>
                                                                   Your session will not be stopped during scheduled hours, even if idle.<br>
+                                                                  Outside of scheduled hours, your session will be terminated only if idle.<br>
                                                                   The server is using <strong>{{ server_timezone_human }}</strong> timezone. Current time is <strong>{{ server_time }}</strong>
                                                               </div>
 
@@ -290,11 +291,11 @@
                                               </a>
                                               {% if session_data.support_hibernation == true %}
                                                   {% if hibernate_idle_session > 0 %}
-                                                      <hr> This session will be automatically hibernated <strong> after {{ hibernate_idle_session }} hours</strong> if you do not use it.
+                                                      <hr> This session will be automatically hibernated <strong> after {{ hibernate_idle_session }} hours</strong> of idle time if you do not run it on a schedule.
                                                   {% endif %}
                                               {% else %}
                                                 {% if stop_idle_session > 0  %}
-                                                    <hr> This session will be automatically stopped <strong> after {{ stop_idle_session }} hours</strong> if you do not use it.
+                                                    <hr> This session will be automatically stopped <strong> after {{ stop_idle_session }} hours </strong> of idle time if you do not run it on a schedule.
                                                 {% endif %}
                                               {% endif %}
 
@@ -338,7 +339,7 @@
                                                                       You won't be charged for the compute time while your session is stopped<br>
                                                                       Applications are loaded in memory and will restart automatically
                                                                       {% if hibernate_idle_session > 0 %}
-                                                                          <br> Your session will be automatically hibernated <strong>after {{ hibernate_idle_session }} hours</strong> if you do not use it.
+                                                                          <br> Your session will be automatically hibernated <strong>after {{ hibernate_idle_session }} hours</strong> of idle time if you do not run it on a schedule.
                                                                       {% endif %}
                                                                   </div>
                                                                   <div align="center">

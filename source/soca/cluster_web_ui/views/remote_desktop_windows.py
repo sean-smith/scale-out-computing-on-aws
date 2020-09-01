@@ -200,10 +200,16 @@ def index():
                 session_info.dcv_authentication_token = session_authentication_token
                 db.session.commit()
 
-        if host_info["status"] in ["stopped", "stopping"] and session_state != "stopped":
-            session_state = "stopped"
-            session_info.session_state = "stopped"
+        if "status" not in host_info.keys():
+            session_info.is_active = False
+            session_info.deactivated_on = datetime.utcnow()
             db.session.commit()
+            db.session.commit()
+        else:
+            if host_info["status"] in ["stopped", "stopping"] and session_state != "stopped":
+                session_state = "stopped"
+                session_info.session_state = "stopped"
+                db.session.commit()
 
         if session_state == "pending" and session_host_private_dns is not False:
             check_dcv_state = get('https://' + read_secretmanager.get_soca_configuration()['LoadBalancerDNSName'] + '/' + session_host_private_dns + '/',

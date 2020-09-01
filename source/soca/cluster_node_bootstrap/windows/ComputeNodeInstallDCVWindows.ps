@@ -38,6 +38,8 @@ if($AutoLogon -eq "true"){
     New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "AutoAdminLogon" -PropertyType "DWord" -Value 1 -Force
     New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultUserName" -PropertyType "String" -Value "Administrator" -Force
     New-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -PropertyType "String" -Value "%SOCA_LOCAL_ADMIN_PASSWORD%" -Force
+    New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows" -Name Personalization -Force
+    cmd /c "powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_NONE CONSOLELOCK 0"
 }
 
 # Specify Admin user/password on the desktop in case user needs it
@@ -64,4 +66,4 @@ Stop-Process -Name Explorer
 Restart-Computer
 
 </powershell>
-
+<persist>true</persist>
