@@ -757,7 +757,7 @@ def main(**kwargs):
             },
             'ScratchType': {
                 'Key': 'scratch_type',
-                'Default': aligo_configuration['scratch_type']
+                'Default': 'gp2'
             }
         }
 
